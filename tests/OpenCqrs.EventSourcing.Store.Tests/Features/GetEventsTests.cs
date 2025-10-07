@@ -1,14 +1,13 @@
 ﻿using FluentAssertions;
 using FluentAssertions.Execution;
-using Microsoft.Extensions.Time.Testing;
-using OpenCqrs.EventSourcing.Store.Cosmos.Tests.Models.Aggregates;
-using OpenCqrs.EventSourcing.Store.Cosmos.Tests.Models.Events;
-using OpenCqrs.EventSourcing.Store.Cosmos.Tests.Models.Streams;
+using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
+using OpenCqrs.EventSourcing.Store.Tests.Models.Events;
+using OpenCqrs.EventSourcing.Store.Tests.Models.Streams;
 using Xunit;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos.Tests.Features;
+namespace OpenCqrs.EventSourcing.Store.Tests.Features;
 
-public class GetEventsTests : TestBase
+public class GetEventsTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
 {
     [Fact]
     public async Task GiveMultipleEventsSaved_WhenAllEventsAreRequested_ThenAllEventsAreReturned()

@@ -1,14 +1,14 @@
 ﻿using FluentAssertions;
 using FluentAssertions.Execution;
 using OpenCqrs.EventSourcing.Domain;
-using OpenCqrs.EventSourcing.Store.Cosmos.Tests.Models.Aggregates;
-using OpenCqrs.EventSourcing.Store.Cosmos.Tests.Models.Events;
-using OpenCqrs.EventSourcing.Store.Cosmos.Tests.Models.Streams;
+using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
+using OpenCqrs.EventSourcing.Store.Tests.Models.Events;
+using OpenCqrs.EventSourcing.Store.Tests.Models.Streams;
 using Xunit;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos.Tests.Features;
+namespace OpenCqrs.EventSourcing.Store.Tests.Features;
 
-public class GetEventsAppliedToAggregateTests : TestBase
+public class GetEventsAppliedToAggregateTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
 {
     [Fact]
     public async Task GivenAggregateSaved_ThenOnlyAggregateEventsAppliedAreReturned()

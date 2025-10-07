@@ -7,7 +7,7 @@ using OpenCqrs.EventSourcing.Store.Tests;
 
 namespace OpenCqrs.EventSourcing.Store.Cosmos.Tests;
 
-public class CosmosDomainServiceFactory : IDomainServiceFactory
+public class DomainServiceFactory : IDomainServiceFactory
 {
     public IDomainService CreateDomainService(FakeTimeProvider timeProvider, IHttpContextAccessor httpContextAccessor)
     {

@@ -22,6 +22,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\src\OpenCqrs.EventSourcing.Store.EntityFrameworkCore\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.csproj" />
       <ProjectReference Include="..\..\src\OpenCqrs\OpenCqrs.csproj" />
+      <ProjectReference Include="..\OpenCqrs.EventSourcing.Store.Tests\OpenCqrs.EventSourcing.Store.Tests.csproj" />
     </ItemGroup>
 
 </Project>

@@ -50,7 +50,6 @@ If you're using this repository for your learning, samples, workshop, or your pr
 - Kafka messaging provider
 - File store provider for event sourcing
 - Amazon SQS messaging provider
-- EventSourcingDB store provider
 
 📣 _[Release Notes](https://opencqrs.github.io/OpenCQRS/Release-Notes.html)_
 

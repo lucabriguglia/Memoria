@@ -1,14 +1,14 @@
 ﻿using FluentAssertions;
 using FluentAssertions.Execution;
 using OpenCqrs.EventSourcing.Domain;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.Models.Aggregates;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.Models.Events;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.Models.Streams;
+using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
+using OpenCqrs.EventSourcing.Store.Tests.Models.Events;
+using OpenCqrs.EventSourcing.Store.Tests.Models.Streams;
 using Xunit;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.Features;
+namespace OpenCqrs.EventSourcing.Store.Tests.Features;
 
-public class UpdateAggregateTests : TestBase
+public class UpdateAggregateTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
 {
     [Fact]
     public async Task GivenEventsHandledByTheAggregateAreStoredSeparately_WhenAggregateIsUpdated_ThenAggregateVersionIsIncreasedAndTheUpdatedAggregateIsReturned()
@@ -69,3 +69,4 @@ public class UpdateAggregateTests : TestBase
         }
     }
 }
+

@@ -1,5 +1,8 @@
+using Microsoft.AspNetCore.Http;
 using OpenCqrs.EventSourcing.Domain;
 using OpenCqrs.EventSourcing.Store.Cosmos.Documents;
+using OpenCqrs.EventSourcing.Store.Cosmos.Extensions;
+using OpenCqrs.Extensions;
 using OpenCqrs.Results;
 
 namespace OpenCqrs.EventSourcing.Store.Cosmos.InMemory;
@@ -8,7 +11,7 @@ namespace OpenCqrs.EventSourcing.Store.Cosmos.InMemory;
 /// In-memory implementation of ICosmosDataStore for fast testing.
 /// Uses shared InMemoryCosmosStorage for data persistence.
 /// </summary>
-public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage) : ICosmosDataStore
+public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider timeProvider, IHttpContextAccessor httpContextAccessor) : ICosmosDataStore
 {
     public Task<Result<AggregateDocument?>> GetAggregateDocument<T>(
         IStreamId streamId,
@@ -159,23 +162,66 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage) : ICosmosDat
         return Task.FromResult(Result<List<EventDocument>>.Ok(documents));
     }
 
-    public Task<Result<T?>> UpdateAggregateDocument<T>(
+    public async Task<Result<T?>> UpdateAggregateDocument<T>(
         IStreamId streamId,
         IAggregateId<T> aggregateId,
         AggregateDocument? aggregateDocument,
         CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
     {
-        var key = InMemoryCosmosStorage.CreateAggregateKey(streamId, aggregateId);
+        var aggregateKey = InMemoryCosmosStorage.CreateAggregateKey(streamId, aggregateId);
 
-        if (aggregateDocument == null)
+        var aggregate = aggregateDocument is null ? new T() : aggregateDocument.ToAggregate<T>();
+
+        var currentAggregateVersion = aggregate.Version;
+
+        var newEventDocumentsResult = await GetEventDocumentsFromSequence(streamId, fromSequence: aggregate.LatestEventSequence + 1, aggregate.EventTypeFilter, cancellationToken);
+        if (newEventDocumentsResult.IsNotSuccess)
         {
-            storage.AggregateDocuments.TryRemove(key, out _);
-            return Task.FromResult(Result<T?>.Ok(default(T)));
+            return newEventDocumentsResult.Failure!;
+        }
+        var newEventDocuments = newEventDocumentsResult.Value!;
+        if (newEventDocuments.Count == 0)
+        {
+            return aggregate.Version > 0 ? aggregate : default;
         }
 
-        storage.AggregateDocuments.AddOrUpdate(key, aggregateDocument, (_, _) => aggregateDocument);
-        var aggregate = aggregateDocument.ToAggregate<T>();
-        return Task.FromResult(Result<T?>.Ok(aggregate));
+        var newEvents = newEventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        aggregate.Apply(newEvents);
+        if (aggregate.Version == currentAggregateVersion)
+        {
+            return aggregate.Version > 0 ? aggregate : default;
+        }
+
+        var newLatestEventSequenceForAggregate = newEventDocuments.OrderBy(eventEntity => eventEntity.Sequence).Last().Sequence;
+        var timeStamp = timeProvider.GetUtcNow();
+        var currentUserNameIdentifier = httpContextAccessor.GetCurrentUserNameIdentifier();
+
+        var aggregateDocumentToUpdate = aggregate.ToAggregateDocument(streamId, aggregateId, newLatestEventSequenceForAggregate);
+        aggregateDocumentToUpdate.CreatedDate = aggregateDocument?.CreatedDate ?? timeStamp;
+        aggregateDocumentToUpdate.CreatedBy = aggregateDocument?.CreatedBy ?? currentUserNameIdentifier;
+        aggregateDocumentToUpdate.UpdatedDate = timeStamp;
+        aggregateDocumentToUpdate.UpdatedBy = currentUserNameIdentifier;
+        storage.AggregateDocuments.AddOrUpdate(aggregateKey, aggregateDocumentToUpdate, (_, _) => aggregateDocumentToUpdate);
+
+        foreach (var eventDocument in newEventDocuments)
+        {
+            var aggregateEventDocument = new AggregateEventDocument
+            {
+                Id = $"{aggregateId.ToStoreId()}|{eventDocument.Id}",
+                StreamId = streamId.Id,
+                AggregateId = aggregateId.ToStoreId(),
+                EventId = eventDocument.Id,
+                AppliedDate = timeStamp
+            };
+            if (!storage.AggregateEventDocuments.TryGetValue(aggregateKey, out var bag))
+            {
+                bag = [];
+                storage.AggregateEventDocuments.TryAdd(aggregateKey, bag);
+            }
+            bag.Add(aggregateEventDocument);
+        }
+
+        return aggregate;
     }
 
     public void Dispose()

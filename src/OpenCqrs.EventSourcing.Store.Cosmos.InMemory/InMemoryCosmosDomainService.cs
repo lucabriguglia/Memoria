@@ -13,7 +13,7 @@ public class InMemoryCosmosDomainService(
     IHttpContextAccessor httpContextAccessor)
     : IDomainService
 {
-    private readonly InMemoryCosmosDataStore _dataStore = new(storage);
+    private readonly InMemoryCosmosDataStore _dataStore = new(storage, timeProvider, httpContextAccessor);
 
     public async Task<Result<T?>> GetAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId, ReadMode readMode = ReadMode.SnapshotOnly, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
     {

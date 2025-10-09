@@ -14,7 +14,7 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>logo.png</PackageIcon>
-    <Version>7.3.0-preview.1</Version>
+    <Version>7.3.0-preview.2</Version>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

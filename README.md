@@ -1,15 +1,15 @@
-# 🚀 OpenCQRS&trade;
+# 🚀 Memoria&trade;
 
-[![.Build](https://github.com/OpenCQRS/OpenCQRS/actions/workflows/build.yml/badge.svg)](https://github.com/OpenCQRS/OpenCQRS/actions/workflows/build.yml)
+[![.Build](https://github.com/Memoria/Memoria/actions/workflows/build.yml/badge.svg)](https://github.com/Memoria/Memoria/actions/workflows/build.yml)
 
 .NET framework implementing DDD, Event Sourcing, and CQRS.
 
-OpenCQRS 7 released in September 2025 is extremely flexible and expandable. It can be used as a simple mediator or as a full Event Sourcing solution with Cosmos DB or Entity Framework Core as storage.
+Memoria 1.0.0 released in October 2025 is extremely flexible and expandable. It can be used as a simple mediator or as a full Event Sourcing solution with Cosmos DB or Entity Framework Core as storage.
 
-- 📘 _[Full documentation](https://opencqrs.github.io/OpenCQRS/)_
-- 📣 _[Release Notes](https://opencqrs.github.io/OpenCQRS/Release-Notes.html)_
-- 📚 _[Examples in repository](https://github.com/OpenCQRS/OpenCQRS/tree/main/examples)_
-- 🛒 _[EventShop (ecommerce demo application)](https://github.com/OpenCQRS/EventShop)_
+- 📘 _[Full documentation](https://lucabriguglia.github.io/Memoria/)_
+- 📣 _[Release Notes](https://lucabriguglia.github.io/Memoria/Release-Notes.html)_
+- 📚 _[Examples in repository](https://github.com/lucabriguglia/Memoria/tree/main/examples)_
+- 🛒 _[EventShop (ecommerce demo application)](https://github.com/lucabriguglia/EventShop)_
 
 ## ⭐ Give a star
 
@@ -40,34 +40,34 @@ If you're using this repository for your learning, samples, workshop, or your pr
 - Rebranding
 
 ### ⏭️ Next
-- New package for in-memory RabbitMQ for easier testing in projects using OpenCQRS
-- New package for in-memory Service Bus for easier testing in projects using OpenCQRS
+- New package for in-memory RabbitMQ for easier testing in projects using Memoria
+- New package for in-memory Service Bus for easier testing in projects using Memoria
 
 ### 🕙 To Follow
-- Create an ecommerce demo application to showcase OpenCQRS features
+- Create an ecommerce demo application to showcase Memoria features
 - Option to automatically validate commands
 - Event Grid messaging provider
 - Kafka messaging provider
 - File store provider for event sourcing
 - Amazon SQS messaging provider
 
-📣 _[Release Notes](https://opencqrs.github.io/OpenCQRS/Release-Notes.html)_
+📣 _[Release Notes](https://lucabriguglia.github.io/Memoria/Release-Notes.html)_
 
 ## 📦 Nuget Packages
 
 | Package                                                                                                                                               | Latest Stable                                                                                                                                                   | Latest                                                                                                                                                                    |
 |-------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [OpenCqrs](https://www.nuget.org/packages/OpenCqrs)                                                                                                   | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs)                                                  | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs)                                                  |
-| [OpenCqrs.EventSourcing](https://www.nuget.org/packages/OpenCqrs.EventSourcing)                                                                       | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.EventSourcing)                                    | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.EventSourcing)                                    |
-| [OpenCqrs.EventSourcing.Store.Cosmos](https://www.nuget.org/packages/OpenCqrs.EventSourcing.Store.Cosmos)                                             | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.EventSourcing.Store.Cosmos)                       | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.EventSourcing.Store.Cosmos)                       |
-| [OpenCqrs.EventSourcing.Store.Cosmos.InMemory](https://www.nuget.org/packages/OpenCqrs.EventSourcing.Store.Cosmos.InMemory)                           | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.EventSourcing.Store.Cosmos.InMemory)              | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.EventSourcing.Store.Cosmos.InMemory)              |
-| [OpenCqrs.EventSourcing.Store.EntityFrameworkCore](https://www.nuget.org/packages/OpenCqrs.EventSourcing.Store.EntityFrameworkCore)                   | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.EventSourcing.Store.EntityFrameworkCore)          | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.EventSourcing.Store.EntityFrameworkCore)          |
-| [OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity](https://www.nuget.org/packages/OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity) | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity) | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity) |
-| [OpenCqrs.Messaging.RabbitMq](https://www.nuget.org/packages/OpenCqrs.Messaging.RabbitMq)                                                             | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.Messaging.RabbitMq)                               | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.Messaging.RabbitMq)                               |
-| [OpenCqrs.Messaging.ServiceBus](https://www.nuget.org/packages/OpenCqrs.Messaging.ServiceBus)                                                         | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.Messaging.ServiceBus)                             | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.Messaging.ServiceBus)                             |
-| [OpenCqrs.Validation.FluentValidation](https://www.nuget.org/packages/OpenCqrs.Validation.FluentValidation)                                           | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.Validation.FluentValidation)                      | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.Validation.FluentValidation)                      |
-| [OpenCqrs.Caching.Redis](https://www.nuget.org/packages/OpenCqrs.Caching.Redis)                                                                       | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.Caching.Redis)                                    | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.Caching.Redis)                                    |
-| [OpenCqrs.Caching.Memory](https://www.nuget.org/packages/OpenCqrs.Caching.Memory)                                                                     | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.Caching.Memory)                                   | [![Nuget Package](https://img.shields.io/badge/nuget-7.3.0-blue.svg)](https://www.nuget.org/packages/OpenCqrs.Caching.Memory)                                   |
+| [Memoria](https://www.nuget.org/packages/Memoria)                                                                                                   | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria)                                                  | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria)                                                  |
+| [Memoria.EventSourcing](https://www.nuget.org/packages/Memoria.EventSourcing)                                                                       | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing)                                    | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing)                                    |
+| [Memoria.EventSourcing.Store.Cosmos](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos)                                             | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos)                       | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos)                       |
+| [Memoria.EventSourcing.Store.Cosmos.InMemory](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos.InMemory)                           | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos.InMemory)              | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos.InMemory)              |
+| [Memoria.EventSourcing.Store.EntityFrameworkCore](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore)                   | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore)          | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore)          |
+| [Memoria.EventSourcing.Store.EntityFrameworkCore.Identity](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity) | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity) | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity) |
+| [Memoria.Messaging.RabbitMq](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq)                                                             | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq)                               | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq)                               |
+| [Memoria.Messaging.ServiceBus](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus)                                                         | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus)                             | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus)                             |
+| [Memoria.Validation.FluentValidation](https://www.nuget.org/packages/Memoria.Validation.FluentValidation)                                           | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Validation.FluentValidation)                      | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Validation.FluentValidation)                      |
+| [Memoria.Caching.Redis](https://www.nuget.org/packages/Memoria.Caching.Redis)                                                                       | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Caching.Redis)                                    | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Caching.Redis)                                    |
+| [Memoria.Caching.Memory](https://www.nuget.org/packages/Memoria.Caching.Memory)                                                                     | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Caching.Memory)                                   | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Caching.Memory)                                   |
 
 ## 🔄 Simple mediator
 
@@ -265,7 +265,7 @@ var aggregate = await domainService.GetAggregate(streamId, aggregateId, ReadMode
 
 ### Get InMemory Aggregate
 
-With OpenCQRS, you can replay events in-memory up to a specific event sequence or date, giving you precise control for debugging or auditing.
+With Memoria, you can replay events in-memory up to a specific event sequence or date, giving you precise control for debugging or auditing.
 
 ```C#
 var streamId = new CustomerStreamId(customerId);
@@ -283,7 +283,7 @@ var aggregate = await domainService.GetInMemoryAggregate(streamId, aggregateId, 
 
 ### Get Events
 
-Need to inspect your event stream? OpenCQRS makes it easy to retrieve events with flexible querying.
+Need to inspect your event stream? Memoria makes it easy to retrieve events with flexible querying.
 
 Get all events, filter by sequence, date, or event type. Whether you’re auditing, debugging, or building reports, these methods give you full control over your event history.
 
@@ -316,13 +316,13 @@ var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var result = await domainService.GetEvents(streamId, eventTypes);
 ```
 
-📘 _[Full documentation](https://opencqrs.github.io/OpenCQRS/)_
+📘 _[Full documentation](https://lucabriguglia.github.io/Memoria/)_
 
 ## ✨ Custom Implementations and Project Support
 
-OpenCQRS is designed to be extensible, supporting custom store, messaging, caching, and validation providers. 
+Memoria is designed to be extensible, supporting custom store, messaging, caching, and validation providers. 
 
 Need a specific implementation for your existing code or a new provider (e.g., a custom database store or messaging bus)? I’ve got you covered! 
-I can also work directly on your projects to implement OpenCQRS for your specific event sourcing or CQRS needs. 
+I can also work directly on your projects to implement Memoria for your specific event sourcing or CQRS needs. 
 
 Please reach out to request custom integrations, new providers, or project assistance via [LinkedIn](https://www.linkedin.com/in/lucabriguglia).

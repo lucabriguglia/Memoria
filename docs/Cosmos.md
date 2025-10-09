@@ -1,6 +1,6 @@
 # Cosmos DB
 
-OpenCQRS provides a store provider for Cosmos DB using the SQL API.
+Memoria provides a store provider for Cosmos DB using the SQL API.
 
 You can use the `IDomainService` interface to access the event-sourcing functionalities.
 
@@ -8,7 +8,7 @@ You can also use the `ICosmosDataStore` interface to access Cosmos DB specific f
 
 ## Diagnostics
 
-OpenCQRS emits diagnostic events using `System.Diagnostics` to help you monitor and troubleshoot your application.
+Memoria emits diagnostic events using `System.Diagnostics` to help you monitor and troubleshoot your application.
 
 | Event                          | Tags                                                                                                                                                                  |
 |--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|

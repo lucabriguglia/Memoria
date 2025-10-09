@@ -8,9 +8,9 @@
 
 <a name="main"></a>
 ## Main
-First, register OpenCQRS in the service collection (**OpenCQRS** package):
+First, register Memoria in the service collection (**Memoria** package):
 ```C#
-services.AddOpenCqrs(typeof(CreateProduct), typeof(GetProduct));
+services.AddMemoria(typeof(CreateProduct), typeof(GetProduct));
 ```
 All command, event, and query handlers will be registered automatically by passing one type per assembly.
 CreateProduct is a sample command, and GetProduct is a sample query.
@@ -21,9 +21,9 @@ Both assemblies need to be registered.
 ## Command Validation
 To use the command validation features, you need to install and register a validation package first.
 
-**OpenCqrs.Validation.FluentValidation**
+**Memoria.Validation.FluentValidation**
 ```C#
-services.AddOpenCqrsFluentValidation(typeof(CreateProduct));
+services.AddMemoriaFluentValidation(typeof(CreateProduct));
 ```
 All validators will be registered automatically by passing one type per assembly.
 
@@ -31,14 +31,14 @@ All validators will be registered automatically by passing one type per assembly
 ## Messaging
 To use the messaging features, you need to install and register a messaging package first.
 
-**OpenCqrs.Messaging.ServiceBus**
+**Memoria.Messaging.ServiceBus**
 ```C#
-services.AddOpenCqrsServiceBus(new ServiceBusOptions { ConnectionString = connectionString });
+services.AddMemoriaServiceBus(new ServiceBusOptions { ConnectionString = connectionString });
 ```
-**OpenCqrs.Messaging.RabbitMq**
+**Memoria.Messaging.RabbitMq**
 ```C#
 services
-    .AddOpenCqrsRabbitMq(options =>
+    .AddMemoriaRabbitMq(options =>
     {
          options.ConnectionString = connectionString;
      });
@@ -48,13 +48,13 @@ services
 ## Caching
 To use the caching features, you need to install and register a caching package.
 
-**OpenCqrs.Caching.Memory**
+**Memoria.Caching.Memory**
 ```C#
-services.AddOpenCqrsMemoryCache();
+services.AddMemoriaMemoryCache();
 ```
-**OpenCqrs.Caching.Redis**
+**Memoria.Caching.Redis**
 ```C#
-services.AddOpenCqrsRedisCache(options =>
+services.AddMemoriaRedisCache(options =>
 {
     options.ConnectionString = "localhost:6379"
 });
@@ -62,13 +62,13 @@ services.AddOpenCqrsRedisCache(options =>
 
 <a name="event-sourcing"></a>
 ## Event Sourcing
-To use the event sourcing features, you need to install and register the event sourcing package first (**OpenCqrs.EventSourcing** package).
+To use the event sourcing features, you need to install and register the event sourcing package first (**Memoria.EventSourcing** package).
 ```C#
-services.AddOpenCqrsEventSourcing();
+services.AddMemoriaEventSourcing();
 ```
 Then, you need to register a store provider.
 ### Entity Framework Core Store Provider
-After installing the required package (**OpenCqrs.EventSourcing.Store.EntityFrameworkCore**), you can create or update your own db context and register the database provider:
+After installing the required package (**Memoria.EventSourcing.Store.EntityFrameworkCore**), you can create or update your own db context and register the database provider:
 ```C#
 // Your db context that inherits from DomainDbContext
 public class ApplicationDbContext(
@@ -96,9 +96,9 @@ services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
 
 // Register the event sourcing store provider
-services.AddOpenCqrsEntityFrameworkCore<ApplicationDbContext>();
+services.AddMemoriaEntityFrameworkCore<ApplicationDbContext>();
 ```
-OpenCQRS also supports ASP.NET Core Identity. Install the **OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity** package and use the IdentityDomainDbContext in your application:
+Memoria also supports ASP.NET Core Identity. Install the **Memoria.EventSourcing.Store.EntityFrameworkCore.Identity** package and use the IdentityDomainDbContext in your application:
 ```C#
 // Your db context that inherits from DomainDbContext
 public class ApplicationDbContext(
@@ -130,13 +130,13 @@ services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
 
 // Register the event sourcing store provider
-services.AddOpenCqrsEntityFrameworkCore<ApplicationDbContext>();
+services.AddMemoriaEntityFrameworkCore<ApplicationDbContext>();
 ```
 
 ### Cosmo DB Store Provider
-After installing the required package (**OpenCqrs.EventSourcing.Store.Cosmos**), you can register the Cosmo DB store provider:
+After installing the required package (**Memoria.EventSourcing.Store.Cosmos**), you can register the Cosmo DB store provider:
 ```C#
-services.AddOpenCqrsCosmos(options =>
+services.AddMemoriaCosmos(options =>
 {
     // Required
     options.Endpoint = "your-cosmosdb-endpoint";
@@ -144,14 +144,14 @@ services.AddOpenCqrsCosmos(options =>
     // Required
     options.AuthKey = "your-cosmosdb-auth-key";
     
-    // Optional, default is "OpenCQRS"
+    // Optional, default is "Memoria"
     options.DatabaseName = "your-database-name"; 
     
     // Optional, default is "Domain"
     options.ContainerName = "your-container-name"; 
     
     // Optional, default is new CosmosClientOptions()
-    // with ApplicationName set to "OpenCqrs"
+    // with ApplicationName set to "Memoria"
     // and ConnectionMode set to ConnectionMode.Direct
     options.ClientOptions = new CosmosClientOptions(); 
 });

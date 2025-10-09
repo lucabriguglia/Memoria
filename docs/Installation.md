@@ -4,28 +4,28 @@ Installing the various packages:
 
 Via Package Manager
 
-    Install-Package OpenCqrs
+    Install-Package Memoria
    
 Or via .NET CLI
 
-    dotnet add package OpenCqrs
+    dotnet add package Memoria
     
 Or via Paket CLI
 
-    paket add OpenCqrs
+    paket add Memoria
 
 ## Packages
 
 | Name                                                      | Description                                        |
 |-----------------------------------------------------------|----------------------------------------------------|
-| OpenCqrs                                                  | Main package, all mediator features                |
-| OpenCqrs.Caching.Memory                                   | Cache queries with Memory Cache                    |
-| OpenCqrs.Caching.Redis                                    | Cache queries with Redis Cache                     |
-| OpenCqrs.EventSourcing                                    | Main package for Event Sourcing support            |
-| OpenCqrs.EventSourcing.Store.Cosmos                       | Event Sourcing with Cosmos DB                      |
-| OpenCqrs.EventSourcing.Store.Cosmos.InMemory              | Event Sourcing with InMemory CosmosDB              |
-| OpenCqrs.EventSourcing.Store.EntityFrameworkCore          | Event Sourcing with Entity Framework Core          |
-| OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity | Event Sourcing with Entity Framework Core Identity |
-| OpenCqrs.Messaging.RabbitMq                               | Messaging with RabbitMQ                            |
-| OpenCqrs.Messaging.ServiceBus                             | Messaging with Service Bus                         |
-| OpenCqrs.Validation.FluentValidation                      | Command validation with FluentValidation           |
+| Memoria                                                  | Main package, all mediator features                |
+| Memoria.Caching.Memory                                   | Cache queries with Memory Cache                    |
+| Memoria.Caching.Redis                                    | Cache queries with Redis Cache                     |
+| Memoria.EventSourcing                                    | Main package for Event Sourcing support            |
+| Memoria.EventSourcing.Store.Cosmos                       | Event Sourcing with Cosmos DB                      |
+| Memoria.EventSourcing.Store.Cosmos.InMemory              | Event Sourcing with InMemory CosmosDB              |
+| Memoria.EventSourcing.Store.EntityFrameworkCore          | Event Sourcing with Entity Framework Core          |
+| Memoria.EventSourcing.Store.EntityFrameworkCore.Identity | Event Sourcing with Entity Framework Core Identity |
+| Memoria.Messaging.RabbitMq                               | Messaging with RabbitMQ                            |
+| Memoria.Messaging.ServiceBus                             | Messaging with Service Bus                         |
+| Memoria.Validation.FluentValidation                      | Command validation with FluentValidation           |

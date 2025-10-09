@@ -1,6 +1,10 @@
 # Release Notes
 
-## OprnCQRS 7.3.0
+## Memoria 1.0.0
+_**Released ??/10/2025**_
+- Rename OpenCQRS to Memoria
+
+## OpenCQRS 7.3.0
 _**Released 09/10/2025**_
 - New Cosmos InMemory store provider
 

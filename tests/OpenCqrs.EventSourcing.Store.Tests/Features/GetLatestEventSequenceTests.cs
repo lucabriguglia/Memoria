@@ -5,7 +5,7 @@ using Xunit;
 
 namespace OpenCqrs.EventSourcing.Store.Tests.Features;
 
-public class GetLatestEventSequenceTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
+public abstract class GetLatestEventSequenceTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
 {
     [Fact]
     public async Task GivenNoEventsSaved_TheLatestEventSequenceReturnedIsZero()

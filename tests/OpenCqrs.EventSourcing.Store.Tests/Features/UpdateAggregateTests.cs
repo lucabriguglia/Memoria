@@ -8,7 +8,7 @@ using Xunit;
 
 namespace OpenCqrs.EventSourcing.Store.Tests.Features;
 
-public class UpdateAggregateTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
+public abstract class UpdateAggregateTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
 {
     [Fact]
     public async Task GivenEventsHandledByTheAggregateAreStoredSeparately_WhenAggregateIsUpdated_ThenAggregateVersionIsIncreasedAndTheUpdatedAggregateIsReturned()

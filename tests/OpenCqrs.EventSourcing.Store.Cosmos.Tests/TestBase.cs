@@ -6,8 +6,8 @@ using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 using OpenCqrs.EventSourcing.Domain;
 using OpenCqrs.EventSourcing.Store.Cosmos.Configuration;
-using OpenCqrs.EventSourcing.Store.Cosmos.Tests.Models.Aggregates;
-using OpenCqrs.EventSourcing.Store.Cosmos.Tests.Models.Events;
+using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
+using OpenCqrs.EventSourcing.Store.Tests.Models.Events;
 
 namespace OpenCqrs.EventSourcing.Store.Cosmos.Tests;
 

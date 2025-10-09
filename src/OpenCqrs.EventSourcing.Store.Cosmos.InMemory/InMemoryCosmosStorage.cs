@@ -24,13 +24,13 @@ public class InMemoryCosmosStorage
     {
         return $"{streamId.Id}#{sequence}";
     }
-    
+
     public static string GetEventTypeName(Type eventType)
     {
         var eventTypeName = TypeBindings.EventTypeBindings.FirstOrDefault(kvp => kvp.Value == eventType).Key;
         return eventTypeName ?? eventType.Name;
     }
-    
+
     /// <summary>
     /// Clears all stored data. Useful for test cleanup.
     /// </summary>

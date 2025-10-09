@@ -23,7 +23,7 @@ public abstract class TestBase : IDisposable
         TimeProvider = new FakeTimeProvider();
         HttpContextAccessor = CreateHttpContextAccessor();
         DomainService = domainServiceFactory.CreateDomainService(TimeProvider, HttpContextAccessor);
-        
+
         SetupTypeBindings();
         SetupActivity();
     }

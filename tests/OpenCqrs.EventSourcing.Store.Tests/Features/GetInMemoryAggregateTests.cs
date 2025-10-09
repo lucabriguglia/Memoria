@@ -8,7 +8,7 @@ using Xunit;
 
 namespace OpenCqrs.EventSourcing.Store.Tests.Features;
 
-public class GetInMemoryAggregateTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
+public abstract class GetInMemoryAggregateTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
 {
     [Fact]
     public async Task GivenAggregateDoesExist_ThenTheInMemoryAggregateIsReturned()

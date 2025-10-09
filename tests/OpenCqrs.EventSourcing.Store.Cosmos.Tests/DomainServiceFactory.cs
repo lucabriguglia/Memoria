@@ -23,7 +23,7 @@ public class DomainServiceFactory : IDomainServiceFactory
 
         var cosmosSetup = new CosmosSetup(cosmosOptions);
         _ = cosmosSetup.CreateDatabaseAndContainerIfNotExist();
-        
+
         return domainService;
     }
 }

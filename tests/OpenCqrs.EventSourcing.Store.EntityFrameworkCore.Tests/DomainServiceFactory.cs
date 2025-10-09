@@ -13,7 +13,7 @@ public class DomainServiceFactory : IDomainServiceFactory
         var dbContext = new TestDbContext(CreateContextOptions(), timeProvider, httpContextAccessor);
         return new EntityFrameworkCoreDomainService(dbContext);
     }
-    
+
     private static DbContextOptions<DomainDbContext> CreateContextOptions()
     {
         var builder = new DbContextOptionsBuilder<DomainDbContext>();

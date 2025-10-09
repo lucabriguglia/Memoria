@@ -7,7 +7,7 @@ using Xunit;
 
 namespace OpenCqrs.EventSourcing.Store.Tests.Features;
 
-public class GetEventsTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
+public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
 {
     [Fact]
     public async Task GiveMultipleEventsSaved_WhenAllEventsAreRequested_ThenAllEventsAreReturned()

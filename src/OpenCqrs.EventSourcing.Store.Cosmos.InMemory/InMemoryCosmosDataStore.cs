@@ -16,8 +16,8 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage) : ICosmosDat
         CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
     {
         var key = InMemoryCosmosStorage.CreateAggregateKey(streamId, aggregateId);
-        var document = storage.AggregateDocuments.TryGetValue(key, out var aggregateDocument) 
-            ? aggregateDocument 
+        var document = storage.AggregateDocuments.TryGetValue(key, out var aggregateDocument)
+            ? aggregateDocument
             : null;
         return Task.FromResult(Result<AggregateDocument?>.Ok(document));
     }
@@ -44,7 +44,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage) : ICosmosDat
             .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
             .OrderBy(doc => doc.Sequence)
             .ToList();
-        
+
         return Task.FromResult(Result<List<EventDocument>>.Ok(documents));
     }
 
@@ -57,7 +57,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage) : ICosmosDat
             .Where(doc => doc.StreamId == streamId.Id && eventIds.Contains(doc.Id))
             .OrderBy(doc => doc.Sequence)
             .ToList();
-        
+
         return Task.FromResult(Result<List<EventDocument>>.Ok(documents));
     }
 
@@ -74,7 +74,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage) : ICosmosDat
             .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
             .OrderBy(doc => doc.Sequence)
             .ToList();
-        
+
         return Task.FromResult(Result<List<EventDocument>>.Ok(documents));
     }
 
@@ -90,7 +90,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage) : ICosmosDat
             .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
             .OrderBy(doc => doc.Sequence)
             .ToList();
-        
+
         return Task.FromResult(Result<List<EventDocument>>.Ok(documents));
     }
 
@@ -106,7 +106,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage) : ICosmosDat
             .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
             .OrderBy(doc => doc.Sequence)
             .ToList();
-        
+
         return Task.FromResult(Result<List<EventDocument>>.Ok(documents));
     }
 
@@ -122,7 +122,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage) : ICosmosDat
             .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
             .OrderBy(doc => doc.Sequence)
             .ToList();
-        
+
         return Task.FromResult(Result<List<EventDocument>>.Ok(documents));
     }
 
@@ -138,7 +138,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage) : ICosmosDat
             .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
             .OrderBy(doc => doc.Sequence)
             .ToList();
-        
+
         return Task.FromResult(Result<List<EventDocument>>.Ok(documents));
     }
 
@@ -155,7 +155,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage) : ICosmosDat
             .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
             .OrderBy(doc => doc.Sequence)
             .ToList();
-        
+
         return Task.FromResult(Result<List<EventDocument>>.Ok(documents));
     }
 

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace OpenCqrs.EventSourcing.Store.Tests.Features;
 
-public class GetAggregateTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
+public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
 {
     [Fact]
     public async Task GivenAggregateExists_ThenAggregateIsReturned()

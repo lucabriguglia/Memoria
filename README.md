@@ -1,10 +1,12 @@
-# 🚀 Memoria&trade; (formerly OpenCQRS)
+# 🚀 Memoria&trade;
+
+From Latin _memoria_ (memory)
 
 [![.Build](https://github.com/lucabriguglia/Memoria/actions/workflows/build.yml/badge.svg)](https://github.com/lucabriguglia/Memoria/actions/workflows/build.yml)
 
-.NET framework implementing DDD, CQRS, and Event Sourcing. From Latin _memoria_ (memory).
+.NET framework implementing DDD, CQRS, and Event Sourcing.
 
-Released in October 2025, Memoria is extremely flexible and expandable. It can be used as a simple mediator or as a full Event Sourcing solution with Cosmos DB or Entity Framework Core as storage.
+Memoria is extremely flexible and expandable. It can be used as a simple mediator or as a full Event Sourcing solution with Cosmos DB or Entity Framework Core as storage.
 
 - 📘 _[Full documentation](https://lucabriguglia.github.io/Memoria/)_
 - 📣 _[Release Notes](https://lucabriguglia.github.io/Memoria/Release-Notes.html)_
@@ -37,14 +39,13 @@ If you're using this repository for your learning, samples, workshop, or your pr
 ## 🗺️ Roadmap
 
 ### ⏳ In Progress
-- Rebranding
-
-### ⏭️ Next
 - New package for in-memory RabbitMQ for easier testing in projects using Memoria
 - New package for in-memory Service Bus for easier testing in projects using Memoria
 
-### 🕙 To Follow
+### ⏭️ Next
 - Create an ecommerce demo application to showcase Memoria features
+
+### 🕙 To Follow
 - Option to automatically validate commands
 - Event Grid messaging provider
 - Kafka messaging provider

@@ -2,12 +2,12 @@
 
 using Memoria;
 using Memoria.Extensions;
+using Memoria.Messaging.ServiceBus.Configuration;
+using Memoria.Messaging.ServiceBus.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using OpenCqrs;
 using OpenCqrs.Examples.Messaging.ServiceBus.Commands;
-using OpenCqrs.Messaging.ServiceBus.Configuration;
-using OpenCqrs.Messaging.ServiceBus.Extensions;
 
 var serviceProvider = ConfigureServices();
 

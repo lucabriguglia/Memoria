@@ -1,11 +1,10 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using Azure.Messaging.ServiceBus;
-using Memoria.Messaging;
 using Memoria.Results;
 using Newtonsoft.Json;
 
-namespace OpenCqrs.Messaging.ServiceBus;
+namespace Memoria.Messaging.ServiceBus;
 
 /// <summary>
 /// Provides messaging functionality using Azure Service Bus for sending queue and topic messages.

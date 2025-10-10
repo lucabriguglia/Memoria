@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Memoria.Messaging.ServiceBus;
 using OpenCqrs.Messaging.ServiceBus.Tests.Models.Messages;
 using Xunit;
 

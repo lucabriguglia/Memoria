@@ -1,10 +1,9 @@
 ﻿using Azure.Messaging.ServiceBus;
-using Memoria.Messaging;
+using Memoria.Messaging.ServiceBus.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using OpenCqrs.Messaging.ServiceBus.Configuration;
 
-namespace OpenCqrs.Messaging.ServiceBus.Extensions;
+namespace Memoria.Messaging.ServiceBus.Extensions;
 
 /// <summary>
 /// Provides extension methods for configuring OpenCQRS with Azure Service Bus messaging.

@@ -1,6 +1,7 @@
 using Memoria;
 using Memoria.Commands;
 using Memoria.Messaging;
+using Memoria.Messaging.ServiceBus;
 using Memoria.Notifications;
 using Memoria.Queries;
 using Memoria.Validation;

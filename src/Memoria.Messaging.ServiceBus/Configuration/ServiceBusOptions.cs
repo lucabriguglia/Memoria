@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.Messaging.ServiceBus.Configuration;
+﻿namespace Memoria.Messaging.ServiceBus.Configuration;
 
 /// <summary>
 /// Represents the configuration options for Service Bus messaging.

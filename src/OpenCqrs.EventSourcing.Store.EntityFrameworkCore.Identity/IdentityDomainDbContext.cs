@@ -1,11 +1,12 @@
 ﻿using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.EntityFrameworkCore;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Configurations;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Interceptors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Configurations;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Interceptors;
 
 namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity;
 

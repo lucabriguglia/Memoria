@@ -1,4 +1,4 @@
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
 
 /// <summary>
 /// Defines the contract for entities with creation audit trail.

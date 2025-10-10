@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Memoria.EventSourcing;
 using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.EntityFrameworkCore;
 using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
 using OpenCqrs.EventSourcing.Store.Tests.Models.Events;
 

@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Memoria.EventSourcing.Domain;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions;
 
 /// <summary>
 /// Provides extension methods for diagnostics in the Entity Framework Core store.

@@ -1,4 +1,5 @@
 using Memoria.EventSourcing;
+using Memoria.EventSourcing.Store.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Time.Testing;

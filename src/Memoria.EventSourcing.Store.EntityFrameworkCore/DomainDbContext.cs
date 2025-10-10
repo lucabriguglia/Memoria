@@ -1,11 +1,11 @@
 ﻿using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Configurations;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Interceptors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Configurations;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Interceptors;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore;
 
 /// <summary>
 /// Provides the foundational database context for event sourcing operations using Entity Framework Core.

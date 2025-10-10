@@ -1,9 +1,8 @@
-﻿using Memoria.EventSourcing;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions;
 
 /// <summary>
 /// Provides extension methods for IServiceCollection to add OpenCQRS Entity Framework Core services.

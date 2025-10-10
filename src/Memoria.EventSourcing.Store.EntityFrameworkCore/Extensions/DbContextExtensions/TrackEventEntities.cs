@@ -1,9 +1,8 @@
-﻿using Memoria.EventSourcing;
-using Memoria.EventSourcing.Domain;
+﻿using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
 using Memoria.Results;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
 
 public static partial class IDomainDbContextExtensions
 {

@@ -1,10 +1,9 @@
-using Memoria.EventSourcing;
 using Memoria.EventSourcing.Domain;
 using Newtonsoft.Json;
 
 // ReSharper disable EntityFramework.ModelValidation.UnlimitedStringLength
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
 
 /// <summary>
 /// Represents the database entity for storing aggregate snapshots.

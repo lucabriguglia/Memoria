@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Configurations;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Configurations;
 
 public class AggregateEventEntityConfiguration : IEntityTypeConfiguration<AggregateEventEntity>
 {

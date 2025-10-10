@@ -1,7 +1,6 @@
 ﻿using Memoria.EventSourcing;
 using Memoria.Queries;
 using Memoria.Results;
-using OpenCqrs.EventSourcing;
 using OpenCqrs.Examples.EventSourcing.Cosmos.Aggregates;
 using OpenCqrs.Examples.EventSourcing.Cosmos.Streams;
 

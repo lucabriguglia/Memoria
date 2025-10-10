@@ -1,6 +1,6 @@
 ﻿// ReSharper disable EntityFramework.ModelValidation.UnlimitedStringLength
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
 
 /// <summary>
 /// Represents a many-to-many relationship entity linking aggregates to domain events.

@@ -1,9 +1,9 @@
 using System.Reflection;
 using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
 using Newtonsoft.Json;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions;
 
 /// <summary>
 /// Provides extension methods for converting domain events to Entity Framework Core entities

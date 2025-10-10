@@ -1,9 +1,8 @@
-﻿using Memoria.EventSourcing;
-using Memoria.EventSourcing.Domain;
+﻿using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
 using Memoria.Results;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore;
 
 /// <summary>
 /// Entity Framework Core implementation of the domain service for managing aggregates and domain events.

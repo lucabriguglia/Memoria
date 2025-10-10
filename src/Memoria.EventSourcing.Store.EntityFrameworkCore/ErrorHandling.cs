@@ -1,6 +1,6 @@
 ﻿using Memoria.Results;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore;
 
 /// <summary>
 /// Provides error handling utilities for the Entity Framework Core event store.

@@ -1,10 +1,10 @@
-﻿using Memoria.Extensions;
+﻿using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
+using Memoria.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Interceptors;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Interceptors;
 
 public class AuditInterceptor(TimeProvider timeProvider, IHttpContextAccessor httpContextAccessor)
     : SaveChangesInterceptor

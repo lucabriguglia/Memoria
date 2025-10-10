@@ -2,13 +2,13 @@
 
 using Memoria;
 using Memoria.EventSourcing.Extensions;
+using Memoria.EventSourcing.Store.EntityFrameworkCore;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions;
 using Memoria.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenCqrs;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions;
 using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Commands;
 using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Data;
 using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Queries;

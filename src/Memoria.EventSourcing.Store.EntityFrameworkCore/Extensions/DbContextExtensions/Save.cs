@@ -1,6 +1,6 @@
 ﻿using Memoria.Results;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
 
 public static partial class IDomainDbContextExtensions
 {

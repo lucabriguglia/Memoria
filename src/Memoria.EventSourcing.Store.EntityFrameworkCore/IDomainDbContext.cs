@@ -1,8 +1,8 @@
 ﻿using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
 using Microsoft.EntityFrameworkCore;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore;
 
 /// <summary>
 /// Defines the contract for the domain database context in the Entity Framework Core event store.

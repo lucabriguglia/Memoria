@@ -1,8 +1,8 @@
 ﻿using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.Cosmos.Documents;
 using Memoria.Results;
-using OpenCqrs.EventSourcing.Store.Cosmos.Documents;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos;
+namespace Memoria.EventSourcing.Store.Cosmos;
 
 public interface ICosmosDataStore : IDisposable
 {

@@ -5,7 +5,6 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>true</IsPackable>
-        <RootNamespace>OpenCqrs.EventSourcing.Store.Cosmos</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

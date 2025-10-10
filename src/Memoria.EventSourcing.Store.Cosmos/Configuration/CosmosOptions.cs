@@ -1,7 +1,7 @@
-using Microsoft.Azure.Cosmos;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Azure.Cosmos;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos.Configuration;
+namespace Memoria.EventSourcing.Store.Cosmos.Configuration;
 
 /// <summary>
 /// Represents configuration options for connecting to an Azure Cosmos DB instance.

@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.EventSourcing.Store.Cosmos.Documents;
+﻿namespace Memoria.EventSourcing.Store.Cosmos.Documents;
 
 /// <summary>
 /// Defines the available document types used in the Cosmos DB Event Sourcing store.

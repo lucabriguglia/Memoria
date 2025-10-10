@@ -1,14 +1,14 @@
 ﻿using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.Cosmos.Configuration;
+using Memoria.EventSourcing.Store.Cosmos.Documents;
+using Memoria.EventSourcing.Store.Cosmos.Extensions;
 using Memoria.Extensions;
 using Memoria.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Options;
-using OpenCqrs.EventSourcing.Store.Cosmos.Configuration;
-using OpenCqrs.EventSourcing.Store.Cosmos.Documents;
-using OpenCqrs.EventSourcing.Store.Cosmos.Extensions;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos;
+namespace Memoria.EventSourcing.Store.Cosmos;
 
 /// <summary>
 /// Provides data access operations for the Cosmos DB Event Sourcing store.

@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos.Documents;
+namespace Memoria.EventSourcing.Store.Cosmos.Documents;
 
 /// <summary>
 /// Represents a document that stores information about an aggregate event in the Cosmos DB Event Sourcing store.

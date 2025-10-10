@@ -1,11 +1,10 @@
-﻿using Memoria.EventSourcing;
+﻿using Memoria.EventSourcing.Store.Cosmos.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using OpenCqrs.EventSourcing.Store.Cosmos.Configuration;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos.Extensions;
+namespace Memoria.EventSourcing.Store.Cosmos.Extensions;
 
 /// <summary>
 /// Provides extension methods for configuring Cosmos DB Event Sourcing store services in the dependency injection container.

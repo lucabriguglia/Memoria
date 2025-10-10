@@ -2,12 +2,12 @@
 
 using Memoria;
 using Memoria.EventSourcing.Extensions;
+using Memoria.EventSourcing.Store.Cosmos;
+using Memoria.EventSourcing.Store.Cosmos.Extensions;
 using Memoria.Extensions;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.DependencyInjection;
 using OpenCqrs;
-using OpenCqrs.EventSourcing.Store.Cosmos;
-using OpenCqrs.EventSourcing.Store.Cosmos.Extensions;
 using OpenCqrs.Examples.EventSourcing.Cosmos.Commands;
 using OpenCqrs.Examples.EventSourcing.Cosmos.Queries;
 

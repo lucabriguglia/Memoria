@@ -1,9 +1,9 @@
 ﻿using System.Reflection;
 using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.Cosmos.Documents;
 using Newtonsoft.Json;
-using OpenCqrs.EventSourcing.Store.Cosmos.Documents;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos.Extensions;
+namespace Memoria.EventSourcing.Store.Cosmos.Extensions;
 
 /// <summary>
 /// Provides extension methods for converting aggregate objects to documents suitable for storage in Cosmos DB.

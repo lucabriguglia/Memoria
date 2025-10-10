@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.Cosmos.Documents;
 using Microsoft.Azure.Cosmos;
-using OpenCqrs.EventSourcing.Store.Cosmos.Documents;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos.Extensions;
+namespace Memoria.EventSourcing.Store.Cosmos.Extensions;
 
 /// <summary>
 /// Provides extension methods for adding diagnostic information to activities.

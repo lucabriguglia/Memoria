@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using Memoria.EventSourcing;
 using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.Cosmos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Time.Testing;
 using NSubstitute;

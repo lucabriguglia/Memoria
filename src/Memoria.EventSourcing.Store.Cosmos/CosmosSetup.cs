@@ -1,8 +1,8 @@
-﻿using Microsoft.Azure.Cosmos;
+﻿using Memoria.EventSourcing.Store.Cosmos.Configuration;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Options;
-using OpenCqrs.EventSourcing.Store.Cosmos.Configuration;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos;
+namespace Memoria.EventSourcing.Store.Cosmos;
 
 /// <summary>
 /// Provides setup and initialization functionality for Cosmos DB database and container.

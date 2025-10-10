@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using Memoria.EventSourcing.Domain;
-using OpenCqrs.EventSourcing.Store.Cosmos.Documents;
+using Memoria.EventSourcing.Store.Cosmos.Documents;
 
 namespace OpenCqrs.EventSourcing.Store.Cosmos.InMemory;
 

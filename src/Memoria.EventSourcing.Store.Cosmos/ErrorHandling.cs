@@ -1,6 +1,6 @@
 ﻿using Memoria.Results;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos;
+namespace Memoria.EventSourcing.Store.Cosmos;
 
 /// <summary>
 /// Provides error handling utilities for Cosmos DB event sourcing operations.

@@ -1,17 +1,15 @@
 ﻿using System.Diagnostics;
 using System.Security.Claims;
-using Memoria.EventSourcing;
 using Memoria.EventSourcing.Domain;
-using Memoria.EventSourcing.Store.Cosmos;
 using Memoria.EventSourcing.Store.Cosmos.Configuration;
+using Memoria.EventSourcing.Store.Tests.Models.Aggregates;
+using Memoria.EventSourcing.Store.Tests.Models.Events;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Events;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos.Tests;
+namespace Memoria.EventSourcing.Store.Cosmos.Tests;
 
 public abstract class TestBase : IDisposable
 {

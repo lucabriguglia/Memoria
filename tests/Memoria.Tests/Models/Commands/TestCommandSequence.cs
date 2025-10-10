@@ -1,6 +1,6 @@
 ﻿using Memoria.Commands;
 
-namespace OpenCqrs.Tests.Models.Commands;
+namespace Memoria.Tests.Models.Commands;
 
 public class TestCommandSequence : CommandSequence<string>
 {

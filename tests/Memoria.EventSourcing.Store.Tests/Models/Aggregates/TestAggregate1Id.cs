@@ -1,6 +1,6 @@
 ﻿using Memoria.EventSourcing.Domain;
 
-namespace OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
+namespace Memoria.EventSourcing.Store.Tests.Models.Aggregates;
 
 public class TestAggregate1Id(string testAggregateId) : IAggregateId<TestAggregate1>
 {

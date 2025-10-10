@@ -1,9 +1,8 @@
-using Memoria.EventSourcing.Store.EntityFrameworkCore;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Tests.Data.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.Data.Entities;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.Data;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Tests.Data;
 
 public sealed class TestDbContext(
     DbContextOptions<DomainDbContext> options,

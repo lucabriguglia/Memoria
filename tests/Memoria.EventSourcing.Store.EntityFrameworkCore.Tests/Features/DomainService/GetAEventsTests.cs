@@ -1,3 +1,3 @@
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.Features.DomainService;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Tests.Features.DomainService;
 
-public class GetEventsTests() : OpenCqrs.EventSourcing.Store.Tests.Features.GetAggregateTests(new DomainServiceFactory());
+public class GetEventsTests() : Store.Tests.Features.GetAggregateTests(new DomainServiceFactory());

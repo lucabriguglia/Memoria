@@ -1,17 +1,16 @@
-﻿using Memoria;
-using Memoria.Commands;
+﻿using Memoria.Commands;
 using Memoria.Messaging;
 using Memoria.Notifications;
 using Memoria.Queries;
+using Memoria.Tests.Models.Commands;
+using Memoria.Tests.Models.Commands.Handlers;
+using Memoria.Tests.Models.Notifications;
+using Memoria.Tests.Models.Notifications.Handlers;
 using Memoria.Validation;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
-using OpenCqrs.Tests.Models.Commands;
-using OpenCqrs.Tests.Models.Commands.Handlers;
-using OpenCqrs.Tests.Models.Notifications;
-using OpenCqrs.Tests.Models.Notifications.Handlers;
 
-namespace OpenCqrs.Tests;
+namespace Memoria.Tests;
 
 public abstract class TestBase
 {

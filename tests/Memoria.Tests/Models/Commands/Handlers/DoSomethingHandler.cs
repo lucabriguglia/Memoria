@@ -1,8 +1,8 @@
 using Memoria.Commands;
 using Memoria.Results;
-using OpenCqrs.Tests.Models.Notifications;
+using Memoria.Tests.Models.Notifications;
 
-namespace OpenCqrs.Tests.Models.Commands.Handlers;
+namespace Memoria.Tests.Models.Commands.Handlers;
 
 public class DoSomethingHandler : ICommandHandler<DoSomething, CommandResponse>
 {

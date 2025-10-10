@@ -1,9 +1,9 @@
 using FluentAssertions;
-using OpenCqrs.Messaging.ServiceBus.Tests.Models.Commands;
-using OpenCqrs.Messaging.ServiceBus.Tests.Models.Messages;
+using Memoria.Messaging.ServiceBus.Tests.Models.Commands;
+using Memoria.Messaging.ServiceBus.Tests.Models.Messages;
 using Xunit;
 
-namespace OpenCqrs.Messaging.ServiceBus.Tests.Features;
+namespace Memoria.Messaging.ServiceBus.Tests.Features;
 
 public class CommandSenderWithPublishingTests : TestBase
 {

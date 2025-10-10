@@ -1,10 +1,10 @@
 ﻿using FluentAssertions;
 using FluentAssertions.Execution;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Streams;
+using Memoria.EventSourcing.Store.Tests.Models.Aggregates;
+using Memoria.EventSourcing.Store.Tests.Models.Streams;
 using Xunit;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos.Tests.Features.DataStore;
+namespace Memoria.EventSourcing.Store.Cosmos.Tests.Features.DataStore;
 
 public class SaveAggregateTests : TestBase
 {

@@ -1,8 +1,7 @@
-using Memoria.EventSourcing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Time.Testing;
 
-namespace OpenCqrs.EventSourcing.Store.Tests;
+namespace Memoria.EventSourcing.Store.Tests;
 
 public interface IDomainServiceFactory
 {

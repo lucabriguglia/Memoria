@@ -1,13 +1,11 @@
 ﻿using System.Security.Claims;
-using Memoria.EventSourcing;
-using Memoria.EventSourcing.Store.EntityFrameworkCore;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Tests.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.Data;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Tests;
 
 public static class Shared
 {

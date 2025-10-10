@@ -1,11 +1,11 @@
-﻿using Azure.Messaging.ServiceBus;
+﻿using System.Collections.Concurrent;
+using System.Text.Json;
+using Azure.Messaging.ServiceBus;
+using Memoria.Messaging.ServiceBus.Tests.Models.Messages;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using System.Collections.Concurrent;
-using System.Text.Json;
-using OpenCqrs.Messaging.ServiceBus.Tests.Models.Messages;
 
-namespace OpenCqrs.Messaging.ServiceBus.Tests;
+namespace Memoria.Messaging.ServiceBus.Tests;
 
 public class MockServiceBusTestHelper
 {

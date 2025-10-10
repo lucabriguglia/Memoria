@@ -1,7 +1,7 @@
 using Memoria.Commands;
 using Memoria.Results;
 
-namespace OpenCqrs.Validation.FluentValidation.Tests.Models.Commands.Handlers;
+namespace Memoria.Validation.FluentValidation.Tests.Models.Commands.Handlers;
 
 public class SecondCommandInSequenceHandler : ICommandSequenceHandler<SecondCommandInSequence, string>
 {

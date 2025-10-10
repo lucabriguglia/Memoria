@@ -1,8 +1,8 @@
 using Memoria.Commands;
+using Memoria.Messaging.ServiceBus.Tests.Models.Messages;
 using Memoria.Results;
-using OpenCqrs.Messaging.ServiceBus.Tests.Models.Messages;
 
-namespace OpenCqrs.Messaging.ServiceBus.Tests.Models.Commands.Handlers;
+namespace Memoria.Messaging.ServiceBus.Tests.Models.Commands.Handlers;
 
 public class DoSomethingHandler : ICommandHandler<DoSomething, CommandResponse>
 {

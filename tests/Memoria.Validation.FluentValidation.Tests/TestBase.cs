@@ -1,18 +1,15 @@
 ﻿using FluentValidation;
-using Memoria;
 using Memoria.Commands;
 using Memoria.Messaging;
 using Memoria.Notifications;
 using Memoria.Queries;
-using Memoria.Validation;
-using Memoria.Validation.FluentValidation;
+using Memoria.Validation.FluentValidation.Tests.Models.Commands;
+using Memoria.Validation.FluentValidation.Tests.Models.Commands.Handlers;
+using Memoria.Validation.FluentValidation.Tests.Models.Commands.Validators;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
-using OpenCqrs.Validation.FluentValidation.Tests.Models.Commands;
-using OpenCqrs.Validation.FluentValidation.Tests.Models.Commands.Handlers;
-using OpenCqrs.Validation.FluentValidation.Tests.Models.Commands.Validators;
 
-namespace OpenCqrs.Validation.FluentValidation.Tests;
+namespace Memoria.Validation.FluentValidation.Tests;
 
 public abstract class TestBase
 {

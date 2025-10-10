@@ -1,9 +1,9 @@
 ﻿using FluentAssertions;
 using FluentAssertions.Execution;
-using OpenCqrs.Tests.Models.Commands;
+using Memoria.Tests.Models.Commands;
 using Xunit;
 
-namespace OpenCqrs.Tests.Features;
+namespace Memoria.Tests.Features;
 
 public class CommandSequenceTests : TestBase
 {

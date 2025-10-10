@@ -1,9 +1,8 @@
 using FluentAssertions;
-using Memoria.Messaging.RabbitMq;
-using OpenCqrs.Messaging.RabbitMq.Tests.Models.Messages;
+using Memoria.Messaging.RabbitMq.Tests.Models.Messages;
 using Xunit;
 
-namespace OpenCqrs.Messaging.RabbitMq.Tests.Features;
+namespace Memoria.Messaging.RabbitMq.Tests.Features;
 
 public class RabbitMqMessagingProviderTests
 {

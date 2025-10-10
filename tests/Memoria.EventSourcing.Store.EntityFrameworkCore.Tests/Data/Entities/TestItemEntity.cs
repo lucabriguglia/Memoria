@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.Data.Entities;
+﻿namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Tests.Data.Entities;
 
 public class TestItemEntity
 {

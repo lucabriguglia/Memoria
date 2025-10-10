@@ -1,7 +1,7 @@
 using Memoria.Commands;
 using Memoria.Results;
 
-namespace OpenCqrs.Tests.Models.Commands.Handlers;
+namespace Memoria.Tests.Models.Commands.Handlers;
 
 public class ThirdCommandInSequenceHandler : ICommandSequenceHandler<ThirdCommandInSequence, string>
 {

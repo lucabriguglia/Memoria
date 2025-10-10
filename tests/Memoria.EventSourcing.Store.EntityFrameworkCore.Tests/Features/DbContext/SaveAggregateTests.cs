@@ -2,14 +2,14 @@
 using FluentAssertions.Execution;
 using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Tests.Data;
+using Memoria.EventSourcing.Store.Tests.Models.Aggregates;
+using Memoria.EventSourcing.Store.Tests.Models.Streams;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Time.Testing;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.Data;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Streams;
 using Xunit;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.Features.DbContext;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Tests.Features.DbContext;
 
 public class SaveAggregateTests : TestBase
 {

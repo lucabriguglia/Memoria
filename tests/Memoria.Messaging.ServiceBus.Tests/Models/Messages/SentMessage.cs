@@ -1,6 +1,6 @@
 using Azure.Messaging.ServiceBus;
 
-namespace OpenCqrs.Messaging.ServiceBus.Tests.Models.Messages;
+namespace Memoria.Messaging.ServiceBus.Tests.Models.Messages;
 
 public class SentMessage
 {

@@ -1,9 +1,9 @@
 ﻿using FluentAssertions;
 using FluentAssertions.Execution;
-using OpenCqrs.Validation.FluentValidation.Tests.Models.Commands;
+using Memoria.Validation.FluentValidation.Tests.Models.Commands;
 using Xunit;
 
-namespace OpenCqrs.Validation.FluentValidation.Tests.Features;
+namespace Memoria.Validation.FluentValidation.Tests.Features;
 
 public class FluentValidationTests : TestBase
 {

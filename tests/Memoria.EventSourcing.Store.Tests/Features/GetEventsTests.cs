@@ -1,11 +1,11 @@
 ﻿using FluentAssertions;
 using FluentAssertions.Execution;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Events;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Streams;
+using Memoria.EventSourcing.Store.Tests.Models.Aggregates;
+using Memoria.EventSourcing.Store.Tests.Models.Events;
+using Memoria.EventSourcing.Store.Tests.Models.Streams;
 using Xunit;
 
-namespace OpenCqrs.EventSourcing.Store.Tests.Features;
+namespace Memoria.EventSourcing.Store.Tests.Features;
 
 public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
 {

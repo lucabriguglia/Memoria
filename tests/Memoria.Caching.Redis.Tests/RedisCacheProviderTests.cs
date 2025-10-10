@@ -1,13 +1,12 @@
 ﻿using FluentAssertions;
-using Memoria.Caching.Redis;
 using Memoria.Caching.Redis.Configuration;
 using Microsoft.Extensions.Options;
-using NSubstitute;
 using Newtonsoft.Json;
+using NSubstitute;
 using StackExchange.Redis;
 using Xunit;
 
-namespace OpenCqrs.Caching.Redis.Tests;
+namespace Memoria.Caching.Redis.Tests;
 
 public class RedisCacheProviderTests
 {

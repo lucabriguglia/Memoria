@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace OpenCqrs.Validation.FluentValidation.Tests.Models.Commands.Validators;
+namespace Memoria.Validation.FluentValidation.Tests.Models.Commands.Validators;
 
 public class SecondCommandInSequenceValidator : AbstractValidator<SecondCommandInSequence>
 {

@@ -1,11 +1,10 @@
 ﻿using FluentAssertions;
-using Memoria.Caching.Memory;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Xunit;
 
-namespace OpenCqrs.Caching.Memory.Tests;
+namespace Memoria.Caching.Memory.Tests;
 
 public class MemoryCacheProviderTests
 {

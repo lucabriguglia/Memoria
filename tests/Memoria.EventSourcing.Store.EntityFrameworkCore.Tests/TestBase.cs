@@ -1,11 +1,9 @@
 ﻿using System.Diagnostics;
-using Memoria.EventSourcing;
 using Memoria.EventSourcing.Domain;
-using Memoria.EventSourcing.Store.EntityFrameworkCore;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Events;
+using Memoria.EventSourcing.Store.Tests.Models.Aggregates;
+using Memoria.EventSourcing.Store.Tests.Models.Events;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Tests;
 
 public abstract class TestBase : IDisposable
 {

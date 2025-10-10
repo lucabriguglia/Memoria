@@ -2,13 +2,13 @@
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.Tests.Models.Aggregates;
+using Memoria.EventSourcing.Store.Tests.Models.Events;
+using Memoria.EventSourcing.Store.Tests.Models.Streams;
 using Memoria.Results;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Events;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Streams;
 using Xunit;
 
-namespace OpenCqrs.EventSourcing.Store.Tests.Features;
+namespace Memoria.EventSourcing.Store.Tests.Features;
 
 public abstract class SaveAggregateTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
 {

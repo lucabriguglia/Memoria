@@ -1,9 +1,8 @@
 using FluentAssertions;
-using Memoria.Messaging.ServiceBus;
-using OpenCqrs.Messaging.ServiceBus.Tests.Models.Messages;
+using Memoria.Messaging.ServiceBus.Tests.Models.Messages;
 using Xunit;
 
-namespace OpenCqrs.Messaging.ServiceBus.Tests.Features;
+namespace Memoria.Messaging.ServiceBus.Tests.Features;
 
 public class ServiceBusMessagingProviderTests
 {

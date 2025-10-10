@@ -1,12 +1,10 @@
-using Memoria.EventSourcing;
-using Memoria.EventSourcing.Store.EntityFrameworkCore;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Tests.Data;
+using Memoria.EventSourcing.Store.Tests;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Time.Testing;
-using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.Data;
-using OpenCqrs.EventSourcing.Store.Tests;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Tests;
 
 public class DomainServiceFactory : IDomainServiceFactory
 {

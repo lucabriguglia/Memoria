@@ -1,10 +1,10 @@
 ﻿using FluentAssertions;
 using FluentAssertions.Execution;
-using OpenCqrs.Tests.Models.Commands;
-using OpenCqrs.Tests.Models.Commands.Handlers;
+using Memoria.Tests.Models.Commands;
+using Memoria.Tests.Models.Commands.Handlers;
 using Xunit;
 
-namespace OpenCqrs.Tests.Features;
+namespace Memoria.Tests.Features;
 
 public class CustomHandlersTests : TestBase
 {

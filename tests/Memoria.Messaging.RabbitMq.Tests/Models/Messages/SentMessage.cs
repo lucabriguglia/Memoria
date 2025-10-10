@@ -1,6 +1,6 @@
 using RabbitMQ.Client;
 
-namespace OpenCqrs.Messaging.RabbitMq.Tests.Models.Messages;
+namespace Memoria.Messaging.RabbitMq.Tests.Models.Messages;
 
 public class SentMessage
 {

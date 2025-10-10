@@ -1,7 +1,7 @@
 ﻿using Memoria.EventSourcing.Domain;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Events;
+using Memoria.EventSourcing.Store.Tests.Models.Events;
 
-namespace OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
+namespace Memoria.EventSourcing.Store.Tests.Models.Aggregates;
 
 [AggregateType("TestAggregate2")]
 public class TestAggregate2 : AggregateRoot

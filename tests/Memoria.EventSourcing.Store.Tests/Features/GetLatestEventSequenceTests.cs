@@ -1,9 +1,9 @@
 ﻿using FluentAssertions;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
-using OpenCqrs.EventSourcing.Store.Tests.Models.Streams;
+using Memoria.EventSourcing.Store.Tests.Models.Aggregates;
+using Memoria.EventSourcing.Store.Tests.Models.Streams;
 using Xunit;
 
-namespace OpenCqrs.EventSourcing.Store.Tests.Features;
+namespace Memoria.EventSourcing.Store.Tests.Features;
 
 public abstract class GetLatestEventSequenceTests(IDomainServiceFactory domainServiceFactory) : TestBase(domainServiceFactory)
 {

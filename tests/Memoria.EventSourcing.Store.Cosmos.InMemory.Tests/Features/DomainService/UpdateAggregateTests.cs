@@ -1,3 +1,3 @@
-namespace OpenCqrs.EventSourcing.Store.Cosmos.InMemory.Tests.Features.DomainService;
+namespace Memoria.EventSourcing.Store.Cosmos.InMemory.Tests.Features.DomainService;
 
-public class UpdateAggregateTests() : OpenCqrs.EventSourcing.Store.Tests.Features.UpdateAggregateTests(new DomainServiceFactory());
+public class UpdateAggregateTests() : Store.Tests.Features.UpdateAggregateTests(new DomainServiceFactory());

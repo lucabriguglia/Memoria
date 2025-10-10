@@ -1,16 +1,13 @@
-using Memoria;
 using Memoria.Commands;
-using Memoria.Messaging;
-using Memoria.Messaging.RabbitMq;
+using Memoria.Messaging.RabbitMq.Tests.Models.Commands;
+using Memoria.Messaging.RabbitMq.Tests.Models.Commands.Handlers;
 using Memoria.Notifications;
 using Memoria.Queries;
 using Memoria.Validation;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
-using OpenCqrs.Messaging.RabbitMq.Tests.Models.Commands;
-using OpenCqrs.Messaging.RabbitMq.Tests.Models.Commands.Handlers;
 
-namespace OpenCqrs.Messaging.RabbitMq.Tests;
+namespace Memoria.Messaging.RabbitMq.Tests;
 
 public abstract class TestBase
 {

@@ -1,8 +1,8 @@
 using Memoria.Commands;
+using Memoria.Messaging.RabbitMq.Tests.Models.Messages;
 using Memoria.Results;
-using OpenCqrs.Messaging.RabbitMq.Tests.Models.Messages;
 
-namespace OpenCqrs.Messaging.RabbitMq.Tests.Models.Commands.Handlers;
+namespace Memoria.Messaging.RabbitMq.Tests.Models.Commands.Handlers;
 
 public class DoSomethingHandler : ICommandHandler<DoSomething, CommandResponse>
 {

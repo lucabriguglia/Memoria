@@ -2,13 +2,13 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using Memoria.Messaging.RabbitMq.Configuration;
+using Memoria.Messaging.RabbitMq.Tests.Models.Messages;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using OpenCqrs.Messaging.RabbitMq.Tests.Models.Messages;
 using RabbitMQ.Client;
 
-namespace OpenCqrs.Messaging.RabbitMq.Tests;
+namespace Memoria.Messaging.RabbitMq.Tests;
 
 public class MockRabbitMqTestHelper
 {

@@ -1,7 +1,7 @@
 using Memoria.Notifications;
 using Memoria.Results;
 
-namespace OpenCqrs.Tests.Models.Notifications.Handlers;
+namespace Memoria.Tests.Models.Notifications.Handlers;
 
 public class SomethingHappenedHandlerOne : INotificationHandler<SomethingHappened>
 {

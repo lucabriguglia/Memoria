@@ -24,8 +24,8 @@ IServiceProvider ConfigureServices()
 {
     var services = new ServiceCollection();
 
-    services.AddOpenCqrs(typeof(Program));
-    services.AddOpenCqrsRedisCache(options =>
+    services.AddMemoria(typeof(Program));
+    services.AddMemoriaRedisCache(options =>
     {
         options.ConnectionString = "localhost:6379";
     });

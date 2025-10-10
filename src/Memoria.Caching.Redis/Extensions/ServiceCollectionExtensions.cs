@@ -28,7 +28,7 @@ public static class ServiceCollectionExtensions
     /// This method integrates Redis as the caching provider for Memoria, including configuration of
     /// connection multiplexer and Redis cache options. It replaces the default caching provider with Redis.
     /// </remarks>
-    public static void AddOpenCqrsRedisCache(this IServiceCollection services, Action<RedisCacheOptions> options)
+    public static void AddMemoriaRedisCache(this IServiceCollection services, Action<RedisCacheOptions> options)
     {
         ArgumentNullException.ThrowIfNull(options);
 

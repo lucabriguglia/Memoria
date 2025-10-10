@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The IServiceCollection to add services to.</param>
     /// <param name="types">The types to scan for handlers.</param>
-    public static void AddOpenCqrs(this IServiceCollection services, params Type[] types)
+    public static void AddMemoria(this IServiceCollection services, params Type[] types)
     {
         ArgumentNullException.ThrowIfNull(services);
 

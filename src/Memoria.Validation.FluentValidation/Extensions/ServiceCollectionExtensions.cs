@@ -14,7 +14,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to register the services with.</param>
     /// <param name="types">An optional array of <see cref="Type"/> objects representing classes whose assemblies should be scanned for validators.</param>
-    public static void AddOpenCqrsFluentValidation(this IServiceCollection services, params Type[] types)
+    public static void AddMemoriaFluentValidation(this IServiceCollection services, params Type[] types)
     {
         ArgumentNullException.ThrowIfNull(services);
 

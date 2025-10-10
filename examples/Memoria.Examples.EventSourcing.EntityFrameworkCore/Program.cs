@@ -51,10 +51,10 @@ IServiceProvider ConfigureServices()
         options.LogTo(Console.WriteLine, LogLevel.Information); // For debugging
     });
 
-    services.AddOpenCqrs(typeof(Program));
-    services.AddOpenCqrsEventSourcing(typeof(Program));
-    services.AddOpenCqrsEntityFrameworkCore<MyStoreDbContext>();
-    services.AddOpenCqrsFluentValidation();
+    services.AddMemoria(typeof(Program));
+    services.AddMemoriaEventSourcing(typeof(Program));
+    services.AddMemoriaEntityFrameworkCore<MyStoreDbContext>();
+    services.AddMemoriaFluentValidation();
 
     return services.BuildServiceProvider();
 }

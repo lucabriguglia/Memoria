@@ -29,8 +29,8 @@ IServiceProvider ConfigureServices()
 
     const string connectionString = "amqp://guest:guest@localhost:5672/";
 
-    services.AddOpenCqrs(typeof(Program));
-    services.AddOpenCqrsRabbitMq(connectionString);
+    services.AddMemoria(typeof(Program));
+    services.AddMemoriaRabbitMq(connectionString);
 
     return services.BuildServiceProvider();
 }

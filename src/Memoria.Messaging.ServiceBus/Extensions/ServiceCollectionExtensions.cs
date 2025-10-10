@@ -15,7 +15,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The service collection to add the provider to.</param>
     /// <param name="options">The Service Bus configuration options.</param>
-    public static void AddOpenCqrsServiceBus(this IServiceCollection services, ServiceBusOptions options)
+    public static void AddMemoriaServiceBus(this IServiceCollection services, ServiceBusOptions options)
     {
         var serviceBusClient = new ServiceBusClient(options.ConnectionString);
         services.Replace(ServiceDescriptor.Scoped<IMessagingProvider>(_ => new ServiceBusMessagingProvider(serviceBusClient)));

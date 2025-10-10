@@ -14,9 +14,9 @@ public static class ServiceCollectionExtensions
     /// Adds memory caching support for Memoria to the service collection.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to add the memory cache to.</param>
-    public static void AddOpenCqrsMemoryCache(this IServiceCollection services)
+    public static void AddMemoriaMemoryCache(this IServiceCollection services)
     {
-        services.AddOpenCqrsMemoryCache(_ => { });
+        services.AddMemoriaMemoryCache(_ => { });
     }
 
     /// <summary>
@@ -24,7 +24,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to add the memory cache to.</param>
     /// <param name="options"></param>
-    public static void AddOpenCqrsMemoryCache(this IServiceCollection services, Action<Configuration.MemoryCacheOptions> options)
+    public static void AddMemoriaMemoryCache(this IServiceCollection services, Action<Configuration.MemoryCacheOptions> options)
     {
         ArgumentNullException.ThrowIfNull(options);
 

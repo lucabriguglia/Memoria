@@ -13,7 +13,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Adds RabbitMQ messaging provider to the service collection with custom options.
     /// </summary>
-    public static IServiceCollection AddOpenCqrsRabbitMq(this IServiceCollection services, Action<RabbitMqOptions> options)
+    public static IServiceCollection AddMemoriaRabbitMq(this IServiceCollection services, Action<RabbitMqOptions> options)
     {
         services.Configure(options);
         services.AddSingleton<IMessagingProvider, RabbitMqMessagingProvider>();
@@ -24,7 +24,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Adds RabbitMQ messaging provider to the service collection with a connection string.
     /// </summary>
-    public static IServiceCollection AddOpenCqrsRabbitMq(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddMemoriaRabbitMq(this IServiceCollection services, string connectionString)
     {
         services.Configure<RabbitMqOptions>(options =>
         {

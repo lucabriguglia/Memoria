@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The service collection to register services with.</param>
     /// <param name="options">An action to configure the Cosmos DB connection and database options.</param>
-    public static void AddOpenCqrsCosmos(this IServiceCollection services, Action<CosmosOptions> options)
+    public static void AddMemoriaCosmos(this IServiceCollection services, Action<CosmosOptions> options)
     {
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();

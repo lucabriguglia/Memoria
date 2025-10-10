@@ -24,8 +24,8 @@ IServiceProvider ConfigureServices()
 {
     var services = new ServiceCollection();
 
-    services.AddOpenCqrs(typeof(Program));
-    services.AddOpenCqrsMemoryCache();
+    services.AddMemoria(typeof(Program));
+    services.AddMemoriaMemoryCache();
 
     return services.BuildServiceProvider();
 }

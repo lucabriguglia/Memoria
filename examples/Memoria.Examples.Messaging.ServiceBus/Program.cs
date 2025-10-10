@@ -30,8 +30,8 @@ IServiceProvider ConfigureServices()
 
     const string connectionString = "your_service_bus_connection_string";
 
-    services.AddOpenCqrs(typeof(Program));
-    services.AddOpenCqrsServiceBus(new ServiceBusOptions { ConnectionString = connectionString });
+    services.AddMemoria(typeof(Program));
+    services.AddMemoriaServiceBus(new ServiceBusOptions { ConnectionString = connectionString });
 
     return services.BuildServiceProvider();
 }

@@ -14,7 +14,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <typeparam name="TDbContext">The type of the DbContext that implements IDomainDbContext.</typeparam>
     /// <param name="services">The IServiceCollection to add services to.</param>
-    public static void AddOpenCqrsEntityFrameworkCore<TDbContext>(this IServiceCollection services) where TDbContext : IDomainDbContext
+    public static void AddMemoriaEntityFrameworkCore<TDbContext>(this IServiceCollection services) where TDbContext : IDomainDbContext
     {
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();

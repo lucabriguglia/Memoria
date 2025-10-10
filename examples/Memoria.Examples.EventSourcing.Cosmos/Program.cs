@@ -32,9 +32,9 @@ IServiceProvider ConfigureServices()
 {
     var services = new ServiceCollection();
 
-    services.AddOpenCqrs(typeof(Program));
-    services.AddOpenCqrsEventSourcing(typeof(Program));
-    services.AddOpenCqrsCosmos(options =>
+    services.AddMemoria(typeof(Program));
+    services.AddMemoriaEventSourcing(typeof(Program));
+    services.AddMemoriaCosmos(options =>
     {
         options.Endpoint = "https://localhost:8081";
         options.AuthKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";

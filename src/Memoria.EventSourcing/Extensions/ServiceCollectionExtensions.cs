@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
     /// <param name="types">The types to scan.</param>
     /// <exception cref="ArgumentNullException">Thrown when services or types are null.</exception>
     /// <exception cref="InvalidOperationException">Thrown when duplicate type-binding keys are encountered.</exception>
-    public static void AddOpenCqrsEventSourcing(this IServiceCollection services, params Type[] types)
+    public static void AddMemoriaEventSourcing(this IServiceCollection services, params Type[] types)
     {
         var eventTypeBindings = new Dictionary<string, Type>();
         var aggregateTypeBindings = new Dictionary<string, Type>();

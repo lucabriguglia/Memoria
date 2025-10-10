@@ -8,7 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\OpenCqrs.EventSourcing.Store.EntityFrameworkCore\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.csproj" />
+      <ProjectReference Include="..\Memoria.EventSourcing.Store.EntityFrameworkCore\Memoria.EventSourcing.Store.EntityFrameworkCore.csproj" />
     </ItemGroup>
 
     <ItemGroup>

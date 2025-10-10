@@ -23,7 +23,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria", "src\Memoria\Memo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Tests", "tests\OpenCqrs.Tests\OpenCqrs.Tests.csproj", "{329831D0-59DB-48B7-B83C-429969928B3C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.EventSourcing.Store.EntityFrameworkCore", "src\OpenCqrs.EventSourcing.Store.EntityFrameworkCore\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.csproj", "{BE446093-2B53-49DD-946C-C0CF377C3099}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.EventSourcing.Store.EntityFrameworkCore", "src\Memoria.EventSourcing.Store.EntityFrameworkCore\Memoria.EventSourcing.Store.EntityFrameworkCore.csproj", "{BE446093-2B53-49DD-946C-C0CF377C3099}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests", "tests\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.csproj", "{207773D3-4028-4F76-A041-47FE5901CC0A}"
 EndProject

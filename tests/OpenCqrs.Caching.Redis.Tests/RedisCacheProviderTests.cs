@@ -1,8 +1,9 @@
 ﻿using FluentAssertions;
+using Memoria.Caching.Redis;
+using Memoria.Caching.Redis.Configuration;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Newtonsoft.Json;
-using OpenCqrs.Caching.Redis.Configuration;
 using StackExchange.Redis;
 using Xunit;
 

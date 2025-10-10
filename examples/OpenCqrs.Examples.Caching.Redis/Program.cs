@@ -1,10 +1,10 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using Memoria;
+using Memoria.Caching.Redis.Extensions;
 using Memoria.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using OpenCqrs;
-using OpenCqrs.Caching.Redis.Extensions;
 using OpenCqrs.Examples.Caching.Redis.Queries;
 
 var serviceProvider = ConfigureServices();

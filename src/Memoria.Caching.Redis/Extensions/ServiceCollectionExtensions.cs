@@ -1,11 +1,10 @@
-﻿using Memoria.Caching;
+﻿using Memoria.Caching.Redis.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using OpenCqrs.Caching.Redis.Configuration;
 using StackExchange.Redis;
 
-namespace OpenCqrs.Caching.Redis.Extensions;
+namespace Memoria.Caching.Redis.Extensions;
 
 /// <summary>
 /// Provides extension methods for integrating Redis caching with the Memoria framework.

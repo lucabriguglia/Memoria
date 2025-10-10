@@ -1,4 +1,4 @@
-namespace OpenCqrs.Caching.Redis.Configuration;
+namespace Memoria.Caching.Redis.Configuration;
 
 /// <summary>
 /// Provides configuration options for the Redis caching mechanism.

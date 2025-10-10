@@ -1,10 +1,9 @@
-﻿using Memoria.Caching;
+﻿using Memoria.Caching.Redis.Configuration;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using OpenCqrs.Caching.Redis.Configuration;
 using StackExchange.Redis;
 
-namespace OpenCqrs.Caching.Redis;
+namespace Memoria.Caching.Redis;
 
 /// <summary>
 /// Provides an implementation of <see cref="ICachingProvider"/> using Redis as the underlying cache.

@@ -4,6 +4,7 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>OpenCqrs.EventSourcing.Store.Cosmos.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -19,6 +20,6 @@
       <ProjectReference Include="..\..\src\Memoria.EventSourcing.Store.Cosmos\Memoria.EventSourcing.Store.Cosmos.csproj" />
       <ProjectReference Include="..\..\src\Memoria.EventSourcing\Memoria.EventSourcing.csproj" />
       <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
-      <ProjectReference Include="..\OpenCqrs.EventSourcing.Store.Tests\OpenCqrs.EventSourcing.Store.Tests.csproj" />
+      <ProjectReference Include="..\Memoria.EventSourcing.Store.Tests\Memoria.EventSourcing.Store.Tests.csproj" />
     </ItemGroup>
 </Project>

@@ -4,20 +4,19 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>OpenCqrs.Validation.FluentValidation.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="FluentAssertions" Version="7.2.0" />
-        <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.0" />
-        <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.9.0" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
         <PackageReference Include="NSubstitute" Version="5.3.0" />
         <PackageReference Include="xunit" Version="2.9.3" />
     </ItemGroup>
-
+    
     <ItemGroup>
-      <ProjectReference Include="..\..\src\Memoria.Messaging.RabbitMq\Memoria.Messaging.RabbitMq.csproj" />
+      <ProjectReference Include="..\..\src\Memoria.Validation.FluentValidation\Memoria.Validation.FluentValidation.csproj" />
       <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
     </ItemGroup>
-    
+
 </Project>

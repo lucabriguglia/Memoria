@@ -4,6 +4,7 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -20,8 +21,9 @@
     </ItemGroup>
     
     <ItemGroup>
-      <ProjectReference Include="..\..\src\Memoria.EventSourcing\Memoria.EventSourcing.csproj" />
+      <ProjectReference Include="..\..\src\Memoria.EventSourcing.Store.EntityFrameworkCore\Memoria.EventSourcing.Store.EntityFrameworkCore.csproj" />
       <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
+      <ProjectReference Include="..\Memoria.EventSourcing.Store.Tests\Memoria.EventSourcing.Store.Tests.csproj" />
     </ItemGroup>
 
 </Project>

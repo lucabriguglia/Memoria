@@ -14,7 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\OpenCqrs.Messaging.RabbitMq\OpenCqrs.Messaging.RabbitMq.csproj" />
+        <ProjectReference Include="..\..\src\Memoria.Messaging.RabbitMq\Memoria.Messaging.RabbitMq.csproj" />
         <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
     </ItemGroup>
     

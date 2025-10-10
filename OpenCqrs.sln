@@ -60,7 +60,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{DF
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Validation.FluentValidation.Tests", "tests\OpenCqrs.Validation.FluentValidation.Tests\OpenCqrs.Validation.FluentValidation.Tests.csproj", "{22A820BB-DE18-4E53-88B8-C4CEF155A92B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Messaging.RabbitMq", "src\OpenCqrs.Messaging.RabbitMq\OpenCqrs.Messaging.RabbitMq.csproj", "{744D2845-3DF6-4132-BE50-4C5D676C3A27}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Messaging.RabbitMq", "src\Memoria.Messaging.RabbitMq\Memoria.Messaging.RabbitMq.csproj", "{744D2845-3DF6-4132-BE50-4C5D676C3A27}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Messaging.ServiceBus", "src\OpenCqrs.Messaging.ServiceBus\OpenCqrs.Messaging.ServiceBus.csproj", "{FD3E4A49-AF1B-4C08-9C36-85633677FF9B}"
 EndProject

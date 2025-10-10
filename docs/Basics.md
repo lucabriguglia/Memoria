@@ -7,4 +7,4 @@ There are three kinds of requests that can be sent through the dispatcher:
 - [Queries](Queries) (single handler)
 - [Notifications](Notifications) (multiple handlers)
 
-OpenCQRS uses the result pattern to return the result of commands, queries, and notifications. The result contains information about the success or failure of the operation, any errors that occurred, and the data returned by the operation.
+Memoria uses the result pattern to return the result of commands, queries, and notifications. The result contains information about the success or failure of the operation, any errors that occurred, and the data returned by the operation.

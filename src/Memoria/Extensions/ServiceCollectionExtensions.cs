@@ -9,12 +9,12 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Memoria.Extensions;
 
 /// <summary>
-/// Provides extension methods for IServiceCollection to add OpenCQRS services.
+/// Provides extension methods for IServiceCollection to add Memoria services.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds OpenCQRS services to the dependency injection container.
+    /// Adds Memoria services to the dependency injection container.
     /// </summary>
     /// <param name="services">The IServiceCollection to add services to.</param>
     /// <param name="types">The types to scan for handlers.</param>

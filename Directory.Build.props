@@ -6,11 +6,11 @@
     <Company>Cledev Limited</Company>
     <Copyright>Copyright Luca Briguglia</Copyright>
     <Product>Memoria</Product>
-    <Description>Open source CQRS and Event Sourcing framework for .NET.</Description>
-    <PackageTags>CQRS EventSourcing DDD Memoria</PackageTags>
-    <PackageProjectUrl>https://github.com/OpenCQRS/OpenCQRS</PackageProjectUrl>
+    <Description>Open source DDD, CQRS and Event Sourcing framework for .NET.</Description>
+    <PackageTags>CQRS EventSourcing DDD OpenCQRS Memoria</PackageTags>
+    <PackageProjectUrl>https://github.com/lucabriguglia/Memoria</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/OpenCQRS/OpenCQRS</RepositoryUrl>
+    <RepositoryUrl>https://github.com/lucabriguglia/Memoria</RepositoryUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>logo.png</PackageIcon>

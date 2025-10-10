@@ -17,7 +17,7 @@ public class DomainServiceFactory : IDomainServiceFactory
     private static DbContextOptions<DomainDbContext> CreateContextOptions()
     {
         var builder = new DbContextOptionsBuilder<DomainDbContext>();
-        builder.UseInMemoryDatabase("OpenCQRS");
+        builder.UseInMemoryDatabase("Memoria");
         return builder.Options;
     }
 }

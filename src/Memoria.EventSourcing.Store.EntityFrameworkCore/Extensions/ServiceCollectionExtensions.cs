@@ -5,12 +5,12 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions;
 
 /// <summary>
-/// Provides extension methods for IServiceCollection to add OpenCQRS Entity Framework Core services.
+/// Provides extension methods for IServiceCollection to add Memoria Entity Framework Core services.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds OpenCQRS Entity Framework Core services to the service collection.
+    /// Adds Memoria Entity Framework Core services to the service collection.
     /// </summary>
     /// <typeparam name="TDbContext">The type of the DbContext that implements IDomainDbContext.</typeparam>
     /// <param name="services">The IServiceCollection to add services to.</param>

@@ -6,12 +6,12 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace Memoria.Messaging.ServiceBus.Extensions;
 
 /// <summary>
-/// Provides extension methods for configuring OpenCQRS with Azure Service Bus messaging.
+/// Provides extension methods for configuring Memoria with Azure Service Bus messaging.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds OpenCQRS Service Bus messaging provider to the service collection.
+    /// Adds Memoria Service Bus messaging provider to the service collection.
     /// </summary>
     /// <param name="services">The service collection to add the provider to.</param>
     /// <param name="options">The Service Bus configuration options.</param>

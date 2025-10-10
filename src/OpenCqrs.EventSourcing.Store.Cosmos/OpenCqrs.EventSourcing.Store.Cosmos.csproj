@@ -15,7 +15,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\OpenCqrs.EventSourcing\OpenCqrs.EventSourcing.csproj" />
-      <ProjectReference Include="..\OpenCqrs\OpenCqrs.csproj" />
+      <ProjectReference Include="..\Memoria\Memoria.csproj" />
     </ItemGroup>
 
 </Project>

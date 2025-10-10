@@ -315,7 +315,7 @@ var result = await domainService.GetEventsBetweenDates(streamId, fromDate, toDat
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var result = await domainService.GetEvents(streamId, eventTypes);
 ```
-
+~~~~
 📘 _[Full documentation](https://lucabriguglia.github.io/Memoria/)_
 
 ## ✨ Custom Implementations and Project Support

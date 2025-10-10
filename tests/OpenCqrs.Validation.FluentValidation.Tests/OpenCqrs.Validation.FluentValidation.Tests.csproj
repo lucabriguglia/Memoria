@@ -15,7 +15,7 @@
     
     <ItemGroup>
       <ProjectReference Include="..\..\src\OpenCqrs.Validation.FluentValidation\OpenCqrs.Validation.FluentValidation.csproj" />
-      <ProjectReference Include="..\..\src\OpenCqrs\OpenCqrs.csproj" />
+      <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
     </ItemGroup>
 
 </Project>

@@ -7,7 +7,7 @@
     <Copyright>Copyright Luca Briguglia</Copyright>
     <Product>Memoria</Product>
     <Description>Open source CQRS and Event Sourcing framework for .NET.</Description>
-    <PackageTags>CQRS EventSourcing DDD OpenCqrs</PackageTags>
+    <PackageTags>CQRS EventSourcing DDD Memoria</PackageTags>
     <PackageProjectUrl>https://github.com/OpenCQRS/OpenCQRS</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/OpenCQRS/OpenCQRS</RepositoryUrl>

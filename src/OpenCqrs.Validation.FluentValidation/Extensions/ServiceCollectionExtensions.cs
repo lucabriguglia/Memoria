@@ -5,12 +5,12 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace OpenCqrs.Validation.FluentValidation.Extensions;
 
 /// <summary>
-/// Provides extension methods for registering OpenCqrs FluentValidation services with an <see cref="IServiceCollection"/>.
+/// Provides extension methods for registering Memoria FluentValidation services with an <see cref="IServiceCollection"/>.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds OpenCqrs FluentValidation services to the specified service collection.
+    /// Adds Memoria FluentValidation services to the specified service collection.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to register the services with.</param>
     /// <param name="types">An optional array of <see cref="Type"/> objects representing classes whose assemblies should be scanned for validators.</param>

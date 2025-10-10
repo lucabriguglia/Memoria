@@ -35,7 +35,7 @@ public class CosmosOptions
     /// This property specifies the logical database name to be used in the Cosmos DB instance.
     /// It is required for defining the database the application will interact with and must be a valid database name.
     /// </remarks>
-    public string DatabaseName { get; set; } = "OpenCqrs";
+    public string DatabaseName { get; set; } = "Memoria";
 
     /// <summary>
     /// Gets or sets the name of the Cosmos DB container.
@@ -58,7 +58,7 @@ public class CosmosOptions
     /// </remarks>
     public CosmosClientOptions ClientOptions { get; set; } = new()
     {
-        ApplicationName = "OpenCqrs",
+        ApplicationName = "Memoria",
         ConnectionMode = ConnectionMode.Direct
     };
 }

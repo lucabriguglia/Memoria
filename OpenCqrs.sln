@@ -19,7 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{90721148-631
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{8E88F39E-B2DF-4122-821F-0EECC7343773}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs", "src\OpenCqrs\OpenCqrs.csproj", "{1C87B8FB-2C9A-4F4D-8052-143209990BB2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria", "src\Memoria\Memoria.csproj", "{1C87B8FB-2C9A-4F4D-8052-143209990BB2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Tests", "tests\OpenCqrs.Tests\OpenCqrs.Tests.csproj", "{329831D0-59DB-48B7-B83C-429969928B3C}"
 EndProject

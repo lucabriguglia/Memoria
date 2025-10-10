@@ -5,6 +5,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>true</IsPackable>
+        <RootNamespace>OpenCqrs</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

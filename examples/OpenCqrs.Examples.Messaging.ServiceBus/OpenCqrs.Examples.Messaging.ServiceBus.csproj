@@ -15,7 +15,7 @@
     
     <ItemGroup>
       <ProjectReference Include="..\..\src\OpenCqrs.Messaging.ServiceBus\OpenCqrs.Messaging.ServiceBus.csproj" />
-      <ProjectReference Include="..\..\src\OpenCqrs\OpenCqrs.csproj" />
+      <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
     </ItemGroup>
 
 </Project>

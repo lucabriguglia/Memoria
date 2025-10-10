@@ -1,11 +1,10 @@
 ﻿using System.Collections.Concurrent;
-using Microsoft.Extensions.DependencyInjection;
 using FluentValidation;
 using FluentValidation.Results;
 using Memoria.Commands;
-using Memoria.Validation;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace OpenCqrs.Validation.FluentValidation;
+namespace Memoria.Validation.FluentValidation;
 
 /// <summary>
 /// Provides validation functionality using FluentValidation.

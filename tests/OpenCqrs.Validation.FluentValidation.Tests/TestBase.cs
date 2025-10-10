@@ -5,6 +5,7 @@ using Memoria.Messaging;
 using Memoria.Notifications;
 using Memoria.Queries;
 using Memoria.Validation;
+using Memoria.Validation.FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using OpenCqrs.Validation.FluentValidation.Tests.Models.Commands;

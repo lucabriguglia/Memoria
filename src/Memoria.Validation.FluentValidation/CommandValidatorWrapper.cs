@@ -3,7 +3,7 @@ using FluentValidation.Results;
 using Memoria.Commands;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace OpenCqrs.Validation.FluentValidation;
+namespace Memoria.Validation.FluentValidation;
 
 internal class CommandValidatorWrapper<TCommand, TResponse> : CommandValidatorWrapperBase<TResponse> where TCommand : ICommand<TResponse>
 {

@@ -5,6 +5,7 @@ using Memoria.EventSourcing.Extensions;
 using Memoria.EventSourcing.Store.EntityFrameworkCore;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions;
 using Memoria.Extensions;
+using Memoria.Validation.FluentValidation.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -12,7 +13,6 @@ using OpenCqrs;
 using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Commands;
 using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Data;
 using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Queries;
-using OpenCqrs.Validation.FluentValidation.Extensions;
 
 var serviceProvider = ConfigureServices();
 

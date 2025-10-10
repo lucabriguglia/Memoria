@@ -1,9 +1,8 @@
 ﻿using FluentValidation;
-using Memoria.Validation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace OpenCqrs.Validation.FluentValidation.Extensions;
+namespace Memoria.Validation.FluentValidation.Extensions;
 
 /// <summary>
 /// Provides extension methods for registering Memoria FluentValidation services with an <see cref="IServiceCollection"/>.

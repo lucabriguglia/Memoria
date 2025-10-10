@@ -2,10 +2,9 @@
 
 using Memoria;
 using Memoria.Caching.Memory.Extensions;
+using Memoria.Examples.Caching.Memory.Queries;
 using Memoria.Extensions;
 using Microsoft.Extensions.DependencyInjection;
-using OpenCqrs;
-using OpenCqrs.Examples.Caching.Memory.Queries;
 
 var serviceProvider = ConfigureServices();
 

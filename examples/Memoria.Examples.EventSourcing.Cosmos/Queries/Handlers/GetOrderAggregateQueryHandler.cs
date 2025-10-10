@@ -1,10 +1,10 @@
 ﻿using Memoria.EventSourcing;
+using Memoria.Examples.EventSourcing.Cosmos.Aggregates;
+using Memoria.Examples.EventSourcing.Cosmos.Streams;
 using Memoria.Queries;
 using Memoria.Results;
-using OpenCqrs.Examples.EventSourcing.Cosmos.Aggregates;
-using OpenCqrs.Examples.EventSourcing.Cosmos.Streams;
 
-namespace OpenCqrs.Examples.EventSourcing.Cosmos.Queries.Handlers;
+namespace Memoria.Examples.EventSourcing.Cosmos.Queries.Handlers;
 
 public class GetOrderAggregateQueryHandler(IDomainService domainService) : IQueryHandler<GetOrderQuery, Order?>
 {

@@ -1,7 +1,7 @@
 using Memoria.EventSourcing.Domain;
-using OpenCqrs.Examples.EventSourcing.Cosmos.DomainEvents;
+using Memoria.Examples.EventSourcing.Cosmos.DomainEvents;
 
-namespace OpenCqrs.Examples.EventSourcing.Cosmos.Aggregates;
+namespace Memoria.Examples.EventSourcing.Cosmos.Aggregates;
 
 [AggregateType("Order")]
 public class Order : AggregateRoot

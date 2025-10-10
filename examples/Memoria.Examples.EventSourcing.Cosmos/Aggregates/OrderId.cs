@@ -1,6 +1,6 @@
 ﻿using Memoria.EventSourcing.Domain;
 
-namespace OpenCqrs.Examples.EventSourcing.Cosmos.Aggregates;
+namespace Memoria.Examples.EventSourcing.Cosmos.Aggregates;
 
 public class OrderId(Guid orderId) : IAggregateId<Order>
 {

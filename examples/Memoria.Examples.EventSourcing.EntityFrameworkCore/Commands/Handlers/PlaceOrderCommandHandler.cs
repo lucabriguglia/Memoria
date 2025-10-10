@@ -1,10 +1,10 @@
 ﻿using Memoria.Commands;
 using Memoria.EventSourcing;
+using Memoria.Examples.EventSourcing.EntityFrameworkCore.Aggregates;
+using Memoria.Examples.EventSourcing.EntityFrameworkCore.Streams;
 using Memoria.Results;
-using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Aggregates;
-using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Streams;
 
-namespace OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Commands.Handlers;
+namespace Memoria.Examples.EventSourcing.EntityFrameworkCore.Commands.Handlers;
 
 public class PlaceOrderCommandHandler(IDomainService domainService) : ICommandHandler<PlaceOrderCommand>
 {

@@ -1,6 +1,6 @@
 using Memoria.Messaging;
 
-namespace OpenCqrs.Examples.Messaging.ServiceBus.Messages;
+namespace Memoria.Examples.Messaging.ServiceBus.Messages;
 
 public class TestQueueMessage : QueueMessage
 {

@@ -1,10 +1,10 @@
 ﻿using Memoria.Commands;
 using Memoria.EventSourcing;
+using Memoria.Examples.EventSourcing.Cosmos.Aggregates;
+using Memoria.Examples.EventSourcing.Cosmos.Streams;
 using Memoria.Results;
-using OpenCqrs.Examples.EventSourcing.Cosmos.Aggregates;
-using OpenCqrs.Examples.EventSourcing.Cosmos.Streams;
 
-namespace OpenCqrs.Examples.EventSourcing.Cosmos.Commands.Handlers;
+namespace Memoria.Examples.EventSourcing.Cosmos.Commands.Handlers;
 
 public class PlaceOrderCommandHandler(IDomainService domainService) : ICommandHandler<PlaceOrderCommand>
 {

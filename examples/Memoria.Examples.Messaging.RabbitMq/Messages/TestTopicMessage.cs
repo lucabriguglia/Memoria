@@ -1,6 +1,6 @@
 using Memoria.Messaging;
 
-namespace OpenCqrs.Examples.Messaging.RabbitMq.Messages;
+namespace Memoria.Examples.Messaging.RabbitMq.Messages;
 
 public class TestTopicMessage : TopicMessage
 {

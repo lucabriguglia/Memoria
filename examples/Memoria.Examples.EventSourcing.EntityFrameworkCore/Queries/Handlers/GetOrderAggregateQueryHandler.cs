@@ -1,10 +1,10 @@
 ﻿using Memoria.EventSourcing;
+using Memoria.Examples.EventSourcing.EntityFrameworkCore.Aggregates;
+using Memoria.Examples.EventSourcing.EntityFrameworkCore.Streams;
 using Memoria.Queries;
 using Memoria.Results;
-using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Aggregates;
-using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Streams;
 
-namespace OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Queries.Handlers;
+namespace Memoria.Examples.EventSourcing.EntityFrameworkCore.Queries.Handlers;
 
 public class GetOrderAggregateQueryHandler(IDomainService domainService) : IQueryHandler<GetOrderAggregateQuery, Order?>
 {

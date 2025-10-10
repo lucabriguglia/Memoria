@@ -1,9 +1,9 @@
 ﻿using Memoria.Commands;
+using Memoria.Examples.Messaging.ServiceBus.Messages;
 using Memoria.Messaging;
 using Memoria.Results;
-using OpenCqrs.Examples.Messaging.ServiceBus.Messages;
 
-namespace OpenCqrs.Examples.Messaging.ServiceBus.Commands.Handlers;
+namespace Memoria.Examples.Messaging.ServiceBus.Commands.Handlers;
 
 public class PlaceOrderCommandHandler : ICommandHandler<PlaceOrderCommand, CommandResponse>
 {

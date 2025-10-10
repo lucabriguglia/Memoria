@@ -1,6 +1,6 @@
 ﻿using Memoria.EventSourcing.Domain;
 
-namespace OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Streams;
+namespace Memoria.Examples.EventSourcing.EntityFrameworkCore.Streams;
 
 public class CustomerStreamId(Guid id) : IStreamId
 {

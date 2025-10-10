@@ -1,6 +1,6 @@
 ﻿using Memoria.EventSourcing.Domain;
 
-namespace OpenCqrs.Examples.EventSourcing.Cosmos.Streams;
+namespace Memoria.Examples.EventSourcing.Cosmos.Streams;
 
 public class CustomerStreamId(Guid id) : IStreamId
 {

@@ -2,10 +2,9 @@
 
 using Memoria;
 using Memoria.Caching.Redis.Extensions;
+using Memoria.Examples.Caching.Redis.Queries;
 using Memoria.Extensions;
 using Microsoft.Extensions.DependencyInjection;
-using OpenCqrs;
-using OpenCqrs.Examples.Caching.Redis.Queries;
 
 var serviceProvider = ConfigureServices();
 

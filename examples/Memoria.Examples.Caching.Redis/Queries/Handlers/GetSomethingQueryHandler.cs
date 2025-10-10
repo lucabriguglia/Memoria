@@ -1,7 +1,7 @@
 ﻿using Memoria.Queries;
 using Memoria.Results;
 
-namespace OpenCqrs.Examples.Caching.Redis.Queries.Handlers;
+namespace Memoria.Examples.Caching.Redis.Queries.Handlers;
 
 public class GetSomethingQueryHandler : IQueryHandler<GetSomethingQuery, string>
 {

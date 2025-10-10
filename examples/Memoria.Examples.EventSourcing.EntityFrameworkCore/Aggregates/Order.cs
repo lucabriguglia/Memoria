@@ -1,7 +1,7 @@
 using Memoria.EventSourcing.Domain;
-using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.DomainEvents;
+using Memoria.Examples.EventSourcing.EntityFrameworkCore.DomainEvents;
 
-namespace OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Aggregates;
+namespace Memoria.Examples.EventSourcing.EntityFrameworkCore.Aggregates;
 
 [AggregateType("Order")]
 public class Order : AggregateRoot

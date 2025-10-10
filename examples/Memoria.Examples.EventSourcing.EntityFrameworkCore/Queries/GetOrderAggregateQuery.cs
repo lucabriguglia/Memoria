@@ -1,6 +1,6 @@
-﻿using Memoria.Queries;
-using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Aggregates;
+﻿using Memoria.Examples.EventSourcing.EntityFrameworkCore.Aggregates;
+using Memoria.Queries;
 
-namespace OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Queries;
+namespace Memoria.Examples.EventSourcing.EntityFrameworkCore.Queries;
 
 public record GetOrderAggregateQuery(Guid CustomerId, Guid OrderId) : IQuery<Order?>;

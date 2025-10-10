@@ -1,9 +1,9 @@
 ﻿using Memoria.Commands;
+using Memoria.Examples.Messaging.RabbitMq.Messages;
 using Memoria.Messaging;
 using Memoria.Results;
-using OpenCqrs.Examples.Messaging.RabbitMq.Messages;
 
-namespace OpenCqrs.Examples.Messaging.RabbitMq.Commands.Handlers;
+namespace Memoria.Examples.Messaging.RabbitMq.Commands.Handlers;
 
 public class PlaceOrderCommandHandler : ICommandHandler<PlaceOrderCommand, CommandResponse>
 {

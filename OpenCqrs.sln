@@ -90,7 +90,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Examples.Caching.R
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Examples.Caching.Memory", "examples\OpenCqrs.Examples.Caching.Memory\OpenCqrs.Examples.Caching.Memory.csproj", "{376BBF21-7E58-45FF-BD05-3E70C7B9B052}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.EventSourcing.Store.Cosmos.InMemory", "src\OpenCqrs.EventSourcing.Store.Cosmos.InMemory\OpenCqrs.EventSourcing.Store.Cosmos.InMemory.csproj", "{CC231C0F-83E5-4481-BAAE-35407A415995}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.EventSourcing.Store.Cosmos.InMemory", "src\Memoria.EventSourcing.Store.Cosmos.InMemory\Memoria.EventSourcing.Store.Cosmos.InMemory.csproj", "{CC231C0F-83E5-4481-BAAE-35407A415995}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.EventSourcing.Store.Tests", "tests\OpenCqrs.EventSourcing.Store.Tests\OpenCqrs.EventSourcing.Store.Tests.csproj", "{59236643-1C12-415A-8FB8-193A480DEA0D}"
 EndProject

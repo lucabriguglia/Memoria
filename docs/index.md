@@ -2,7 +2,7 @@
 
 Memoria is a .NET framework that can be used as a simple mediator or as an Event Sourcing solution.
 
-**Repository**: [https://github.com/Memoria/Memoria](https://github.com/Memoria/Memoria)
+**Repository**: [https://github.com/lucabriguglia/Memoria](https://github.com/Memoria/Memoria)
 
 ## Documentation
 

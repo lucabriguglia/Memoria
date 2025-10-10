@@ -1,5 +1,4 @@
 ﻿using Memoria.EventSourcing.Domain;
-using Memoria.EventSourcing.Store.EntityFrameworkCore;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Configurations;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Interceptors;
@@ -8,7 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity;
+namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Identity;
 
 public abstract class IdentityDomainDbContext(
     DbContextOptions<IdentityDomainDbContext> options,

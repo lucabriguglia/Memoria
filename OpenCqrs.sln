@@ -78,7 +78,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Examples.Messaging
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Caching.Memory", "src\Memoria.Caching.Memory\Memoria.Caching.Memory.csproj", "{45885E26-6EE4-4DE1-B996-C079CB2DC63B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Caching.Redis", "src\OpenCqrs.Caching.Redis\OpenCqrs.Caching.Redis.csproj", "{B4B7BE42-6941-465A-9839-A343109DE806}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Caching.Redis", "src\Memoria.Caching.Redis\Memoria.Caching.Redis.csproj", "{B4B7BE42-6941-465A-9839-A343109DE806}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Caching.Memory.Tests", "tests\OpenCqrs.Caching.Memory.Tests\OpenCqrs.Caching.Memory.Tests.csproj", "{979AC923-5219-4392-BC8D-A9644D4F65C2}"
 EndProject

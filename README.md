@@ -2,9 +2,9 @@
 
 [![.Build](https://github.com/Memoria/Memoria/actions/workflows/build.yml/badge.svg)](https://github.com/Memoria/Memoria/actions/workflows/build.yml)
 
-.NET framework implementing DDD, Event Sourcing, and CQRS.
+.NET framework implementing DDD, CQRS, and Event Sourcing. From Latin _memoria_ (memory).
 
-Memoria 1.0.0 released in October 2025 is extremely flexible and expandable. It can be used as a simple mediator or as a full Event Sourcing solution with Cosmos DB or Entity Framework Core as storage.
+Released in October 2025, Memoria is extremely flexible and expandable. It can be used as a simple mediator or as a full Event Sourcing solution with Cosmos DB or Entity Framework Core as storage.
 
 - 📘 _[Full documentation](https://lucabriguglia.github.io/Memoria/)_
 - 📣 _[Release Notes](https://lucabriguglia.github.io/Memoria/Release-Notes.html)_

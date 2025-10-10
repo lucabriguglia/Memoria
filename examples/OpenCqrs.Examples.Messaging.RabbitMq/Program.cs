@@ -2,11 +2,11 @@
 
 using Memoria;
 using Memoria.Extensions;
+using Memoria.Messaging.RabbitMq.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using OpenCqrs;
 using OpenCqrs.Examples.Messaging.RabbitMq.Commands;
-using OpenCqrs.Messaging.RabbitMq.Extensions;
 
 var serviceProvider = ConfigureServices();
 

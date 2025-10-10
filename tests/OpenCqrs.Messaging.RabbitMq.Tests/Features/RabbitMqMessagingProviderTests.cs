@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Memoria.Messaging.RabbitMq;
 using OpenCqrs.Messaging.RabbitMq.Tests.Models.Messages;
 using Xunit;
 

@@ -1,4 +1,4 @@
-namespace OpenCqrs.Messaging.RabbitMq.Configuration;
+namespace Memoria.Messaging.RabbitMq.Configuration;
 
 /// <summary>
 /// Configuration options for RabbitMQ messaging.

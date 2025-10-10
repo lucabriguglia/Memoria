@@ -1,6 +1,7 @@
 using Memoria;
 using Memoria.Commands;
 using Memoria.Messaging;
+using Memoria.Messaging.RabbitMq;
 using Memoria.Notifications;
 using Memoria.Queries;
 using Memoria.Validation;

@@ -2,7 +2,6 @@
 using Memoria.Messaging;
 using Memoria.Results;
 using OpenCqrs.Examples.Messaging.RabbitMq.Messages;
-using OpenCqrs.Messaging;
 
 namespace OpenCqrs.Examples.Messaging.RabbitMq.Commands.Handlers;
 

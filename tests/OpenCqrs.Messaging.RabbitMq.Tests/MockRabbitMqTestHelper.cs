@@ -1,10 +1,10 @@
 using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
+using Memoria.Messaging.RabbitMq.Configuration;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using OpenCqrs.Messaging.RabbitMq.Configuration;
 using OpenCqrs.Messaging.RabbitMq.Tests.Models.Messages;
 using RabbitMQ.Client;
 

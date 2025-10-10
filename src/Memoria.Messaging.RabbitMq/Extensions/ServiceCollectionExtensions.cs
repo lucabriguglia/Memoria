@@ -1,10 +1,9 @@
-using Memoria.Messaging;
+using Memoria.Messaging.RabbitMq.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using OpenCqrs.Messaging.RabbitMq.Configuration;
 
-namespace OpenCqrs.Messaging.RabbitMq.Extensions;
+namespace Memoria.Messaging.RabbitMq.Extensions;
 
 /// <summary>
 /// Provides extension methods for configuring RabbitMQ messaging services in the dependency injection container.

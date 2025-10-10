@@ -1,5 +1,5 @@
 using Memoria.EventSourcing.Domain;
-using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.events;
+using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.DomainEvents;
 
 namespace OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Aggregates;
 

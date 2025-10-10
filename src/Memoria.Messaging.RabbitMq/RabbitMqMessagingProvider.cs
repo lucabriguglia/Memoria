@@ -1,14 +1,13 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
-using Memoria.Messaging;
+using Memoria.Messaging.RabbitMq.Configuration;
 using Memoria.Results;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using OpenCqrs.Messaging.RabbitMq.Configuration;
 using RabbitMQ.Client;
 
-namespace OpenCqrs.Messaging.RabbitMq;
+namespace Memoria.Messaging.RabbitMq;
 
 /// <summary>
 /// Provides messaging functionality using RabbitMQ for sending queue and topic messages.

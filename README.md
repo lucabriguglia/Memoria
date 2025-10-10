@@ -1,6 +1,6 @@
 # 🚀 Memoria&trade; (formerly OpenCQRS)
 
-[![.Build](https://github.com/Memoria/Memoria/actions/workflows/build.yml/badge.svg)](https://github.com/Memoria/Memoria/actions/workflows/build.yml)
+[![.Build](https://github.com/lucabriguglia/Memoria/actions/workflows/build.yml/badge.svg)](https://github.com/lucabriguglia/Memoria/actions/workflows/build.yml)
 
 .NET framework implementing DDD, CQRS, and Event Sourcing. From Latin _memoria_ (memory).
 

@@ -29,7 +29,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.EventSourcing.Stor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.EventSourcing", "src\Memoria.EventSourcing\Memoria.EventSourcing.csproj", "{814F9A66-1D1B-4F8E-9CA9-0D2E06AAD65F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity", "src\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity.csproj", "{E85BAC46-723D-4522-B7C4-A808C04DE658}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.EventSourcing.Store.EntityFrameworkCore.Identity", "src\Memoria.EventSourcing.Store.EntityFrameworkCore.Identity\Memoria.EventSourcing.Store.EntityFrameworkCore.Identity.csproj", "{E85BAC46-723D-4522-B7C4-A808C04DE658}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.EventSourcing.Store.Cosmos", "src\Memoria.EventSourcing.Store.Cosmos\Memoria.EventSourcing.Store.Cosmos.csproj", "{0545A833-B9DF-4181-B33C-A27D0365A5D2}"
 EndProject

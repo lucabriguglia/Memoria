@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.Queries;
+﻿namespace Memoria.Queries;
 
 /// <summary>
 /// Represents an abstract query with optional caching capabilities, used in the context of the CQRS pattern.

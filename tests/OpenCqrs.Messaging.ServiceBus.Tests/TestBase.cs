@@ -1,11 +1,13 @@
+using Memoria;
+using Memoria.Commands;
+using Memoria.Messaging;
+using Memoria.Notifications;
+using Memoria.Queries;
+using Memoria.Validation;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
-using OpenCqrs.Commands;
 using OpenCqrs.Messaging.ServiceBus.Tests.Models.Commands;
 using OpenCqrs.Messaging.ServiceBus.Tests.Models.Commands.Handlers;
-using OpenCqrs.Notifications;
-using OpenCqrs.Queries;
-using OpenCqrs.Validation;
 
 namespace OpenCqrs.Messaging.ServiceBus.Tests;
 

@@ -1,6 +1,6 @@
-﻿using OpenCqrs.Results;
+﻿using Memoria.Results;
 
-namespace OpenCqrs.Queries;
+namespace Memoria.Queries;
 
 /// <summary>
 /// Defines a handler for processing queries and returning the requested data.

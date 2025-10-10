@@ -1,4 +1,4 @@
-using OpenCqrs.Commands;
+using Memoria.Commands;
 
 namespace OpenCqrs.Messaging.ServiceBus.Tests.Models.Commands;
 

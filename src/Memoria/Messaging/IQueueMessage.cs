@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.Messaging;
+﻿namespace Memoria.Messaging;
 
 /// <summary>
 /// Represents a queue message within a messaging system.

@@ -1,12 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using OpenCqrs.Caching;
-using OpenCqrs.Commands;
-using OpenCqrs.Messaging;
-using OpenCqrs.Notifications;
-using OpenCqrs.Queries;
-using OpenCqrs.Validation;
+﻿using Memoria.Caching;
+using Memoria.Commands;
+using Memoria.Messaging;
+using Memoria.Notifications;
+using Memoria.Queries;
+using Memoria.Validation;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace OpenCqrs.Extensions;
+namespace Memoria.Extensions;
 
 /// <summary>
 /// Provides extension methods for IServiceCollection to add OpenCQRS services.

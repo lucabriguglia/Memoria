@@ -1,5 +1,5 @@
+using Memoria.Results;
 using OpenCqrs.EventSourcing.Domain;
-using OpenCqrs.Results;
 
 namespace OpenCqrs.EventSourcing;
 

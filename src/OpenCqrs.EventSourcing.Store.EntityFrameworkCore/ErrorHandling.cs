@@ -1,4 +1,4 @@
-﻿using OpenCqrs.Results;
+﻿using Memoria.Results;
 
 namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore;
 

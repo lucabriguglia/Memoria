@@ -1,6 +1,6 @@
-using OpenCqrs.Commands;
+using Memoria.Commands;
+using Memoria.Results;
 using OpenCqrs.Messaging.ServiceBus.Tests.Models.Messages;
-using OpenCqrs.Results;
 
 namespace OpenCqrs.Messaging.ServiceBus.Tests.Models.Commands.Handlers;
 

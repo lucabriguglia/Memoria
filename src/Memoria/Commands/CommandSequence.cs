@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 
-namespace OpenCqrs.Commands;
+namespace Memoria.Commands;
 
 /// <summary>
 /// Abstract base class for command sequences that execute multiple commands and return a response.

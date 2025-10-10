@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.Queries;
+﻿namespace Memoria.Queries;
 
 /// <summary>
 /// Defines a query in the CQRS pattern that represents a request for data without modifying system state.

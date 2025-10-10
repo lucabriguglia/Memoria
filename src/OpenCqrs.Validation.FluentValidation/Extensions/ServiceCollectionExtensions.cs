@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Memoria.Validation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 

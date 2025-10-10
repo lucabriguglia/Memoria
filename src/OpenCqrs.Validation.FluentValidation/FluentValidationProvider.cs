@@ -2,7 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using FluentValidation;
 using FluentValidation.Results;
-using OpenCqrs.Commands;
+using Memoria.Commands;
+using Memoria.Validation;
 
 namespace OpenCqrs.Validation.FluentValidation;
 

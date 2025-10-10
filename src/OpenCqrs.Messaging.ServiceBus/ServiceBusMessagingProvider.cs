@@ -1,8 +1,9 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using Azure.Messaging.ServiceBus;
+using Memoria.Messaging;
+using Memoria.Results;
 using Newtonsoft.Json;
-using OpenCqrs.Results;
 
 namespace OpenCqrs.Messaging.ServiceBus;
 

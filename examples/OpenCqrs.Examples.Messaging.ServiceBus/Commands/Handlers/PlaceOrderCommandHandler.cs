@@ -1,7 +1,8 @@
-﻿using OpenCqrs.Commands;
+﻿using Memoria.Commands;
+using Memoria.Messaging;
+using Memoria.Results;
 using OpenCqrs.Examples.Messaging.ServiceBus.Messages;
 using OpenCqrs.Messaging;
-using OpenCqrs.Results;
 
 namespace OpenCqrs.Examples.Messaging.ServiceBus.Commands.Handlers;
 

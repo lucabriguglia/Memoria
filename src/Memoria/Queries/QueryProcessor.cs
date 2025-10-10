@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
-using OpenCqrs.Caching;
-using OpenCqrs.Results;
+using Memoria.Caching;
+using Memoria.Results;
 
-namespace OpenCqrs.Queries;
+namespace Memoria.Queries;
 
 /// <summary>
 /// Provides query processing functionality by dispatching queries to their corresponding handlers.

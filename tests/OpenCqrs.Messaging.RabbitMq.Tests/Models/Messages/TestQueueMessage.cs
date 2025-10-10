@@ -1,3 +1,5 @@
+using Memoria.Messaging;
+
 namespace OpenCqrs.Messaging.RabbitMq.Tests.Models.Messages;
 
 public class TestQueueMessage : IQueueMessage

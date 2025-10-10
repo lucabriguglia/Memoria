@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.Validation;
+﻿namespace Memoria.Validation;
 
 /// <summary>
 /// Represents the response of a validation operation.

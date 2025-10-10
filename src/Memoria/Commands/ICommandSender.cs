@@ -1,6 +1,6 @@
-﻿using OpenCqrs.Results;
+﻿using Memoria.Results;
 
-namespace OpenCqrs.Commands;
+namespace Memoria.Commands;
 
 /// <summary>
 /// Defines a service for dispatching commands to their corresponding handlers in the CQRS pattern.

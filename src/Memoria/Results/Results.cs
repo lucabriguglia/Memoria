@@ -1,6 +1,6 @@
 using OneOf;
 
-namespace OpenCqrs.Results;
+namespace Memoria.Results;
 
 /// <summary>
 /// Represents the result of an operation that can either succeed or fail.

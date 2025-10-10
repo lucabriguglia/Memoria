@@ -1,6 +1,6 @@
-﻿using OpenCqrs.Commands;
+﻿using Memoria.Commands;
 
-namespace OpenCqrs.Validation;
+namespace Memoria.Validation;
 
 public class DefaultValidationProvider : IValidationProvider
 {

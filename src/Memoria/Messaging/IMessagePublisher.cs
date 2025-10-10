@@ -1,6 +1,6 @@
-﻿using OpenCqrs.Results;
+﻿using Memoria.Results;
 
-namespace OpenCqrs.Messaging;
+namespace Memoria.Messaging;
 
 /// <summary>
 /// Defines a contract for publishing messages within the messaging system.

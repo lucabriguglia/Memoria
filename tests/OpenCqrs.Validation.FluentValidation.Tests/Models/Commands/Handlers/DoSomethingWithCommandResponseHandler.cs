@@ -1,5 +1,5 @@
-using OpenCqrs.Commands;
-using OpenCqrs.Results;
+using Memoria.Commands;
+using Memoria.Results;
 
 namespace OpenCqrs.Validation.FluentValidation.Tests.Models.Commands.Handlers;
 

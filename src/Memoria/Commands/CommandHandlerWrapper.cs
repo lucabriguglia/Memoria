@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using OpenCqrs.Results;
+﻿using Memoria.Results;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace OpenCqrs.Commands;
+namespace Memoria.Commands;
 
 internal class CommandHandlerWrapper<TCommand, TResponse> : CommandHandlerWrapperBase<TResponse> where TCommand : ICommand<TResponse>
 {

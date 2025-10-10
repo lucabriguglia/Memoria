@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.Validation;
+﻿namespace Memoria.Validation;
 
 /// <summary>
 /// Represents a validation error that contains details about a specific property and its related error message.

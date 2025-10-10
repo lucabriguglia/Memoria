@@ -1,6 +1,6 @@
-using OpenCqrs.Commands;
+using Memoria.Commands;
+using Memoria.Results;
 using OpenCqrs.Messaging.RabbitMq.Tests.Models.Messages;
-using OpenCqrs.Results;
 
 namespace OpenCqrs.Messaging.RabbitMq.Tests.Models.Commands.Handlers;
 

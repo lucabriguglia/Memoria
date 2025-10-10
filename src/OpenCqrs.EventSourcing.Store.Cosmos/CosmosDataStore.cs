@@ -1,12 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Memoria.Extensions;
+using Memoria.Results;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Options;
 using OpenCqrs.EventSourcing.Domain;
 using OpenCqrs.EventSourcing.Store.Cosmos.Configuration;
 using OpenCqrs.EventSourcing.Store.Cosmos.Documents;
 using OpenCqrs.EventSourcing.Store.Cosmos.Extensions;
-using OpenCqrs.Extensions;
-using OpenCqrs.Results;
 
 namespace OpenCqrs.EventSourcing.Store.Cosmos;
 

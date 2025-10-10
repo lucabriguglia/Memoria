@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.Messaging;
+﻿namespace Memoria.Messaging;
 
 /// <summary>
 /// Defines the properties and behavior for a basic message in a messaging system.

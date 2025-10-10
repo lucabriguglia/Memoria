@@ -1,6 +1,6 @@
-﻿using OpenCqrs.Results;
+﻿using Memoria.Results;
 
-namespace OpenCqrs.Notifications;
+namespace Memoria.Notifications;
 
 /// <summary>
 /// Defines the contract for a service that publishes notifications to their respective handlers.

@@ -1,10 +1,11 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using Memoria;
+using Memoria.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using OpenCqrs;
 using OpenCqrs.Examples.Messaging.RabbitMq.Commands;
-using OpenCqrs.Extensions;
 using OpenCqrs.Messaging.RabbitMq.Extensions;
 
 var serviceProvider = ConfigureServices();

@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 
-namespace OpenCqrs.Commands;
+namespace Memoria.Commands;
 
 /// <summary>
 /// Represents a sequence of commands that can be executed in a predefined order.

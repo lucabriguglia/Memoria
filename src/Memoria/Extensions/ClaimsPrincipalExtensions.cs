@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 
-namespace OpenCqrs.Extensions;
+namespace Memoria.Extensions;
 
 /// <summary>
 /// Extension methods for <see cref="ClaimsPrincipal"/> to provide convenient access to common claim values.

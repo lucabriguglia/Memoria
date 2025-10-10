@@ -1,6 +1,6 @@
-﻿using OpenCqrs.Results;
+﻿using Memoria.Results;
 
-namespace OpenCqrs.Messaging;
+namespace Memoria.Messaging;
 
 /// <summary>
 /// Defines an interface for messaging providers to handle the sending of messages to queues and topics.

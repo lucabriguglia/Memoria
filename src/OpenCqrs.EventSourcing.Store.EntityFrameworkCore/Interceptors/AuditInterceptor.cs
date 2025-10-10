@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Memoria.Extensions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
-using OpenCqrs.Extensions;
 
 namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Interceptors;
 

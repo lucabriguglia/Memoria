@@ -1,6 +1,6 @@
-﻿using OpenCqrs.Results;
+﻿using Memoria.Results;
 
-namespace OpenCqrs.Notifications;
+namespace Memoria.Notifications;
 
 /// <summary>
 /// Defines a handler for processing notifications of the specified type.

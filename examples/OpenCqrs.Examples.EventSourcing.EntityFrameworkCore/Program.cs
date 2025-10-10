@@ -1,5 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using Memoria;
+using Memoria.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -10,7 +12,6 @@ using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions;
 using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Commands;
 using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Data;
 using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Queries;
-using OpenCqrs.Extensions;
 using OpenCqrs.Validation.FluentValidation.Extensions;
 
 var serviceProvider = ConfigureServices();

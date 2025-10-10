@@ -1,8 +1,8 @@
-﻿using OpenCqrs.Commands;
+﻿using Memoria.Commands;
+using Memoria.Results;
 using OpenCqrs.EventSourcing;
 using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Aggregates;
 using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Streams;
-using OpenCqrs.Results;
 
 namespace OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Commands.Handlers;
 

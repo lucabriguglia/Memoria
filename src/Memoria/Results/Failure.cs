@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.Results;
+﻿namespace Memoria.Results;
 
 /// <summary>
 /// Represents a failed operation result.

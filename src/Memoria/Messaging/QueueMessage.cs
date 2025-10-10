@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace OpenCqrs.Messaging;
+namespace Memoria.Messaging;
 
 /// <summary>
 /// Represents a base class for queue messages in a messaging system.

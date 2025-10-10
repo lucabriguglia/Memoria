@@ -1,7 +1,7 @@
-﻿using OpenCqrs.Commands;
-using OpenCqrs.Results;
+﻿using Memoria.Commands;
+using Memoria.Results;
 
-namespace OpenCqrs.Validation;
+namespace Memoria.Validation;
 
 /// <summary>
 /// Represents a validation service that provides methods to validate commands.

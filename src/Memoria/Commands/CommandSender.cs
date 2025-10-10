@@ -1,12 +1,12 @@
 ﻿using System.Collections.Concurrent;
 using System.Linq.Expressions;
+using Memoria.Messaging;
+using Memoria.Notifications;
+using Memoria.Results;
+using Memoria.Validation;
 using Microsoft.Extensions.DependencyInjection;
-using OpenCqrs.Messaging;
-using OpenCqrs.Notifications;
-using OpenCqrs.Results;
-using OpenCqrs.Validation;
 
-namespace OpenCqrs.Commands;
+namespace Memoria.Commands;
 
 /// <summary>
 /// Default implementation of <see cref="ICommandSender"/> that dispatches commands to their

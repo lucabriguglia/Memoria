@@ -1,3 +1,4 @@
+using Memoria.Messaging;
 using OpenCqrs.Messaging;
 
 namespace OpenCqrs.Examples.Messaging.RabbitMq.Messages;

@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.Messaging;
+﻿namespace Memoria.Messaging;
 
 /// <summary>
 /// Represents a message associated with a specific topic in a messaging system.

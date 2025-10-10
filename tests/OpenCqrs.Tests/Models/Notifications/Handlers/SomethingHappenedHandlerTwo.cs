@@ -1,5 +1,5 @@
-using OpenCqrs.Notifications;
-using OpenCqrs.Results;
+using Memoria.Notifications;
+using Memoria.Results;
 
 namespace OpenCqrs.Tests.Models.Notifications.Handlers;
 

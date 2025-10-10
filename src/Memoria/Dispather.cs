@@ -1,9 +1,9 @@
-﻿using OpenCqrs.Commands;
-using OpenCqrs.Notifications;
-using OpenCqrs.Queries;
-using OpenCqrs.Results;
+﻿using Memoria.Commands;
+using Memoria.Notifications;
+using Memoria.Queries;
+using Memoria.Results;
 
-namespace OpenCqrs;
+namespace Memoria;
 
 /// <summary>
 /// Provides a unified implementation for dispatching commands, queries, and events in the CQRS pattern.

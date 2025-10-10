@@ -1,4 +1,5 @@
 ﻿using Azure.Messaging.ServiceBus;
+using Memoria.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OpenCqrs.Messaging.ServiceBus.Configuration;

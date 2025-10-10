@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.Commands;
+﻿namespace Memoria.Commands;
 
 /// <summary>
 /// Defines a command in the CQRS pattern that represents an intent to change system state

@@ -1,4 +1,4 @@
-﻿using OpenCqrs.Queries;
+﻿using Memoria.Queries;
 
 namespace OpenCqrs.Examples.Caching.Memory.Queries;
 

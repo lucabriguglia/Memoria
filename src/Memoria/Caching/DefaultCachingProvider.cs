@@ -1,4 +1,4 @@
-namespace OpenCqrs.Caching;
+namespace Memoria.Caching;
 
 public class DefaultCachingProvider : ICachingProvider
 {

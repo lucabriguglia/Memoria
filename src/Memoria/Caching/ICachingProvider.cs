@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.Caching;
+﻿namespace Memoria.Caching;
 
 /// <summary>
 /// Provides caching functionality for storing and retrieving data.

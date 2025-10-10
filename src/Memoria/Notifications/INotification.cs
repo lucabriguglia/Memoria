@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.Notifications;
+﻿namespace Memoria.Notifications;
 
 /// <summary>
 /// Represents a notification that can be published to registered handlers within the system.

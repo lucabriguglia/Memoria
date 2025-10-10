@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using OpenCqrs.Results;
+﻿using Memoria.Results;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace OpenCqrs.Notifications;
+namespace Memoria.Notifications;
 
 /// <summary>
 /// Handles the publishing of notifications to all registered notification handlers.

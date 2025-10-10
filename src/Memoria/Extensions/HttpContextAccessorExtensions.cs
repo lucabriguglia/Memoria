@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace OpenCqrs.Extensions;
+namespace Memoria.Extensions;
 
 /// <summary>
 /// Extension methods for <see cref="IHttpContextAccessor"/> to provide convenient access to current user information.

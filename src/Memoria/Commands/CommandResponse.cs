@@ -1,7 +1,7 @@
-﻿using OpenCqrs.Messaging;
-using OpenCqrs.Notifications;
+﻿using Memoria.Messaging;
+using Memoria.Notifications;
 
-namespace OpenCqrs.Commands;
+namespace Memoria.Commands;
 
 /// <summary>
 /// Represents the response from a command execution, containing notifications, messages, and an optional result.

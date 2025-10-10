@@ -1,6 +1,6 @@
-﻿using OpenCqrs.Results;
+﻿using Memoria.Results;
 
-namespace OpenCqrs.Messaging;
+namespace Memoria.Messaging;
 
 /// <summary>
 /// Provides functionality to publish messages to a messaging provider.

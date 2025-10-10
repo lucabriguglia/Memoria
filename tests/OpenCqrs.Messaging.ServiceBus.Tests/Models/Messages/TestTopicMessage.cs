@@ -1,3 +1,5 @@
+using Memoria.Messaging;
+
 namespace OpenCqrs.Messaging.ServiceBus.Tests.Models.Messages;
 
 public class TestTopicMessage : ITopicMessage

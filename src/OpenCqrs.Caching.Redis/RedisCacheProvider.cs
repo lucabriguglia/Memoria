@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Memoria.Caching;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using OpenCqrs.Caching.Redis.Configuration;
 using StackExchange.Redis;

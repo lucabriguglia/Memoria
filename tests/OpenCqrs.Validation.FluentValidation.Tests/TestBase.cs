@@ -1,10 +1,12 @@
 ﻿using FluentValidation;
+using Memoria;
+using Memoria.Commands;
+using Memoria.Messaging;
+using Memoria.Notifications;
+using Memoria.Queries;
+using Memoria.Validation;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
-using OpenCqrs.Commands;
-using OpenCqrs.Messaging;
-using OpenCqrs.Notifications;
-using OpenCqrs.Queries;
 using OpenCqrs.Validation.FluentValidation.Tests.Models.Commands;
 using OpenCqrs.Validation.FluentValidation.Tests.Models.Commands.Handlers;
 using OpenCqrs.Validation.FluentValidation.Tests.Models.Commands.Validators;

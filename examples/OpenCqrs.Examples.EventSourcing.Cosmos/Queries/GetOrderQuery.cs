@@ -1,5 +1,5 @@
-﻿using OpenCqrs.Examples.EventSourcing.Cosmos.Aggregates;
-using OpenCqrs.Queries;
+﻿using Memoria.Queries;
+using OpenCqrs.Examples.EventSourcing.Cosmos.Aggregates;
 
 namespace OpenCqrs.Examples.EventSourcing.Cosmos.Queries;
 

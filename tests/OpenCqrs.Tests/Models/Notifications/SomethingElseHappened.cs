@@ -1,4 +1,4 @@
-﻿using OpenCqrs.Notifications;
+﻿using Memoria.Notifications;
 
 namespace OpenCqrs.Tests.Models.Notifications;
 

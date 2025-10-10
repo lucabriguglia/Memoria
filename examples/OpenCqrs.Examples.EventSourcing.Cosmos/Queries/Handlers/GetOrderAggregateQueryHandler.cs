@@ -1,8 +1,8 @@
-﻿using OpenCqrs.EventSourcing;
+﻿using Memoria.Queries;
+using Memoria.Results;
+using OpenCqrs.EventSourcing;
 using OpenCqrs.Examples.EventSourcing.Cosmos.Aggregates;
 using OpenCqrs.Examples.EventSourcing.Cosmos.Streams;
-using OpenCqrs.Queries;
-using OpenCqrs.Results;
 
 namespace OpenCqrs.Examples.EventSourcing.Cosmos.Queries.Handlers;
 

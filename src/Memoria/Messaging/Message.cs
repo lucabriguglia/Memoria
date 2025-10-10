@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace OpenCqrs.Messaging;
+namespace Memoria.Messaging;
 
 /// <summary>
 /// Represents an abstract base class for messages in a messaging system.

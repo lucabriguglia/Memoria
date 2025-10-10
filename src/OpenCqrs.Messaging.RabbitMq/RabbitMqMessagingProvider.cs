@@ -1,10 +1,11 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
+using Memoria.Messaging;
+using Memoria.Results;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using OpenCqrs.Messaging.RabbitMq.Configuration;
-using OpenCqrs.Results;
 using RabbitMQ.Client;
 
 namespace OpenCqrs.Messaging.RabbitMq;

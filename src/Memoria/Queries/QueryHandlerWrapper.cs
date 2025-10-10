@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using OpenCqrs.Results;
+﻿using Memoria.Results;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace OpenCqrs.Queries;
+namespace Memoria.Queries;
 
 internal class QueryHandlerWrapper<TQuery, TResult> : QueryHandlerWrapperBase<TResult> where TQuery : IQuery<TResult>
 {

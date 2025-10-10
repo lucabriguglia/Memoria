@@ -1,5 +1,5 @@
-﻿using OpenCqrs.Queries;
-using OpenCqrs.Results;
+﻿using Memoria.Queries;
+using Memoria.Results;
 
 namespace OpenCqrs.Examples.Caching.Memory.Queries.Handlers;
 

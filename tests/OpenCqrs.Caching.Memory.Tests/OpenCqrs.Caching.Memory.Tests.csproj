@@ -20,7 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\OpenCqrs.Caching.Memory\OpenCqrs.Caching.Memory.csproj" />
+        <ProjectReference Include="..\..\src\Memoria.Caching.Memory\Memoria.Caching.Memory.csproj" />
         <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
     </ItemGroup>
     

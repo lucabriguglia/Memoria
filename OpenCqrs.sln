@@ -76,7 +76,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.EventSourcing.Stor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Examples.Messaging.RabbitMq", "examples\OpenCqrs.Examples.Messaging.RabbitMq\OpenCqrs.Examples.Messaging.RabbitMq.csproj", "{9E9B2583-D31F-448A-8176-0423ADFC003C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Caching.Memory", "src\OpenCqrs.Caching.Memory\OpenCqrs.Caching.Memory.csproj", "{45885E26-6EE4-4DE1-B996-C079CB2DC63B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Caching.Memory", "src\Memoria.Caching.Memory\Memoria.Caching.Memory.csproj", "{45885E26-6EE4-4DE1-B996-C079CB2DC63B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Caching.Redis", "src\OpenCqrs.Caching.Redis\OpenCqrs.Caching.Redis.csproj", "{B4B7BE42-6941-465A-9839-A343109DE806}"
 EndProject

@@ -9,7 +9,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\OpenCqrs.EventSourcing.Store.Cosmos\OpenCqrs.EventSourcing.Store.Cosmos.csproj" />
-      <ProjectReference Include="..\OpenCqrs.EventSourcing\OpenCqrs.EventSourcing.csproj" />
+      <ProjectReference Include="..\Memoria.EventSourcing\Memoria.EventSourcing.csproj" />
       <ProjectReference Include="..\Memoria\Memoria.csproj" />
     </ItemGroup>
 

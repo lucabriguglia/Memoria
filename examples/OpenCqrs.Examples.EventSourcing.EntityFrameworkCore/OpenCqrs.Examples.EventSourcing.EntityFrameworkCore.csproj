@@ -9,7 +9,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\OpenCqrs.EventSourcing.Store.EntityFrameworkCore\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.csproj" />
-      <ProjectReference Include="..\..\src\OpenCqrs.EventSourcing\OpenCqrs.EventSourcing.csproj" />
+      <ProjectReference Include="..\..\src\Memoria.EventSourcing\Memoria.EventSourcing.csproj" />
       <ProjectReference Include="..\..\src\OpenCqrs.Validation.FluentValidation\OpenCqrs.Validation.FluentValidation.csproj" />
       <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
     </ItemGroup>

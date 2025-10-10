@@ -27,7 +27,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.EventSourcing.Stor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests", "tests\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.csproj", "{207773D3-4028-4F76-A041-47FE5901CC0A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.EventSourcing", "src\OpenCqrs.EventSourcing\OpenCqrs.EventSourcing.csproj", "{814F9A66-1D1B-4F8E-9CA9-0D2E06AAD65F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.EventSourcing", "src\Memoria.EventSourcing\Memoria.EventSourcing.csproj", "{814F9A66-1D1B-4F8E-9CA9-0D2E06AAD65F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity", "src\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity.csproj", "{E85BAC46-723D-4522-B7C4-A808C04DE658}"
 EndProject

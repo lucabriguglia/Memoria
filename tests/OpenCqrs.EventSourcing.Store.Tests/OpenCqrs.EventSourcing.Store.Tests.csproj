@@ -20,7 +20,7 @@
     </ItemGroup>
     
     <ItemGroup>
-      <ProjectReference Include="..\..\src\OpenCqrs.EventSourcing\OpenCqrs.EventSourcing.csproj" />
+      <ProjectReference Include="..\..\src\Memoria.EventSourcing\Memoria.EventSourcing.csproj" />
       <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
     </ItemGroup>
 

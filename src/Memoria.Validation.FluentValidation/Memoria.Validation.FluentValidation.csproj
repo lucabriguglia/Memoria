@@ -5,6 +5,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>true</IsPackable>
+        <RootNamespace>OpenCqrs.Validation.FluentValidation</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

@@ -64,7 +64,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Messaging.RabbitMq"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Messaging.ServiceBus", "src\Memoria.Messaging.ServiceBus\Memoria.Messaging.ServiceBus.csproj", "{FD3E4A49-AF1B-4C08-9C36-85633677FF9B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Validation.FluentValidation", "src\OpenCqrs.Validation.FluentValidation\OpenCqrs.Validation.FluentValidation.csproj", "{453AB943-8F9D-40A3-B6E1-F99C35B10C9A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Validation.FluentValidation", "src\Memoria.Validation.FluentValidation\Memoria.Validation.FluentValidation.csproj", "{453AB943-8F9D-40A3-B6E1-F99C35B10C9A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Messaging.RabbitMq.Tests", "tests\OpenCqrs.Messaging.RabbitMq.Tests\OpenCqrs.Messaging.RabbitMq.Tests.csproj", "{9D967871-A77B-4875-95ED-2C57FF6D0098}"
 EndProject

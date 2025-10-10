@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Store.Cosmos.Documents;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos.InMemory;
+namespace Memoria.EventSourcing.Store.Cosmos.InMemory;
 
 /// <summary>
 /// Shared in-memory storage for Cosmos DB implementation.

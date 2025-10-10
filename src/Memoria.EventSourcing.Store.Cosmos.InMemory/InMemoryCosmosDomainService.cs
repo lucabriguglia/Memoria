@@ -1,13 +1,11 @@
-﻿using Memoria.EventSourcing;
-using Memoria.EventSourcing.Domain;
-using Memoria.EventSourcing.Store.Cosmos;
+﻿using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Store.Cosmos.Documents;
 using Memoria.EventSourcing.Store.Cosmos.Extensions;
 using Memoria.Extensions;
 using Memoria.Results;
 using Microsoft.AspNetCore.Http;
 
-namespace OpenCqrs.EventSourcing.Store.Cosmos.InMemory;
+namespace Memoria.EventSourcing.Store.Cosmos.InMemory;
 
 public class InMemoryCosmosDomainService(
     InMemoryCosmosStorage storage,

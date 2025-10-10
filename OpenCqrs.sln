@@ -31,7 +31,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.EventSourcing", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity", "src\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity\OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Identity.csproj", "{E85BAC46-723D-4522-B7C4-A808C04DE658}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.EventSourcing.Store.Cosmos", "src\OpenCqrs.EventSourcing.Store.Cosmos\OpenCqrs.EventSourcing.Store.Cosmos.csproj", "{0545A833-B9DF-4181-B33C-A27D0365A5D2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.EventSourcing.Store.Cosmos", "src\Memoria.EventSourcing.Store.Cosmos\Memoria.EventSourcing.Store.Cosmos.csproj", "{0545A833-B9DF-4181-B33C-A27D0365A5D2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{5442F24B-4F0C-4330-B09C-E9A880544691}"
 	ProjectSection(SolutionItems) = preProject

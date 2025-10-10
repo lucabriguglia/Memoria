@@ -8,7 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\OpenCqrs.EventSourcing.Store.Cosmos\OpenCqrs.EventSourcing.Store.Cosmos.csproj" />
+      <ProjectReference Include="..\Memoria.EventSourcing.Store.Cosmos\Memoria.EventSourcing.Store.Cosmos.csproj" />
       <ProjectReference Include="..\Memoria.EventSourcing\Memoria.EventSourcing.csproj" />
       <ProjectReference Include="..\Memoria\Memoria.csproj" />
     </ItemGroup>

@@ -1,4 +1,4 @@
-namespace OpenCqrs.Caching.Memory.Configuration;
+namespace Memoria.Caching.Memory.Configuration;
 
 /// <summary>
 /// Represents configuration settings for the in-memory caching mechanism used in the application.

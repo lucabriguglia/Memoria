@@ -1,10 +1,10 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using Memoria;
+using Memoria.Caching.Memory.Extensions;
 using Memoria.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using OpenCqrs;
-using OpenCqrs.Caching.Memory.Extensions;
 using OpenCqrs.Examples.Caching.Memory.Queries;
 
 var serviceProvider = ConfigureServices();

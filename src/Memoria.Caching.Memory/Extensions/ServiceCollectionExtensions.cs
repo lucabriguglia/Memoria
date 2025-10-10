@@ -1,10 +1,9 @@
-﻿using Memoria.Caching;
-using Microsoft.Extensions.Caching.Memory;
+﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
-namespace OpenCqrs.Caching.Memory.Extensions;
+namespace Memoria.Caching.Memory.Extensions;
 
 /// <summary>
 /// Provides extension methods for adding and configuring Memoria memory caching services.

@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using Memoria.Caching.Memory;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -13,8 +14,8 @@ public class MemoryCacheProviderTests
     public MemoryCacheProviderTests()
     {
         var memoryCache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new MemoryCacheOptions());
-        var defaultOptions = new Memory.Configuration.MemoryCacheOptions { DefaultCacheTimeInSeconds = 300 };
-        var options = Substitute.For<IOptions<Memory.Configuration.MemoryCacheOptions>>();
+        var defaultOptions = new Memoria.Caching.Memory.Configuration.MemoryCacheOptions { DefaultCacheTimeInSeconds = 300 };
+        var options = Substitute.For<IOptions<Memoria.Caching.Memory.Configuration.MemoryCacheOptions>>();
         options.Value.Returns(defaultOptions);
         _provider = new MemoryCacheProvider(memoryCache, options);
     }

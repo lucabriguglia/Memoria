@@ -1,8 +1,7 @@
-﻿using Memoria.Caching;
-using Microsoft.Extensions.Caching.Memory;
+﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
-namespace OpenCqrs.Caching.Memory;
+namespace Memoria.Caching.Memory;
 
 /// <summary>
 /// Provides an implementation of the <see cref="ICachingProvider"/> interface using the in-memory caching mechanism

@@ -1,5 +1,6 @@
+using Memoria.EventSourcing;
+using Memoria.EventSourcing.Domain;
 using Newtonsoft.Json;
-using OpenCqrs.EventSourcing.Domain;
 
 // ReSharper disable EntityFramework.ModelValidation.UnlimitedStringLength
 

@@ -1,8 +1,8 @@
 ﻿using System.Reflection;
+using Memoria.EventSourcing.Domain;
 using Microsoft.Extensions.DependencyInjection;
-using OpenCqrs.EventSourcing.Domain;
 
-namespace OpenCqrs.EventSourcing.Extensions;
+namespace Memoria.EventSourcing.Extensions;
 
 /// <summary>
 /// Extension methods for IServiceCollection to configure event sourcing.

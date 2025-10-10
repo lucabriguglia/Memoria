@@ -1,4 +1,5 @@
 ﻿using Memoria.Commands;
+using Memoria.EventSourcing;
 using Memoria.Results;
 using OpenCqrs.EventSourcing;
 using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Aggregates;

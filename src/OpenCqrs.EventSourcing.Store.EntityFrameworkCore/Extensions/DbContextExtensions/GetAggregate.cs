@@ -1,6 +1,7 @@
-﻿using Memoria.Results;
+﻿using Memoria.EventSourcing;
+using Memoria.EventSourcing.Domain;
+using Memoria.Results;
 using Microsoft.EntityFrameworkCore;
-using OpenCqrs.EventSourcing.Domain;
 using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
 
 namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;

@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace OpenCqrs.EventSourcing.Domain;
+namespace Memoria.EventSourcing.Domain;
 
 /// <summary>
 /// Defines a contract for aggregate identifiers.

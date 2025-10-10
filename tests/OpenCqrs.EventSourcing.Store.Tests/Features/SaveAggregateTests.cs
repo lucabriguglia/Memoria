@@ -1,8 +1,8 @@
 ﻿using System.Diagnostics;
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Memoria.EventSourcing.Domain;
 using Memoria.Results;
-using OpenCqrs.EventSourcing.Domain;
 using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
 using OpenCqrs.EventSourcing.Store.Tests.Models.Events;
 using OpenCqrs.EventSourcing.Store.Tests.Models.Streams;

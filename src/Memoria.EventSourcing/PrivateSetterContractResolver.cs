@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace OpenCqrs.EventSourcing;
+namespace Memoria.EventSourcing;
 
 /// <summary>
 /// Custom JSON contract resolver that enables JSON.NET to deserialize objects with private setters.

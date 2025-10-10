@@ -1,4 +1,4 @@
-using OpenCqrs.EventSourcing.Domain;
+using Memoria.EventSourcing.Domain;
 using OpenCqrs.Examples.EventSourcing.Cosmos.events;
 
 namespace OpenCqrs.Examples.EventSourcing.Cosmos.Aggregates;

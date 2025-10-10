@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace OpenCqrs.EventSourcing.Domain;
+namespace Memoria.EventSourcing.Domain;
 
 /// <summary>
 /// Abstract base class for aggregates in event sourcing.

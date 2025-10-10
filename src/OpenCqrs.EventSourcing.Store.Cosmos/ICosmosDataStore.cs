@@ -1,5 +1,5 @@
-﻿using Memoria.Results;
-using OpenCqrs.EventSourcing.Domain;
+﻿using Memoria.EventSourcing.Domain;
+using Memoria.Results;
 using OpenCqrs.EventSourcing.Store.Cosmos.Documents;
 
 namespace OpenCqrs.EventSourcing.Store.Cosmos;

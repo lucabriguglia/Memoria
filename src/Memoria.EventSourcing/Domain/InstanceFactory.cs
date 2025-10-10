@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Linq.Expressions;
 
-namespace OpenCqrs.EventSourcing.Domain;
+namespace Memoria.EventSourcing.Domain;
 
 public static class InstanceFactory
 {

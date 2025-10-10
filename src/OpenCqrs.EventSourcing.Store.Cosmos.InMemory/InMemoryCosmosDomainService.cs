@@ -1,7 +1,8 @@
-﻿using Memoria.Extensions;
+﻿using Memoria.EventSourcing;
+using Memoria.EventSourcing.Domain;
+using Memoria.Extensions;
 using Memoria.Results;
 using Microsoft.AspNetCore.Http;
-using OpenCqrs.EventSourcing.Domain;
 using OpenCqrs.EventSourcing.Store.Cosmos.Documents;
 using OpenCqrs.EventSourcing.Store.Cosmos.Extensions;
 

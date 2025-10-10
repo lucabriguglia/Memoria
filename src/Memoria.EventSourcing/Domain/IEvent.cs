@@ -1,4 +1,4 @@
-namespace OpenCqrs.EventSourcing.Domain;
+namespace Memoria.EventSourcing.Domain;
 
 /// <summary>
 /// Marker interface that identifies domain events in the event sourcing system.

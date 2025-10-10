@@ -1,4 +1,4 @@
-namespace OpenCqrs.EventSourcing.Domain;
+namespace Memoria.EventSourcing.Domain;
 
 /// <summary>
 /// Provides type-binding dictionaries for domain events and aggregates.

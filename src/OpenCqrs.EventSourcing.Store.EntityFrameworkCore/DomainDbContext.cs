@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Memoria.EventSourcing.Domain;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using OpenCqrs.EventSourcing.Domain;
 using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Configurations;
 using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
 using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Interceptors;

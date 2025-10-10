@@ -1,4 +1,4 @@
-namespace OpenCqrs.EventSourcing.Domain;
+namespace Memoria.EventSourcing.Domain;
 
 /// <summary>
 /// Attribute that provides type metadata for aggregate classes, including logical name and version information.

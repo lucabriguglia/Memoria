@@ -1,4 +1,4 @@
-namespace OpenCqrs.EventSourcing.Domain;
+namespace Memoria.EventSourcing.Domain;
 
 /// <summary>
 /// Defines the contract for aggregates in the event sourcing domain model.

@@ -1,4 +1,4 @@
-namespace OpenCqrs.EventSourcing;
+namespace Memoria.EventSourcing;
 
 /// <summary>
 /// Represents the mode of reading aggregates.

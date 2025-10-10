@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using OpenCqrs.EventSourcing.Domain;
+using Memoria.EventSourcing.Domain;
 
 namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions;
 

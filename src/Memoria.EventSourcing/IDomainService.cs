@@ -1,7 +1,7 @@
+using Memoria.EventSourcing.Domain;
 using Memoria.Results;
-using OpenCqrs.EventSourcing.Domain;
 
-namespace OpenCqrs.EventSourcing;
+namespace Memoria.EventSourcing;
 
 public interface IDomainService : IDisposable
 {

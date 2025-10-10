@@ -1,4 +1,4 @@
-﻿namespace OpenCqrs.EventSourcing.Domain;
+﻿namespace Memoria.EventSourcing.Domain;
 
 /// <summary>
 /// Defines a contract for stream identifiers in the event sourcing infrastructure.

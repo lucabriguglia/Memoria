@@ -1,12 +1,12 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using Memoria;
+using Memoria.EventSourcing.Extensions;
 using Memoria.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenCqrs;
-using OpenCqrs.EventSourcing.Extensions;
 using OpenCqrs.EventSourcing.Store.EntityFrameworkCore;
 using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions;
 using OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.Commands;

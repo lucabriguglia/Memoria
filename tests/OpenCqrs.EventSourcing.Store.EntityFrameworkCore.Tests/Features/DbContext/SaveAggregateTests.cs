@@ -1,8 +1,8 @@
 ﻿using FluentAssertions;
 using FluentAssertions.Execution;
+using Memoria.EventSourcing.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Time.Testing;
-using OpenCqrs.EventSourcing.Domain;
 using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
 using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Tests.Data;
 using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;

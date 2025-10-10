@@ -1,6 +1,6 @@
 using System.Reflection;
+using Memoria.EventSourcing.Domain;
 using Newtonsoft.Json;
-using OpenCqrs.EventSourcing.Domain;
 using OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Entities;
 
 namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions;

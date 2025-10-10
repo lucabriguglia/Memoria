@@ -1,4 +1,4 @@
-﻿using OpenCqrs.EventSourcing.Domain;
+﻿using Memoria.EventSourcing.Domain;
 using OpenCqrs.EventSourcing.Store.Tests.Models.Events;
 
 namespace OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;

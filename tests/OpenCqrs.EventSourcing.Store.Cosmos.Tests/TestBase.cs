@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics;
 using System.Security.Claims;
+using Memoria.EventSourcing;
+using Memoria.EventSourcing.Domain;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
-using OpenCqrs.EventSourcing.Domain;
 using OpenCqrs.EventSourcing.Store.Cosmos.Configuration;
 using OpenCqrs.EventSourcing.Store.Tests.Models.Aggregates;
 using OpenCqrs.EventSourcing.Store.Tests.Models.Events;

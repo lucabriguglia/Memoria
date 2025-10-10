@@ -1,3 +1,4 @@
+using Memoria.EventSourcing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;

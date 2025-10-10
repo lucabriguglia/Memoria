@@ -1,5 +1,5 @@
-﻿using Memoria.Results;
-using OpenCqrs.EventSourcing.Domain;
+﻿using Memoria.EventSourcing.Domain;
+using Memoria.Results;
 
 namespace OpenCqrs.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
 

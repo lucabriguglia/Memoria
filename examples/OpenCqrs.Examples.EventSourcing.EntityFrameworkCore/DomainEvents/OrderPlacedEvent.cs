@@ -1,4 +1,4 @@
-using OpenCqrs.EventSourcing.Domain;
+using Memoria.EventSourcing.Domain;
 
 namespace OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.events;
 

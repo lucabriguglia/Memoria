@@ -5,11 +5,11 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>OpenCqrs.Examples.Caching.Redis</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\Memoria.EventSourcing.Store.Cosmos\Memoria.EventSourcing.Store.Cosmos.csproj" />
-      <ProjectReference Include="..\..\src\Memoria.EventSourcing\Memoria.EventSourcing.csproj" />
+      <ProjectReference Include="..\..\src\Memoria.Caching.Redis\Memoria.Caching.Redis.csproj" />
       <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
     </ItemGroup>
 

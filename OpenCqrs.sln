@@ -54,7 +54,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{5442F24B-4
 		docs\Entity-Framework-Core-Scenarios.md = docs\Entity-Framework-Core-Scenarios.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Examples.EventSourcing.EntityFrameworkCore", "examples\OpenCqrs.Examples.EventSourcing.EntityFrameworkCore\OpenCqrs.Examples.EventSourcing.EntityFrameworkCore.csproj", "{6379279E-932F-41F3-BEFD-7FC432FB7E1F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Examples.EventSourcing.EntityFrameworkCore", "examples\Memoria.Examples.EventSourcing.EntityFrameworkCore\Memoria.Examples.EventSourcing.EntityFrameworkCore.csproj", "{6379279E-932F-41F3-BEFD-7FC432FB7E1F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{DFBB5E4C-0C58-497D-A013-0DC8312B7192}"
 EndProject
@@ -70,11 +70,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Messaging.RabbitMq.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Messaging.ServiceBus.Tests", "tests\Memoria.Messaging.ServiceBus.Tests\Memoria.Messaging.ServiceBus.Tests.csproj", "{B4D67082-4D10-4B6A-B50C-A01D59CD74CA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Examples.Messaging.ServiceBus", "examples\OpenCqrs.Examples.Messaging.ServiceBus\OpenCqrs.Examples.Messaging.ServiceBus.csproj", "{A829777C-D893-408C-B8D2-186957147AD5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Examples.Messaging.ServiceBus", "examples\Memoria.Examples.Messaging.ServiceBus\Memoria.Examples.Messaging.ServiceBus.csproj", "{A829777C-D893-408C-B8D2-186957147AD5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.EventSourcing.Store.Cosmos.Tests", "tests\Memoria.EventSourcing.Store.Cosmos.Tests\Memoria.EventSourcing.Store.Cosmos.Tests.csproj", "{F435C0FA-A545-4455-BED5-835C18E75D0D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Examples.Messaging.RabbitMq", "examples\OpenCqrs.Examples.Messaging.RabbitMq\OpenCqrs.Examples.Messaging.RabbitMq.csproj", "{9E9B2583-D31F-448A-8176-0423ADFC003C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Examples.Messaging.RabbitMq", "examples\Memoria.Examples.Messaging.RabbitMq\Memoria.Examples.Messaging.RabbitMq.csproj", "{9E9B2583-D31F-448A-8176-0423ADFC003C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Caching.Memory", "src\Memoria.Caching.Memory\Memoria.Caching.Memory.csproj", "{45885E26-6EE4-4DE1-B996-C079CB2DC63B}"
 EndProject
@@ -84,11 +84,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Caching.Memory.Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Caching.Redis.Tests", "tests\Memoria.Caching.Redis.Tests\Memoria.Caching.Redis.Tests.csproj", "{C87BA4A0-DE14-46BF-82BB-584451A64A93}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Examples.EventSourcing.Cosmos", "examples\OpenCqrs.Examples.EventSourcing.Cosmos\OpenCqrs.Examples.EventSourcing.Cosmos.csproj", "{F25BFDEF-7BD2-4B93-A893-B08DE7EE5CDD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Examples.EventSourcing.Cosmos", "examples\Memoria.Examples.EventSourcing.Cosmos\Memoria.Examples.EventSourcing.Cosmos.csproj", "{F25BFDEF-7BD2-4B93-A893-B08DE7EE5CDD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Examples.Caching.Redis", "examples\OpenCqrs.Examples.Caching.Redis\OpenCqrs.Examples.Caching.Redis.csproj", "{B841B955-D8EE-43F9-B3AC-75355EF16405}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Examples.Caching.Redis", "examples\Memoria.Examples.Caching.Redis\Memoria.Examples.Caching.Redis.csproj", "{B841B955-D8EE-43F9-B3AC-75355EF16405}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCqrs.Examples.Caching.Memory", "examples\OpenCqrs.Examples.Caching.Memory\OpenCqrs.Examples.Caching.Memory.csproj", "{376BBF21-7E58-45FF-BD05-3E70C7B9B052}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.Examples.Caching.Memory", "examples\Memoria.Examples.Caching.Memory\Memoria.Examples.Caching.Memory.csproj", "{376BBF21-7E58-45FF-BD05-3E70C7B9B052}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memoria.EventSourcing.Store.Cosmos.InMemory", "src\Memoria.EventSourcing.Store.Cosmos.InMemory\Memoria.EventSourcing.Store.Cosmos.InMemory.csproj", "{CC231C0F-83E5-4481-BAAE-35407A415995}"
 EndProject

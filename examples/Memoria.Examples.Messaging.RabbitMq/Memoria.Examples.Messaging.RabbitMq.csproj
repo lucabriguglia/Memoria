@@ -5,6 +5,7 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>OpenCqrs.Examples.Messaging.RabbitMq</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -12,10 +13,10 @@
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.9" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
     </ItemGroup>
-    
-    <ItemGroup>
-      <ProjectReference Include="..\..\src\Memoria.Messaging.ServiceBus\Memoria.Messaging.ServiceBus.csproj" />
-      <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
-    </ItemGroup>
 
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Memoria.Messaging.RabbitMq\Memoria.Messaging.RabbitMq.csproj" />
+        <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
+    </ItemGroup>
+    
 </Project>

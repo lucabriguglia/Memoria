@@ -154,7 +154,8 @@ public class MockServiceBusTestHelper
 
     public IEnumerable<SentMessage> GetSentMessagesForEntity(string entityName)
     {
-        return _sentMessages.Where(m => string.Equals(m.EntityName, entityName, StringComparison.OrdinalIgnoreCase)).ToList();
+        return _sentMessages.Where(m => string.Equals(m.EntityName, entityName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
     }
 
     public IEnumerable<T> GetSentMessages<T>() where T : class
@@ -224,15 +225,18 @@ public class MockServiceBusTestHelper
         var actualCount = GetMessageCountForEntity(entityName);
         if (actualCount != expectedCount)
         {
-            throw new InvalidOperationException($"Expected {expectedCount} messages to {entityName}, but found {actualCount}");
+            throw new InvalidOperationException(
+                $"Expected {expectedCount} messages to {entityName}, but found {actualCount}");
         }
     }
 
     public void VerifySendMessageAsyncCalled(string entityName, int expectedTimes = 1)
     {
-        if (!_mockQueueSenders.ContainsKey(entityName) && !_mockTopicSenders.ContainsKey(entityName))
+        var actualCount = GetMessageCountForEntity(entityName);
+        if (actualCount != expectedTimes)
         {
-            throw new InvalidOperationException($"No sender was created for entity '{entityName}'");
+            throw new InvalidOperationException(
+                $"Expected BasicPublish to be called {expectedTimes} times for '{entityName}', but was called {actualCount} times");
         }
     }
 

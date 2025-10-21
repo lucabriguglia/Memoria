@@ -20,6 +20,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\src\Memoria.Messaging.ServiceBus\Memoria.Messaging.ServiceBus.csproj" />
       <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
+        <ProjectReference Include="..\Memoria.Messaging.Tests\Memoria.Messaging.Tests.csproj"/>
     </ItemGroup>
     
 </Project>

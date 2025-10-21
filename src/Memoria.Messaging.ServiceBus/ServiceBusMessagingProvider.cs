@@ -9,7 +9,7 @@ namespace Memoria.Messaging.ServiceBus;
 /// <summary>
 /// Provides messaging functionality using Azure Service Bus for sending queue and topic messages.
 /// </summary>
-public class ServiceBusMessagingProvider(ServiceBusClient serviceBusClient) : IMessagingProvider, IAsyncDisposable
+public class MessagingProvider(ServiceBusClient serviceBusClient) : IMessagingProvider, IAsyncDisposable
 {
     private readonly ConcurrentDictionary<string, ServiceBusSender> _queueSenders = new();
     private readonly ConcurrentDictionary<string, ServiceBusSender> _topicSenders = new();
@@ -21,7 +21,8 @@ public class ServiceBusMessagingProvider(ServiceBusClient serviceBusClient) : IM
     /// <param name="message">The message to send.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A result indicating success or failure.</returns>
-    public async Task<Result> SendQueueMessage<TMessage>(TMessage message, CancellationToken cancellationToken = default) where TMessage : IQueueMessage
+    public async Task<Result> SendQueueMessage<TMessage>(TMessage message,
+        CancellationToken cancellationToken = default) where TMessage : IQueueMessage
     {
         try
         {
@@ -56,7 +57,8 @@ public class ServiceBusMessagingProvider(ServiceBusClient serviceBusClient) : IM
     /// <param name="message">The message to send.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A result indicating success or failure.</returns>
-    public async Task<Result> SendTopicMessage<TMessage>(TMessage message, CancellationToken cancellationToken = default) where TMessage : ITopicMessage
+    public async Task<Result> SendTopicMessage<TMessage>(TMessage message,
+        CancellationToken cancellationToken = default) where TMessage : ITopicMessage
     {
         try
         {

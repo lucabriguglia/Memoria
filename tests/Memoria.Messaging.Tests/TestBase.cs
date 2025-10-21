@@ -11,7 +11,7 @@ namespace Memoria.Messaging.Tests;
 
 public abstract class TestBase
 {
-    protected readonly MockServiceBusTestHelper MockServiceBusTestHelper;
+    protected readonly MockTestHelper MockServiceBusTestHelper;
     protected readonly IDispatcher Dispatcher;
     protected readonly IMessagingProvider MessagingProvider;
 
@@ -21,8 +21,7 @@ public abstract class TestBase
             .AddSingleton<ICommandHandler<DoSomething, CommandResponse>, DoSomethingHandler>()
             .BuildServiceProvider();
 
-        MockServiceBusTestHelper = new MockServiceBusTestHelper();
-        // var serviceBusMessagingProvider = new ServiceBusMessagingProvider(MockServiceBusTestHelper.MockServiceBusClient);
+        MockServiceBusTestHelper = new MockTestHelper();
         MessagingProvider = messagingProviderFactory.CreateMessagingProvider();
         var messagePublisher = new MessagePublisher(MessagingProvider);
         var commandSender = new CommandSender(serviceProvider, Substitute.For<IValidationService>(),

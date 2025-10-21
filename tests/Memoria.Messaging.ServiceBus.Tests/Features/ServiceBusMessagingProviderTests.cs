@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Memoria.Messaging.ServiceBus.Tests.Features;
 
-public class ServiceBusMessagingProviderTests
+public class MessagingProviderTests
 {
     private readonly MockServiceBusTestHelper _mockHelper = new();
 
@@ -244,8 +244,8 @@ public class ServiceBusMessagingProviderTests
             .WithMessage("Expected 2 messages to verify-queue, but found 1");
     }
 
-    private ServiceBusMessagingProvider CreateServiceBusMessagingProvider()
+    private MessagingProvider CreateServiceBusMessagingProvider()
     {
-        return new ServiceBusMessagingProvider(_mockHelper.MockServiceBusClient);
+        return new MessagingProvider(_mockHelper.MockServiceBusClient);
     }
 }

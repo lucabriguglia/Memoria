@@ -18,6 +18,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\src\Memoria.Messaging.RabbitMq\Memoria.Messaging.RabbitMq.csproj" />
       <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
+        <ProjectReference Include="..\Memoria.Messaging.Tests\Memoria.Messaging.Tests.csproj"/>
     </ItemGroup>
     
 </Project>

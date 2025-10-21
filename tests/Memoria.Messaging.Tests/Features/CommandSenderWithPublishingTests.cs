@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Memoria.Messaging.Tests.Features;
 
-public class CommandSenderWithPublishingTests(IMessagingProviderFactory messagingProviderFactory)
+public abstract class CommandSenderWithPublishingTests(IMessagingProviderFactory messagingProviderFactory)
     : TestBase(messagingProviderFactory)
 {
     [Fact]

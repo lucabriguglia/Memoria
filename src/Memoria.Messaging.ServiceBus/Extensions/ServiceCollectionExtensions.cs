@@ -18,6 +18,6 @@ public static class ServiceCollectionExtensions
     public static void AddMemoriaServiceBus(this IServiceCollection services, ServiceBusOptions options)
     {
         var serviceBusClient = new ServiceBusClient(options.ConnectionString);
-        services.Replace(ServiceDescriptor.Scoped<IMessagingProvider>(_ => new ServiceBusMessagingProvider(serviceBusClient)));
+        services.Replace(ServiceDescriptor.Scoped<IMessagingProvider>(_ => new MessagingProvider(serviceBusClient)));
     }
 }

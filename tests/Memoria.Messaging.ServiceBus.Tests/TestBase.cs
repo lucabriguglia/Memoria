@@ -21,10 +21,12 @@ public abstract class TestBase
             .BuildServiceProvider();
 
         MockServiceBusTestHelper = new MockServiceBusTestHelper();
-        var serviceBusMessagingProvider = new ServiceBusMessagingProvider(MockServiceBusTestHelper.MockServiceBusClient);
+        var serviceBusMessagingProvider = new MessagingProvider(MockServiceBusTestHelper.MockServiceBusClient);
         var messagePublisher = new MessagePublisher(serviceBusMessagingProvider);
-        var commandSender = new CommandSender(serviceProvider, Substitute.For<IValidationService>(), Substitute.For<INotificationPublisher>(), messagePublisher);
+        var commandSender = new CommandSender(serviceProvider, Substitute.For<IValidationService>(),
+            Substitute.For<INotificationPublisher>(), messagePublisher);
 
-        Dispatcher = new Dispatcher(commandSender, Substitute.For<IQueryProcessor>(), Substitute.For<INotificationPublisher>());
+        Dispatcher = new Dispatcher(commandSender, Substitute.For<IQueryProcessor>(),
+            Substitute.For<INotificationPublisher>());
     }
 }

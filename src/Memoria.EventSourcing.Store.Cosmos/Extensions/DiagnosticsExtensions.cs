@@ -5,6 +5,8 @@ using Microsoft.Azure.Cosmos;
 
 namespace Memoria.EventSourcing.Store.Cosmos.Extensions;
 
+// TODO: Rename all extensions methods to "Track..." instead of "Add..." to better reflect their purpose.
+
 /// <summary>
 /// Provides extension methods for adding diagnostic information to activities.
 /// </summary>
@@ -17,7 +19,8 @@ public static class DiagnosticsExtensions
     /// <param name="streamId">The stream identifier.</param>
     /// <param name="aggregateId">The aggregate identifier.</param>
     /// <param name="operation">The operation being performed.</param>
-    public static void AddActivityEvent<T>(this TransactionalBatchResponse batchResponse, IStreamId streamId, IAggregateId<T> aggregateId, string operation) where T : IAggregateRoot
+    public static void AddActivityEvent<T>(this TransactionalBatchResponse batchResponse, IStreamId streamId,
+        IAggregateId<T> aggregateId, string operation) where T : IAggregateRoot
     {
         Activity.Current?.AddEvent(new ActivityEvent("Cosmos Transactional Batch", default, new ActivityTagsCollection
         {
@@ -39,19 +42,21 @@ public static class DiagnosticsExtensions
     /// <param name="streamId">The stream identifier.</param>
     /// <param name="eventDocuments">The collection of event documents processed in the batch.</param>
     /// <param name="operation">The operation being performed.</param>
-    public static void AddActivityEvent(this TransactionalBatchResponse batchResponse, IStreamId streamId, IEnumerable<EventDocument> eventDocuments, string operation)
+    public static void AddActivityEvent(this TransactionalBatchResponse batchResponse, IStreamId streamId,
+        IEnumerable<EventDocument> eventDocuments, string operation)
     {
-        Activity.Current?.AddEvent(new ActivityEvent(name: "Cosmos Transactional Batch", timestamp: default, new ActivityTagsCollection
-        {
-            { "operation", operation },
-            { "streamId", streamId.Id },
-            { "eventDocumentIds", string.Join(", ", eventDocuments.Select(document => document.Id))},
-            { "cosmos.activityId", batchResponse.ActivityId },
-            { "cosmos.statusCode", batchResponse.StatusCode },
-            { "cosmos.errorMessage", batchResponse.ErrorMessage },
-            { "cosmos.requestCharge", batchResponse.RequestCharge },
-            { "cosmos.count", batchResponse.Count }
-        }));
+        Activity.Current?.AddEvent(new ActivityEvent(name: "Cosmos Transactional Batch", timestamp: default,
+            new ActivityTagsCollection
+            {
+                { "operation", operation },
+                { "streamId", streamId.Id },
+                { "eventDocumentIds", string.Join(", ", eventDocuments.Select(document => document.Id)) },
+                { "cosmos.activityId", batchResponse.ActivityId },
+                { "cosmos.statusCode", batchResponse.StatusCode },
+                { "cosmos.errorMessage", batchResponse.ErrorMessage },
+                { "cosmos.requestCharge", batchResponse.RequestCharge },
+                { "cosmos.count", batchResponse.Count }
+            }));
     }
 
     /// <summary>
@@ -61,7 +66,8 @@ public static class DiagnosticsExtensions
     /// <param name="streamId">The stream identifier.</param>
     /// <param name="aggregateId">The aggregate identifier.</param>
     /// <param name="operation">The operation being performed.</param>
-    public static void AddActivityEvent<T>(this ItemResponse<AggregateDocument> itemResponse, IStreamId streamId, IAggregateId<T> aggregateId, string operation) where T : IAggregateRoot
+    public static void AddActivityEvent<T>(this ItemResponse<AggregateDocument> itemResponse, IStreamId streamId,
+        IAggregateId<T> aggregateId, string operation) where T : IAggregateRoot
     {
         Activity.Current?.AddEvent(new ActivityEvent("Cosmos Read Item", default, new ActivityTagsCollection
         {
@@ -82,15 +88,16 @@ public static class DiagnosticsExtensions
     /// <param name="operation">The operation being performed.</param>
     public static void AddActivityEvent<T>(this FeedResponse<T> feedResponse, IStreamId streamId, string operation)
     {
-        Activity.Current?.AddEvent(new ActivityEvent(name: "Cosmos Feed Iterator", timestamp: default, new ActivityTagsCollection
-        {
-            { "operation", operation },
-            { "streamId", streamId.Id },
-            { "cosmos.activityId", feedResponse.ActivityId },
-            { "cosmos.statusCode", feedResponse.StatusCode },
-            { "cosmos.requestCharge", feedResponse.RequestCharge },
-            { "cosmos.count", feedResponse.Count }
-        }));
+        Activity.Current?.AddEvent(new ActivityEvent(name: "Cosmos Feed Iterator", timestamp: default,
+            new ActivityTagsCollection
+            {
+                { "operation", operation },
+                { "streamId", streamId.Id },
+                { "cosmos.activityId", feedResponse.ActivityId },
+                { "cosmos.statusCode", feedResponse.StatusCode },
+                { "cosmos.requestCharge", feedResponse.RequestCharge },
+                { "cosmos.count", feedResponse.Count }
+            }));
     }
 
     /// <summary>
@@ -101,12 +108,13 @@ public static class DiagnosticsExtensions
     /// <param name="latestEventSequence">The actual latest event sequence number.</param>
     public static void AddActivityEvent(IStreamId streamId, int expectedEventSequence, int latestEventSequence)
     {
-        Activity.Current?.AddEvent(new ActivityEvent(name: "Concurrency Exception", timestamp: default, tags: new ActivityTagsCollection
-        {
-            { "streamId", streamId.Id },
-            { "expectedEventSequence", expectedEventSequence },
-            { "latestEventSequence", latestEventSequence }
-        }));
+        Activity.Current?.AddEvent(new ActivityEvent(name: "Concurrency Exception", timestamp: default,
+            tags: new ActivityTagsCollection
+            {
+                { "streamId", streamId.Id },
+                { "expectedEventSequence", expectedEventSequence },
+                { "latestEventSequence", latestEventSequence }
+            }));
     }
 
     /// <summary>

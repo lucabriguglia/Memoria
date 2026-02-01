@@ -1,5 +1,11 @@
 # Release Notes
 
+## Memoria 1.1.0
+_**Released 01/02/2026**_
+- Upgrade to .NET 10
+- New In Memory Service Bus provider
+- New In Memory RabbitMQ provider
+
 ## Memoria 1.0.0
 _**Released 10/10/2025**_
 - Rename OpenCQRS to Memoria

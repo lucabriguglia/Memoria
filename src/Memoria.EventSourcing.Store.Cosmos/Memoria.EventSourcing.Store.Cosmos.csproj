@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>true</IsPackable>
@@ -10,7 +10,7 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.0" />
       <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.53.1" />
-      <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.9" />
+      <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.2" />
     </ItemGroup>
 
     <ItemGroup>

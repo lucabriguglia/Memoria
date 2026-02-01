@@ -38,11 +38,9 @@ If you're using this repository for your learning, samples, workshop, or your pr
 
 ## 🗺️ Roadmap
 
-### ⏳ In Progress
-- New package for in-memory RabbitMQ for easier testing in projects using Memoria
-
 ### ✅ Recently Completed
 - New package for in-memory Service Bus for easier testing in projects using Memoria
+- New package for in-memory RabbitMQ for easier testing in projects using Memoria
 
 ### ⏭️ Next
 - Create an ecommerce demo application to showcase Memoria features
@@ -67,6 +65,7 @@ If you're using this repository for your learning, samples, workshop, or your pr
 | [Memoria.EventSourcing.Store.EntityFrameworkCore](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore)                   | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore)          |
 | [Memoria.EventSourcing.Store.EntityFrameworkCore.Identity](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity) | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity) |
 | [Memoria.Messaging.RabbitMq](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq)                                                             | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq)                               |
+| [Memoria.Messaging.RabbitMq.InMemory](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq.InMemory)                                           | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq.InMemory)                      |
 | [Memoria.Messaging.ServiceBus](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus)                                                         | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus)                             |
 | [Memoria.Messaging.ServiceBus.InMemory](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus.InMemory)                                       | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus.InMemory)                    |
 | [Memoria.Validation.FluentValidation](https://www.nuget.org/packages/Memoria.Validation.FluentValidation)                                           | [![Nuget Package](https://img.shields.io/badge/nuget-1.0.0-blue.svg)](https://www.nuget.org/packages/Memoria.Validation.FluentValidation)                      |

@@ -1,0 +1,68 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="CODE_OF_CONDUCT.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path=".github/workflows/build.yml" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+    <File Path="logo.jpg" />
+    <File Path="logo.png" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/Basics.md" />
+    <File Path="docs/Commands.md" />
+    <File Path="docs/Configuration.md" />
+    <File Path="docs/index.md" />
+    <File Path="docs/Installation.md" />
+    <File Path="docs/Queries.md" />
+    <File Path="docs/Release-Notes.md" />
+    <File Path="docs/Event-Sourcing.md" />
+    <File Path="docs/Entity-Framework-Core.md" />
+    <File Path="docs/Cosmos.md" />
+    <File Path="docs/Domain.md" />
+    <File Path="docs/Notifications.md" />
+    <File Path="docs/Entity-Framework-Core-Extensions.md" />
+    <File Path="docs/Store-Providers.md" />
+    <File Path="docs/Domain-Service.md" />
+    <File Path="docs/Event-Sourcing-Scenarios.md" />
+    <File Path="docs/Entity-Framework-Core-Scenarios.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Memoria/Memoria.csproj" />
+    <Project Path="src/Memoria.EventSourcing/Memoria.EventSourcing.csproj" />
+    <Project Path="src/Memoria.EventSourcing.Store.EntityFrameworkCore/Memoria.EventSourcing.Store.EntityFrameworkCore.csproj" />
+    <Project Path="src/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity.csproj" />
+    <Project Path="src/Memoria.EventSourcing.Store.Cosmos/Memoria.EventSourcing.Store.Cosmos.csproj" />
+    <Project Path="src/Memoria.EventSourcing.Store.Cosmos.InMemory/Memoria.EventSourcing.Store.Cosmos.InMemory.csproj" />
+    <Project Path="src/Memoria.Messaging.RabbitMq/Memoria.Messaging.RabbitMq.csproj" />
+    <Project Path="src/Memoria.Messaging.RabbitMq.InMemory/Memoria.Messaging.RabbitMq.InMemory.csproj" />
+    <Project Path="src/Memoria.Messaging.ServiceBus/Memoria.Messaging.ServiceBus.csproj" />
+    <Project Path="src/Memoria.Messaging.ServiceBus.InMemory/Memoria.Messaging.ServiceBus.InMemory.csproj" />
+    <Project Path="src/Memoria.Validation.FluentValidation/Memoria.Validation.FluentValidation.csproj" />
+    <Project Path="src/Memoria.Caching.Memory/Memoria.Caching.Memory.csproj" />
+    <Project Path="src/Memoria.Caching.Redis/Memoria.Caching.Redis.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Memoria.Tests/Memoria.Tests.csproj" />
+    <Project Path="tests/Memoria.EventSourcing.Store.EntityFrameworkCore.Tests/Memoria.EventSourcing.Store.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/Memoria.EventSourcing.Store.Cosmos.Tests/Memoria.EventSourcing.Store.Cosmos.Tests.csproj" />
+    <Project Path="tests/Memoria.EventSourcing.Store.Cosmos.InMemory.Tests/Memoria.EventSourcing.Store.Cosmos.InMemory.Tests.csproj" />
+    <Project Path="tests/Memoria.EventSourcing.Store.Tests/Memoria.EventSourcing.Store.Tests.csproj" />
+    <Project Path="tests/Memoria.Validation.FluentValidation.Tests/Memoria.Validation.FluentValidation.Tests.csproj" />
+    <Project Path="tests/Memoria.Messaging.RabbitMq.Tests/Memoria.Messaging.RabbitMq.Tests.csproj" />
+    <Project Path="tests/Memoria.Messaging.RabbitMq.InMemory.Tests/Memoria.Messaging.RabbitMq.InMemory.Tests.csproj" />
+    <Project Path="tests/Memoria.Messaging.ServiceBus.Tests/Memoria.Messaging.ServiceBus.Tests.csproj" />
+    <Project Path="tests/Memoria.Messaging.ServiceBus.InMemory.Tests/Memoria.Messaging.ServiceBus.InMemory.Tests.csproj" />
+    <Project Path="tests/Memoria.Caching.Memory.Tests/Memoria.Caching.Memory.Tests.csproj" />
+    <Project Path="tests/Memoria.Caching.Redis.Tests/Memoria.Caching.Redis.Tests.csproj" />
+  </Folder>
+  <Folder Name="/examples/">
+    <Project Path="examples/Memoria.Examples.EventSourcing.EntityFrameworkCore/Memoria.Examples.EventSourcing.EntityFrameworkCore.csproj" />
+    <Project Path="examples/Memoria.Examples.EventSourcing.Cosmos/Memoria.Examples.EventSourcing.Cosmos.csproj" />
+    <Project Path="examples/Memoria.Examples.Messaging.ServiceBus/Memoria.Examples.Messaging.ServiceBus.csproj" />
+    <Project Path="examples/Memoria.Examples.Messaging.RabbitMq/Memoria.Examples.Messaging.RabbitMq.csproj" />
+    <Project Path="examples/Memoria.Examples.Caching.Redis/Memoria.Examples.Caching.Redis.csproj" />
+    <Project Path="examples/Memoria.Examples.Caching.Memory/Memoria.Examples.Caching.Memory.csproj" />
+  </Folder>
+</Solution>

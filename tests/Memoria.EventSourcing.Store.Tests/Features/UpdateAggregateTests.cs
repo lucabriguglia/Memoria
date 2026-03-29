@@ -68,5 +68,33 @@ public abstract class UpdateAggregateTests(IDomainServiceFactory domainServiceFa
             updatedAggregateResult.Value.Description.Should().Be("Updated Description");
         }
     }
+    
+    [Fact]
+    public async Task GivenEventWithNewVersion_WhenAggregateIsUpdated_ThenNewEventVersionIsApplied()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var aggregateId = new TestAggregate1Id(id);
+        var aggregate = new TestAggregate1(id, "Test Name", "Test Description");
+
+        await DomainService.SaveAggregate(streamId, aggregateId, aggregate, expectedEventSequence: 0);
+        await DomainService.SaveEvents(streamId, [new SomethingHappenedEvent2("Something 2")], expectedEventSequence: 1);
+        var updatedAggregateResult = await DomainService.UpdateAggregate(streamId, aggregateId);
+
+        using (new AssertionScope())
+        {
+            updatedAggregateResult.IsSuccess.Should().BeTrue();
+
+            updatedAggregateResult.Value.Should().NotBeNull();
+
+            updatedAggregateResult.Value.StreamId.Should().Be(streamId.Id);
+            updatedAggregateResult.Value.AggregateId.Should().Be(aggregateId.ToStoreId());
+            updatedAggregateResult.Value.Version.Should().Be(2);
+
+            updatedAggregateResult.Value.Id.Should().Be(id);
+            updatedAggregateResult.Value.Name.Should().Be("Something 2");
+            updatedAggregateResult.Value.Description.Should().Be("Test Description");
+        }
+    }
 }
 

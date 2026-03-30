@@ -22,4 +22,10 @@ public static class TypeBindings
     /// <param name="version">The version.</param>
     /// <returns>The binding key.</returns>
     public static string GetTypeBindingKey(string name, int version) => $"{name}:{version}";
+
+    // public static string GetEventTypeBindingKey(Type type)
+    // {
+    //     var test = EventTypeBindings.
+    //     return $"{name}:{version}";
+    // }
 }

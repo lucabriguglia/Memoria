@@ -7,7 +7,7 @@ using NSubstitute;
 
 namespace Memoria.EventSourcing.Store.Cosmos.Tests;
 
-public class DomainServiceFactory : IDomainServiceFactory
+public class CosmosDomainServiceFactory : IDomainServiceFactory
 {
     public IDomainService CreateDomainService(FakeTimeProvider timeProvider, IHttpContextAccessor httpContextAccessor)
     {

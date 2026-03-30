@@ -10,7 +10,8 @@ public class TestAggregate1 : AggregateRoot
     [
         typeof(TestAggregateCreatedEvent),
         typeof(TestAggregateUpdatedEvent),
-        typeof(SomethingHappenedEvent)
+        typeof(SomethingHappenedEvent),
+        typeof(SomethingHappenedEvent2)
     ];
 
     public string Id { get; set; } = null!;
@@ -37,6 +38,7 @@ public class TestAggregate1 : AggregateRoot
         {
             TestAggregateCreatedEvent testAggregateCreated => Apply(testAggregateCreated),
             TestAggregateUpdatedEvent testAggregateUpdated => Apply(testAggregateUpdated),
+            SomethingHappenedEvent2 somethingHappened2 => Apply(somethingHappened2),
             _ => false
         };
     }
@@ -55,6 +57,13 @@ public class TestAggregate1 : AggregateRoot
         Name = @event.Name;
         Description = @event.Description;
 
+        return true;
+    }
+
+    private bool Apply(SomethingHappenedEvent2 @event)
+    {
+        Name = @event.Something2;
+        
         return true;
     }
 }

@@ -304,9 +304,5 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
 
     // TODO: In memory aggregate
 
-    // TODO: from date
-    // TODO: to date
-    // TODO: between dates
-
     // TODO: Latest event sequence
 }

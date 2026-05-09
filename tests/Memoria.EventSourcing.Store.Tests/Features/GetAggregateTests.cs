@@ -301,8 +301,4 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
             getAggregateResult.Value.Description.Should().Be("Match");
         }
     }
-
-    // TODO: In memory aggregate
-
-    // TODO: Latest event sequence
 }

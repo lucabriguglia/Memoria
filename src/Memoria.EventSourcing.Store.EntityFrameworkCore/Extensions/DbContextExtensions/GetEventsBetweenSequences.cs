@@ -22,7 +22,7 @@ public static partial class IDomainDbContextExtensions
     /// var filteredEvents = await context.GetEventsBetweenSequences(streamId, fromSequence, toSequence, new[] { typeof(SomeEvent) });
     /// </code>
     /// </example>
-    public static async Task<List<IEvent>> GetEventsBetweenSequences(this IDomainDbContext domainDbContext, IStreamId streamId, int fromSequence, int toSequence, Type[]? eventTypeFilter = null, string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+    public static async Task<List<IEvent>> GetEventsBetweenSequences(this IDomainDbContext domainDbContext, IStreamId streamId, int fromSequence, int toSequence, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventEntities = await domainDbContext.GetEventEntitiesBetweenSequences(streamId, fromSequence, toSequence, eventTypeFilter, eventPropertyFilter, cancellationToken);
         return eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();

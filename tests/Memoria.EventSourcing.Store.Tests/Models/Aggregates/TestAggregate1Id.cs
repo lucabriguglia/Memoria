@@ -5,5 +5,5 @@ namespace Memoria.EventSourcing.Store.Tests.Models.Aggregates;
 public class TestAggregate1Id(string testAggregateId) : IAggregateId<TestAggregate1>
 {
     public string Id => $"test-aggregate-1:{testAggregateId}";
-    public string[]? EventPropertyFilter { get; } = [];
+    public IDictionary<string, string>? EventPropertyFilter { get; } = new Dictionary<string, string>();
 }

@@ -35,7 +35,7 @@ public interface IDomainService : IDisposable
     /// var events = result.Value;
     /// </example>
     Task<Result<List<IEvent>>> GetEvents(IStreamId streamId, Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default);
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the list of domain events that were applied to the specified aggregate.
@@ -80,7 +80,7 @@ public interface IDomainService : IDisposable
         int fromSequence,
         int toSequence,
         Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -101,7 +101,7 @@ public interface IDomainService : IDisposable
     /// var events = result.Value;
     /// </example>
     Task<Result<List<IEvent>>> GetEventsFromSequence(IStreamId streamId, int fromSequence,
-        Type[]? eventTypeFilter = null, string[]? eventPropertyFilter = null,
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -123,7 +123,7 @@ public interface IDomainService : IDisposable
     /// var events = result.Value;
     /// </example>
     Task<Result<List<IEvent>>> GetEventsUpToSequence(IStreamId streamId, int upToSequence,
-        Type[]? eventTypeFilter = null, string[]? eventPropertyFilter = null,
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -147,7 +147,7 @@ public interface IDomainService : IDisposable
     Task<Result<List<IEvent>>> GetEventsUpToDate(
         IStreamId streamId,
         DateTimeOffset upToDate,
-        Type[]? eventTypeFilter = null, string[]? eventPropertyFilter = null,
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -171,7 +171,7 @@ public interface IDomainService : IDisposable
     Task<Result<List<IEvent>>> GetEventsFromDate(
         IStreamId streamId,
         DateTimeOffset fromDate,
-        Type[]? eventTypeFilter = null, string[]? eventPropertyFilter = null,
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -197,7 +197,7 @@ public interface IDomainService : IDisposable
         IStreamId streamId,
         DateTimeOffset fromDate,
         DateTimeOffset toDate,
-        Type[]? eventTypeFilter = null, string[]? eventPropertyFilter = null,
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -275,7 +275,7 @@ public interface IDomainService : IDisposable
     /// var sequence = result.Value;
     /// </example>
     Task<Result<int>> GetLatestEventSequence(IStreamId streamId, Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

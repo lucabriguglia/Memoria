@@ -33,7 +33,7 @@ public interface IAggregateId
     /// <summary>
     /// Specifies a filter applied to properties of events.
     /// </summary>
-    string[]? EventPropertyFilter { get; }
+    IDictionary<string, string>? EventPropertyFilter { get; }
 }
 
 /// <summary>

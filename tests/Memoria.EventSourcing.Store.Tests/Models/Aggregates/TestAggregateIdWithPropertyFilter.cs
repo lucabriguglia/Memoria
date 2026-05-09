@@ -5,19 +5,5 @@ namespace Memoria.EventSourcing.Store.Tests.Models.Aggregates;
 public class TestAggregateIdWithPropertyFilter(string testAggregateId, string something) : IAggregateId<TestAggregate1>
 {
     public string Id => $"test-aggregate-with-filter:{testAggregateId}:{something}";
-    public string[]? EventPropertyFilter { get; } = [$"Something2={something}"];
-}
-
-public class TestAggregateIdWithCustomPropertyFilter(string testAggregateId, string propertyName, string propertyValue)
-    : IAggregateId<TestAggregate1>
-{
-    public string Id => $"test-aggregate-with-filter:{testAggregateId}:{propertyValue}";
-    public string[]? EventPropertyFilter { get; } = [$"{propertyName}={propertyValue}"];
-}
-
-public class TestAggregateIdWithPropertyFilterForNoTypeFilter(string testAggregateId, string something)
-    : IAggregateId<TestAggregateWithNoTypeFilter>
-{
-    public string Id => $"test-aggregate-with-filter-for-no-type-filter:{testAggregateId}:{something}";
-    public string[]? EventPropertyFilter { get; } = [$"Something2={something}"];
+    public IDictionary<string, string>? EventPropertyFilter { get; } = new Dictionary<string, string>{{"Something2", something}};
 }

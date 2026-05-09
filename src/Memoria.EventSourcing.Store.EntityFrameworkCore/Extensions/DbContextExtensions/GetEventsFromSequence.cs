@@ -22,7 +22,7 @@ public static partial class IDomainDbContextExtensions
     /// </code>
     /// </example>
     public static async Task<List<IEvent>> GetEventsFromSequence(this IDomainDbContext domainDbContext,
-        IStreamId streamId, int fromSequence, Type[]? eventTypeFilter = null, string[]? eventPropertyFilter = null,
+        IStreamId streamId, int fromSequence, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         var eventEntities = await domainDbContext.GetEventEntitiesFromSequence(streamId, fromSequence, eventTypeFilter,

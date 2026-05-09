@@ -5,5 +5,5 @@ namespace Memoria.Examples.EventSourcing.Cosmos.Aggregates;
 public class OrderId(Guid orderId) : IAggregateId<Order>
 {
     public string Id => $"order:{orderId}";
-    public string[]? EventPropertyFilter { get; } = [];
+    public IDictionary<string, string>? EventPropertyFilter { get; } = new Dictionary<string, string>();
 }

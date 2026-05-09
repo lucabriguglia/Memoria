@@ -6,5 +6,9 @@ public class TestAggregateIdWithMultiplePropertyFilter(string testAggregateId, s
     : IAggregateId<TestAggregateWithMultiplePropertyFilter>
 {
     public string Id => $"test-aggregate-with-multiple-property-filter:{testAggregateId}:{name}:{description}";
-    public string[]? EventPropertyFilter { get; } = [$"Name={name}", $"Description={description}"];
+    public IDictionary<string, string>? EventPropertyFilter { get; } = new  Dictionary<string, string>
+    {
+        { "Name", name },
+        { "Description", description }
+    };
 }

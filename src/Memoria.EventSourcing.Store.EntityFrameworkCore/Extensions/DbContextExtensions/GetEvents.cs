@@ -21,7 +21,7 @@ public static partial class IDomainDbContextExtensions
     /// </code>
     /// </example>
     public static async Task<List<IEvent>> GetEvents(this IDomainDbContext domainDbContext, IStreamId streamId,
-        Type[]? eventTypeFilter = null, string[]? eventPropertyFilter = null,
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         var eventEntities =

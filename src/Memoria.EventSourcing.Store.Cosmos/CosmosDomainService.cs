@@ -150,7 +150,7 @@ public class CosmosDomainService : IDomainService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A result containing the list of domain events or failure information.</returns>
     public async Task<Result<List<IEvent>>> GetEvents(IStreamId streamId, Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
             await _cosmosDataStore.GetEventDocuments(streamId, eventTypeFilter, cancellationToken);
@@ -212,7 +212,7 @@ public class CosmosDomainService : IDomainService
         int fromSequence,
         int toSequence,
         Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult = await _cosmosDataStore.GetEventDocumentsBetweenSequences(streamId, fromSequence,
@@ -236,7 +236,7 @@ public class CosmosDomainService : IDomainService
     /// <returns>A result containing the list of domain events or failure information.</returns>
     public async Task<Result<List<IEvent>>> GetEventsFromSequence(IStreamId streamId, int fromSequence,
         Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
             await _cosmosDataStore.GetEventDocumentsFromSequence(streamId, fromSequence, eventTypeFilter,
@@ -260,7 +260,7 @@ public class CosmosDomainService : IDomainService
     /// <returns>A result containing the list of domain events or failure information.</returns>
     public async Task<Result<List<IEvent>>> GetEventsUpToSequence(IStreamId streamId, int upToSequence,
         Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
             await _cosmosDataStore.GetEventDocumentsUpToSequence(streamId, upToSequence, eventTypeFilter,
@@ -284,7 +284,7 @@ public class CosmosDomainService : IDomainService
     /// <returns>A result containing the list of domain events or failure information.</returns>
     public async Task<Result<List<IEvent>>> GetEventsUpToDate(IStreamId streamId, DateTimeOffset upToDate,
         Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
@@ -308,7 +308,7 @@ public class CosmosDomainService : IDomainService
     /// <returns>A result containing the list of domain events or failure information.</returns>
     public async Task<Result<List<IEvent>>> GetEventsFromDate(IStreamId streamId, DateTimeOffset fromDate,
         Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
@@ -334,7 +334,7 @@ public class CosmosDomainService : IDomainService
     public async Task<Result<List<IEvent>>> GetEventsBetweenDates(IStreamId streamId, DateTimeOffset fromDate,
         DateTimeOffset toDate,
         Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
             await _cosmosDataStore.GetEventDocumentsBetweenDates(streamId, fromDate, toDate, eventTypeFilter,
@@ -462,7 +462,7 @@ public class CosmosDomainService : IDomainService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A result containing the latest event sequence number or failure information.</returns>
     public async Task<Result<int>> GetLatestEventSequence(IStreamId streamId, Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         QueryDefinition queryDefinition;

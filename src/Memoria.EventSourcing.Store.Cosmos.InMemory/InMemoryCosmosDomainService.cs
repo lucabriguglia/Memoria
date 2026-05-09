@@ -116,7 +116,7 @@ public class InMemoryCosmosDomainService(
     }
 
     public async Task<Result<List<IEvent>>> GetEvents(IStreamId streamId, Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId, eventTypeFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
@@ -156,7 +156,7 @@ public class InMemoryCosmosDomainService(
 
     public async Task<Result<List<IEvent>>> GetEventsBetweenSequences(IStreamId streamId, int fromSequence,
         int toSequence, Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult = await _dataStore.GetEventDocumentsBetweenSequences(streamId, fromSequence,
             toSequence, eventTypeFilter, cancellationToken);
@@ -170,7 +170,7 @@ public class InMemoryCosmosDomainService(
 
     public async Task<Result<List<IEvent>>> GetEventsFromSequence(IStreamId streamId, int fromSequence,
         Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
             await _dataStore.GetEventDocumentsFromSequence(streamId, fromSequence, eventTypeFilter, cancellationToken);
@@ -184,7 +184,7 @@ public class InMemoryCosmosDomainService(
 
     public async Task<Result<List<IEvent>>> GetEventsUpToSequence(IStreamId streamId, int upToSequence,
         Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
             await _dataStore.GetEventDocumentsUpToSequence(streamId, upToSequence, eventTypeFilter, cancellationToken);
@@ -198,7 +198,7 @@ public class InMemoryCosmosDomainService(
 
     public async Task<Result<List<IEvent>>> GetEventsUpToDate(IStreamId streamId, DateTimeOffset upToDate,
         Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
             await _dataStore.GetEventDocumentsUpToDate(streamId, upToDate, eventTypeFilter, cancellationToken);
@@ -212,7 +212,7 @@ public class InMemoryCosmosDomainService(
 
     public async Task<Result<List<IEvent>>> GetEventsFromDate(IStreamId streamId, DateTimeOffset fromDate,
         Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
             await _dataStore.GetEventDocumentsFromDate(streamId, fromDate, eventTypeFilter, cancellationToken);
@@ -226,7 +226,7 @@ public class InMemoryCosmosDomainService(
 
     public async Task<Result<List<IEvent>>> GetEventsBetweenDates(IStreamId streamId, DateTimeOffset fromDate,
         DateTimeOffset toDate, Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
             await _dataStore.GetEventDocumentsBetweenDates(streamId, fromDate, toDate, eventTypeFilter,
@@ -319,7 +319,7 @@ public class InMemoryCosmosDomainService(
     }
 
     public Task<Result<int>> GetLatestEventSequence(IStreamId streamId, Type[]? eventTypeFilter = null,
-        string[]? eventPropertyFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         var latestSequence = storage.StreamSequences.GetOrAdd(streamId.Id, 0);

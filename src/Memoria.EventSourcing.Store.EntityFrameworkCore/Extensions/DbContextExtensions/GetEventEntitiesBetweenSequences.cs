@@ -26,7 +26,7 @@ public static partial class IDomainDbContextExtensions
     /// var filteredEntities = await context.GetEventEntitiesBetweenSequences(streamId, fromSequence, toSequence, new[] { typeof(SomeEvent) });
     /// </code>
     /// </example>
-    public static async Task<List<EventEntity>> GetEventEntitiesBetweenSequences(this IDomainDbContext domainDbContext, IStreamId streamId, int fromSequence, int toSequence, Type[]? eventTypeFilter = null, string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+    public static async Task<List<EventEntity>> GetEventEntitiesBetweenSequences(this IDomainDbContext domainDbContext, IStreamId streamId, int fromSequence, int toSequence, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var query = domainDbContext.Events.AsNoTracking().Where(eventEntity =>
             eventEntity.StreamId == streamId.Id && eventEntity.Sequence >= fromSequence && eventEntity.Sequence <= toSequence);
@@ -40,14 +40,11 @@ public static partial class IDomainDbContextExtensions
             query = query.Where(eventEntity => eventTypes.Contains(eventEntity.EventType));
         }
 
-        if (eventPropertyFilter is { Length: > 0 })
+        if (eventPropertyFilter is { Count: > 0 })
         {
             foreach (var filter in eventPropertyFilter)
             {
-                var eventProperty = filter.Split("=");
-                var propertyName = eventProperty[0];
-                var propertyValue = eventProperty[1];
-                var propertyFilter = $"\"{propertyName}\":\"{propertyValue}\"";
+                var propertyFilter = $"\"{filter.Key}\":\"{filter.Value}\"";
 
                 query = query.Where(eventEntity => eventEntity.Data.Contains(propertyFilter));
             }

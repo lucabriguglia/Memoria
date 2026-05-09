@@ -15,7 +15,7 @@ public class DefaultDomainService : IDomainService
     }
 
     public Task<Result<List<IEvent>>> GetEvents(IStreamId streamId, Type[]? eventTypeFilter = null,
-        string[]? propertyEventFilter = null, CancellationToken cancellationToken = default)
+        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException(NotImplementedMessage);
     }

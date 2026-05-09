@@ -116,7 +116,7 @@ public class InMemoryCosmosDomainService(
     }
 
     public async Task<Result<List<IEvent>>> GetEvents(IStreamId streamId, Type[]? eventTypeFilter = null,
-        string[]? propertyEventFilter = null, CancellationToken cancellationToken = default)
+        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId, eventTypeFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)

@@ -12,7 +12,7 @@ public static partial class IDomainDbContextExtensions
     /// <param name="domainDbContext">The domain database context.</param>
     /// <param name="streamId">The unique identifier for the event stream.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results.</param>
-    /// <param name="propertyEventFilter">An optional array of event properties to filter the results.</param>
+    /// <param name="eventPropertyFilter">An optional array of event properties to filter the results.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A list of event entities from the stream.</returns>
     /// <example>
@@ -22,14 +22,37 @@ public static partial class IDomainDbContextExtensions
     /// </code>
     /// </example>
     public static async Task<List<EventEntity>> GetEventEntities(this IDomainDbContext domainDbContext,
-        IStreamId streamId, Type[]? eventTypeFilter = null, string[]? propertyEventFilter = null,
+        IStreamId streamId, Type[]? eventTypeFilter = null, string[]? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
-        var filterEvents = eventTypeFilter is not null && eventTypeFilter.Length > 0;
-        if (!filterEvents)
+        var filterEventByProperty = eventPropertyFilter is not null && eventPropertyFilter.Length > 0;
+        var filterEventsByType = eventTypeFilter is not null && eventTypeFilter.Length > 0;
+        if (!filterEventsByType)
         {
+            if (filterEventByProperty)
+            {
+                // TODO
+            }
+
             return await domainDbContext.Events.AsNoTracking()
                 .Where(eventEntity => eventEntity.StreamId == streamId.Id)
+                .OrderBy(eventEntity => eventEntity.Sequence)
+                .ToListAsync(cancellationToken);
+        }
+
+        if (filterEventByProperty)
+        {
+            var eventTypes2 = eventTypeFilter!
+                .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
+                .Select(b => b.Key).ToList();
+
+            var eventProperty = eventPropertyFilter![0].Split("=");
+            var propertyName = eventProperty[0];
+            var propertyValue = eventProperty[1];
+
+            return await domainDbContext.Events.AsNoTracking()
+                .Where(eventEntity =>
+                    eventEntity.StreamId == streamId.Id && eventTypes2.Contains(eventEntity.EventType))
                 .OrderBy(eventEntity => eventEntity.Sequence)
                 .ToListAsync(cancellationToken);
         }

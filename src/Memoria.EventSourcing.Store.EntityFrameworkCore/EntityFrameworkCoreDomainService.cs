@@ -31,13 +31,13 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
     /// </summary>
     /// <param name="streamId">The stream identifier.</param>
     /// <param name="eventTypeFilter">Optional array of event types to filter by.</param>
-    /// <param name="propertyEventFilter">Optional array of event properties to filter by.</param>
+    /// <param name="eventPropertyFilter">Optional array of event properties to filter by.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A result containing the list of domain events.</returns>
     public async Task<Result<List<IEvent>>> GetEvents(IStreamId streamId, Type[]? eventTypeFilter = null,
-        string[]? propertyEventFilter = null, CancellationToken cancellationToken = default)
+        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        return await domainDbContext.GetEvents(streamId, eventTypeFilter, propertyEventFilter, cancellationToken);
+        return await domainDbContext.GetEvents(streamId, eventTypeFilter, eventPropertyFilter, cancellationToken);
     }
 
     /// <summary>

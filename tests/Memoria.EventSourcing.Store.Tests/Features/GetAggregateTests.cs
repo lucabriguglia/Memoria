@@ -206,7 +206,7 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
     }
 
     [Fact]
-    public async Task GivenAggregateIdFilteredByProperty_ThenOnlyFilteredEventsAreApplied()
+    public async Task GivenAggregateFilteredByTypeAndProperty_ThenOnlyFilteredEventsAreApplied()
     {
         var id = Guid.NewGuid().ToString();
         var streamId = new TestStreamId(id);
@@ -239,4 +239,6 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
             getAggregateResult.Value.Description.Should().Be("Updated Description");
         }
     }
+
+    // TODO: Filter only by property
 }

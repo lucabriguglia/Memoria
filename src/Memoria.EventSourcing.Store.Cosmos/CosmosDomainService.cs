@@ -149,7 +149,7 @@ public class CosmosDomainService : IDomainService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A result containing the list of domain events or failure information.</returns>
     public async Task<Result<List<IEvent>>> GetEvents(IStreamId streamId, Type[]? eventTypeFilter = null,
-        string[]? propertyEventFilter = null, CancellationToken cancellationToken = default)
+        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
             await _cosmosDataStore.GetEventDocuments(streamId, eventTypeFilter, cancellationToken);

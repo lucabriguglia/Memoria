@@ -43,7 +43,6 @@ public static partial class IDomainDbContextExtensions
             foreach (var filter in eventPropertyFilter)
             {
                 var propertyFilter = $"\"{filter.Key}\":\"{filter.Value}\"";
-
                 query = query.Where(eventEntity => eventEntity.Data.Contains(propertyFilter));
             }
         }

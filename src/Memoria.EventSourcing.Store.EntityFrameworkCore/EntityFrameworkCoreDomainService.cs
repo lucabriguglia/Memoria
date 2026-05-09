@@ -118,7 +118,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
         Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
-        return await domainDbContext.GetEventsUpToDate(streamId, upToDate, eventTypeFilter, cancellationToken);
+        return await domainDbContext.GetEventsUpToDate(streamId, upToDate, eventTypeFilter, eventPropertyFilter, cancellationToken);
     }
 
     /// <summary>
@@ -134,7 +134,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
         Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
-        return await domainDbContext.GetEventsFromDate(streamId, fromDate, eventTypeFilter, cancellationToken);
+        return await domainDbContext.GetEventsFromDate(streamId, fromDate, eventTypeFilter, eventPropertyFilter, cancellationToken);
     }
 
     /// <summary>
@@ -153,7 +153,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
         CancellationToken cancellationToken = default)
     {
         return await domainDbContext.GetEventsBetweenDates(streamId, fromDate, toDate, eventTypeFilter,
-            cancellationToken);
+            eventPropertyFilter, cancellationToken);
     }
 
     /// <summary>

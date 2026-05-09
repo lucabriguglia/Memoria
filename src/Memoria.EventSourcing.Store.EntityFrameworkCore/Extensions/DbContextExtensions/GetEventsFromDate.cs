@@ -23,9 +23,9 @@ public static partial class IDomainDbContextExtensions
     /// var filteredEvents = await context.GetEventsFromDate(streamId, fromDate, new[] { typeof(SomeEvent) });
     /// </code>
     /// </example>
-    public static async Task<List<IEvent>> GetEventsFromDate(this IDomainDbContext domainDbContext, IStreamId streamId, DateTimeOffset fromDate, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+    public static async Task<List<IEvent>> GetEventsFromDate(this IDomainDbContext domainDbContext, IStreamId streamId, DateTimeOffset fromDate, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var eventEntities = await domainDbContext.GetEventEntitiesFromDate(streamId, fromDate, eventTypeFilter, cancellationToken);
+        var eventEntities = await domainDbContext.GetEventEntitiesFromDate(streamId, fromDate, eventTypeFilter, eventPropertyFilter, cancellationToken);
         return eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
     }
 }

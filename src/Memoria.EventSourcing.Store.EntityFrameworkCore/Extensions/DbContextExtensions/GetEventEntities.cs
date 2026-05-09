@@ -25,55 +25,28 @@ public static partial class IDomainDbContextExtensions
         IStreamId streamId, Type[]? eventTypeFilter = null, string[]? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
-        var filterEventByProperty = eventPropertyFilter is not null && eventPropertyFilter.Length > 0;
-        var filterEventsByType = eventTypeFilter is not null && eventTypeFilter.Length > 0;
-        if (!filterEventsByType)
+        var query = domainDbContext.Events.AsNoTracking().Where(eventEntity => eventEntity.StreamId == streamId.Id);
+
+        if (eventTypeFilter is { Length: > 0 })
         {
-            if (filterEventByProperty)
-            {
-                var eventProperty = eventPropertyFilter![0].Split("=");
-                var propertyName = eventProperty[0];
-                var propertyValue = eventProperty[1];
-                var propertyFilter = $"\"{propertyName}\":\"{propertyValue}\"";
-
-                return await domainDbContext.Events.AsNoTracking()
-                    .Where(eventEntity =>
-                        eventEntity.StreamId == streamId.Id && eventEntity.Data.Contains(propertyFilter))
-                    .OrderBy(eventEntity => eventEntity.Sequence)
-                    .ToListAsync(cancellationToken);
-            }
-
-            return await domainDbContext.Events.AsNoTracking()
-                .Where(eventEntity => eventEntity.StreamId == streamId.Id)
-                .OrderBy(eventEntity => eventEntity.Sequence)
-                .ToListAsync(cancellationToken);
-        }
-
-        if (filterEventByProperty)
-        {
-            var eventTypes2 = eventTypeFilter!
+            var eventTypes = eventTypeFilter
                 .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
                 .Select(b => b.Key).ToList();
 
-            var eventProperty = eventPropertyFilter![0].Split("=");
+            query = query.Where(eventEntity => eventTypes.Contains(eventEntity.EventType));
+        }
+
+        if (eventPropertyFilter is { Length: > 0 })
+        {
+            var eventProperty = eventPropertyFilter[0].Split("=");
             var propertyName = eventProperty[0];
             var propertyValue = eventProperty[1];
             var propertyFilter = $"\"{propertyName}\":\"{propertyValue}\"";
 
-            return await domainDbContext.Events.AsNoTracking()
-                .Where(eventEntity => eventEntity.StreamId == streamId.Id &&
-                                      eventTypes2.Contains(eventEntity.EventType) &&
-                                      eventEntity.Data.Contains(propertyFilter))
-                .OrderBy(eventEntity => eventEntity.Sequence)
-                .ToListAsync(cancellationToken);
+            query = query.Where(eventEntity => eventEntity.Data.Contains(propertyFilter));
         }
 
-        var eventTypes = eventTypeFilter!
-            .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
-            .Select(b => b.Key).ToList();
-
-        return await domainDbContext.Events.AsNoTracking()
-            .Where(eventEntity => eventEntity.StreamId == streamId.Id && eventTypes.Contains(eventEntity.EventType))
+        return await query
             .OrderBy(eventEntity => eventEntity.Sequence)
             .ToListAsync(cancellationToken);
     }

@@ -51,6 +51,7 @@ public interface ICosmosDataStore : IDisposable
     /// </summary>
     /// <param name="streamId">The identifier of the stream from which the events are to be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results. If null, all event types will be retrieved.</param>
+    /// <param name="eventPropertyFilter">An optional array of event properties to filter the results. If null, all events will be retrieved.</param>
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>A result containing the list of event documents or a failure.</returns>
     /// <example>
@@ -62,6 +63,7 @@ public interface ICosmosDataStore : IDisposable
     /// var documents = result.Value;
     /// </example>
     Task<Result<List<EventDocument>>> GetEventDocuments(IStreamId streamId, Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

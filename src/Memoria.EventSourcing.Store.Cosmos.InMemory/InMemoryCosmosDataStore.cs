@@ -40,6 +40,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
     public Task<Result<List<EventDocument>>> GetEventDocuments(
         IStreamId streamId,
         Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         var documents = storage.EventDocuments.Values

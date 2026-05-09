@@ -114,9 +114,11 @@ public class CosmosDataStore : ICosmosDataStore
     /// </summary>
     /// <param name="streamId">The stream identifier to retrieve events from.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter by. If null or empty, all events are returned.</param>
+    /// <param name="eventPropertyFilter">An optional array of event properties to filter the results. If null, all event will be retrieved.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents, or a failure if an error occurred.</returns>
-    public async Task<Result<List<EventDocument>>> GetEventDocuments(IStreamId streamId, Type[]? eventTypeFilter, CancellationToken cancellationToken = default)
+    public async Task<Result<List<EventDocument>>> GetEventDocuments(IStreamId streamId, Type[]? eventTypeFilter,
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         QueryDefinition queryDefinition;
 

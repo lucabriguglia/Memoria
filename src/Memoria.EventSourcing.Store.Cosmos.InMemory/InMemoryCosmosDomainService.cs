@@ -46,7 +46,7 @@ public class InMemoryCosmosDomainService(
         var aggregate = new T();
 
         var eventDocumentsResult =
-            await _dataStore.GetEventDocuments(streamId, aggregate.EventTypeFilter, cancellationToken);
+            await _dataStore.GetEventDocuments(streamId, aggregate.EventTypeFilter, aggregateId.EventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
@@ -118,7 +118,7 @@ public class InMemoryCosmosDomainService(
     public async Task<Result<List<IEvent>>> GetEvents(IStreamId streamId, Type[]? eventTypeFilter = null,
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId, eventTypeFilter, cancellationToken);
+        var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
@@ -245,7 +245,7 @@ public class InMemoryCosmosDomainService(
         var aggregate = new T();
 
         var eventDocumentsResult =
-            await _dataStore.GetEventDocuments(streamId, aggregate.EventTypeFilter, cancellationToken);
+            await _dataStore.GetEventDocuments(streamId, aggregate.EventTypeFilter, aggregateId.EventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;

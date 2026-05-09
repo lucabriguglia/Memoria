@@ -131,6 +131,7 @@ public interface ICosmosDataStore : IDisposable
     /// <param name="streamId">The identifier of the stream from which the event documents are retrieved.</param>
     /// <param name="upToSequence">The maximum sequence number up to which the event documents should be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the retrieved documents.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents retrieved or a failure.</returns>
     /// <example>
@@ -142,7 +143,8 @@ public interface ICosmosDataStore : IDisposable
     /// var documents = result.Value;
     /// </example>
     Task<Result<List<EventDocument>>> GetEventDocumentsUpToSequence(IStreamId streamId, int upToSequence,
-        Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default);
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves event documents from the Cosmos data store up to a specified date.

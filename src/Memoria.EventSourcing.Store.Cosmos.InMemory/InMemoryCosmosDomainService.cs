@@ -187,7 +187,7 @@ public class InMemoryCosmosDomainService(
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
-            await _dataStore.GetEventDocumentsUpToSequence(streamId, upToSequence, eventTypeFilter, cancellationToken);
+            await _dataStore.GetEventDocumentsUpToSequence(streamId, upToSequence, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
@@ -271,7 +271,7 @@ public class InMemoryCosmosDomainService(
         var aggregate = new T();
 
         var eventDocumentsResult = await _dataStore.GetEventDocumentsUpToSequence(streamId, upToSequence,
-            aggregate.EventTypeFilter, cancellationToken);
+            aggregate.EventTypeFilter, cancellationToken: cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;

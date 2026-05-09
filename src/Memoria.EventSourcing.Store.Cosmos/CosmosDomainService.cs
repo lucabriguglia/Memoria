@@ -263,7 +263,7 @@ public class CosmosDomainService : IDomainService
     {
         var eventDocumentsResult =
             await _cosmosDataStore.GetEventDocumentsUpToSequence(streamId, upToSequence, eventTypeFilter,
-                cancellationToken);
+                eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
@@ -394,7 +394,7 @@ public class CosmosDomainService : IDomainService
         var aggregate = new T();
 
         var eventDocumentsResult = await _cosmosDataStore.GetEventDocumentsUpToSequence(streamId, upToSequence,
-            aggregate.EventTypeFilter, cancellationToken);
+            aggregate.EventTypeFilter, cancellationToken: cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;

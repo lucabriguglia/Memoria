@@ -103,6 +103,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         IStreamId streamId,
         int upToSequence,
         Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         var documents = storage.EventDocuments.Values

@@ -102,7 +102,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
         Type[]? eventTypeFilter = null, string[]? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
-        return await domainDbContext.GetEventsUpToSequence(streamId, upToSequence, eventTypeFilter, cancellationToken);
+        return await domainDbContext.GetEventsUpToSequence(streamId, upToSequence, eventTypeFilter, eventPropertyFilter, cancellationToken);
     }
 
     /// <summary>

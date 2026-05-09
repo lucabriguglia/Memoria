@@ -45,7 +45,8 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
     {
         var documents = storage.EventDocuments.Values
             .Where(doc => doc.StreamId == streamId.Id)
-            .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
+            .Where(doc => MatchesEventTypeFilter(doc, eventTypeFilter))
+            .Where(doc => MatchesEventPropertyFilter(doc, eventPropertyFilter))
             .OrderBy(doc => doc.Sequence)
             .ToList();
 
@@ -76,7 +77,8 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         var documents = storage.EventDocuments.Values
             .Where(doc => doc.StreamId == streamId.Id)
             .Where(doc => doc.Sequence >= fromSequence && doc.Sequence <= toSequence)
-            .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
+            .Where(doc => MatchesEventTypeFilter(doc, eventTypeFilter))
+            .Where(doc => MatchesEventPropertyFilter(doc, eventPropertyFilter))
             .OrderBy(doc => doc.Sequence)
             .ToList();
 
@@ -93,7 +95,8 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         var documents = storage.EventDocuments.Values
             .Where(doc => doc.StreamId == streamId.Id)
             .Where(doc => doc.Sequence >= fromSequence)
-            .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
+            .Where(doc => MatchesEventTypeFilter(doc, eventTypeFilter))
+            .Where(doc => MatchesEventPropertyFilter(doc, eventPropertyFilter))
             .OrderBy(doc => doc.Sequence)
             .ToList();
 
@@ -110,7 +113,8 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         var documents = storage.EventDocuments.Values
             .Where(doc => doc.StreamId == streamId.Id)
             .Where(doc => doc.Sequence <= upToSequence)
-            .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
+            .Where(doc => MatchesEventTypeFilter(doc, eventTypeFilter))
+            .Where(doc => MatchesEventPropertyFilter(doc, eventPropertyFilter))
             .OrderBy(doc => doc.Sequence)
             .ToList();
 
@@ -127,7 +131,8 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         var documents = storage.EventDocuments.Values
             .Where(doc => doc.StreamId == streamId.Id)
             .Where(doc => doc.CreatedDate <= upToDate)
-            .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
+            .Where(doc => MatchesEventTypeFilter(doc, eventTypeFilter))
+            .Where(doc => MatchesEventPropertyFilter(doc, eventPropertyFilter))
             .OrderBy(doc => doc.Sequence)
             .ToList();
 
@@ -144,7 +149,8 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         var documents = storage.EventDocuments.Values
             .Where(doc => doc.StreamId == streamId.Id)
             .Where(doc => doc.CreatedDate >= fromDate)
-            .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
+            .Where(doc => MatchesEventTypeFilter(doc, eventTypeFilter))
+            .Where(doc => MatchesEventPropertyFilter(doc, eventPropertyFilter))
             .OrderBy(doc => doc.Sequence)
             .ToList();
 
@@ -162,11 +168,41 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         var documents = storage.EventDocuments.Values
             .Where(doc => doc.StreamId == streamId.Id)
             .Where(doc => doc.CreatedDate >= fromDate && doc.CreatedDate <= toDate)
-            .Where(doc => eventTypeFilter == null || eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == doc.EventType))
+            .Where(doc => MatchesEventTypeFilter(doc, eventTypeFilter))
+            .Where(doc => MatchesEventPropertyFilter(doc, eventPropertyFilter))
             .OrderBy(doc => doc.Sequence)
             .ToList();
 
         return Task.FromResult(Result<List<EventDocument>>.Ok(documents));
+    }
+
+    private static bool MatchesEventTypeFilter(EventDocument document, Type[]? eventTypeFilter)
+    {
+        if (eventTypeFilter is not { Length: > 0 })
+        {
+            return true;
+        }
+
+        return eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == document.EventType);
+    }
+
+    private static bool MatchesEventPropertyFilter(EventDocument document, IDictionary<string, string>? eventPropertyFilter)
+    {
+        if (eventPropertyFilter is not { Count: > 0 })
+        {
+            return true;
+        }
+
+        foreach (var filter in eventPropertyFilter)
+        {
+            var propertyFilter = $"\"{filter.Key}\":\"{filter.Value}\"";
+            if (!document.Data.Contains(propertyFilter))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public async Task<Result<T?>> UpdateAggregateDocument<T>(

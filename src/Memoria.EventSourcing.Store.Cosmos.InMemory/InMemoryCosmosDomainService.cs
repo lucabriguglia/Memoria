@@ -318,12 +318,25 @@ public class InMemoryCosmosDomainService(
         return aggregate;
     }
 
-    public Task<Result<int>> GetLatestEventSequence(IStreamId streamId, Type[]? eventTypeFilter = null,
+    public async Task<Result<int>> GetLatestEventSequence(IStreamId streamId, Type[]? eventTypeFilter = null,
         IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
-        var latestSequence = storage.StreamSequences.GetOrAdd(streamId.Id, 0);
-        return Task.FromResult(Result<int>.Ok(latestSequence));
+        var hasFilters = eventTypeFilter is { Length: > 0 } || eventPropertyFilter is { Count: > 0 };
+        if (!hasFilters)
+        {
+            var latestSequence = storage.StreamSequences.GetOrAdd(streamId.Id, 0);
+            return Result<int>.Ok(latestSequence);
+        }
+
+        var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId, eventTypeFilter, eventPropertyFilter, cancellationToken);
+        if (eventDocumentsResult.IsNotSuccess)
+        {
+            return eventDocumentsResult.Failure!;
+        }
+
+        var eventDocuments = eventDocumentsResult.Value!;
+        return eventDocuments.Count == 0 ? 0 : eventDocuments.Max(doc => doc.Sequence);
     }
 
     public async Task<Result> SaveAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId, T aggregate,

@@ -12,6 +12,7 @@ public static partial class IDomainDbContextExtensions
     /// <param name="domainDbContext">The domain database context.</param>
     /// <param name="streamId">The unique identifier for the event stream.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results.</param>
+    /// <param name="propertyEventFilter">An optional array of event properties to filter the results.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A list of event entities from the stream.</returns>
     /// <example>
@@ -20,7 +21,9 @@ public static partial class IDomainDbContextExtensions
     /// var filteredEntities = await context.GetEventEntities(streamId, new[] { typeof(SomeEvent) });
     /// </code>
     /// </example>
-    public static async Task<List<EventEntity>> GetEventEntities(this IDomainDbContext domainDbContext, IStreamId streamId, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+    public static async Task<List<EventEntity>> GetEventEntities(this IDomainDbContext domainDbContext,
+        IStreamId streamId, Type[]? eventTypeFilter = null, string[]? propertyEventFilter = null,
+        CancellationToken cancellationToken = default)
     {
         var filterEvents = eventTypeFilter is not null && eventTypeFilter.Length > 0;
         if (!filterEvents)

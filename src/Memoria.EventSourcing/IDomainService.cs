@@ -23,6 +23,7 @@ public interface IDomainService : IDisposable
     /// </summary>
     /// <param name="streamId">The unique identifier of the stream for which domain events are to be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the domain events. If null, no filtering is applied.</param>
+    /// <param name="propertyEventFilter">An optional array of event properties to filter the domain events. If null, no filtering is applied.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a result wrapping a list of domain events.</returns>
     /// <example>
@@ -34,7 +35,7 @@ public interface IDomainService : IDisposable
     /// var events = result.Value;
     /// </example>
     Task<Result<List<IEvent>>> GetEvents(IStreamId streamId, Type[]? eventTypeFilter = null,
-        CancellationToken cancellationToken = default);
+        string[]? propertyEventFilter = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the list of domain events that were applied to the specified aggregate.

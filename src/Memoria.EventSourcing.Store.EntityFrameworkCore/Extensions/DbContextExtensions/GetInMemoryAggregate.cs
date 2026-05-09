@@ -28,11 +28,14 @@ public static partial class IDomainDbContextExtensions
     /// var aggregate = result.Value;
     /// </code>
     /// </example>
-    public static async Task<Result<T>> GetInMemoryAggregate<T>(this IDomainDbContext domainDbContext, IStreamId streamId, IAggregateId<T> aggregateId, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
+    public static async Task<Result<T>> GetInMemoryAggregate<T>(this IDomainDbContext domainDbContext,
+        IStreamId streamId, IAggregateId<T> aggregateId, CancellationToken cancellationToken = default)
+        where T : IAggregateRoot, new()
     {
         var aggregate = new T();
 
-        var eventEntities = await domainDbContext.GetEventEntities(streamId, aggregate.EventTypeFilter, cancellationToken);
+        var eventEntities = await domainDbContext.GetEventEntities(streamId, aggregate.EventTypeFilter,
+            aggregateId.EventPropertyFilter, cancellationToken);
         if (eventEntities.Count == 0)
         {
             return aggregate;
@@ -66,11 +69,14 @@ public static partial class IDomainDbContextExtensions
     /// var aggregate = result.Value;
     /// </code>
     /// </example>
-    public static async Task<Result<T>> GetInMemoryAggregate<T>(this IDomainDbContext domainDbContext, IStreamId streamId, IAggregateId<T> aggregateId, int upToSequence, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
+    public static async Task<Result<T>> GetInMemoryAggregate<T>(this IDomainDbContext domainDbContext,
+        IStreamId streamId, IAggregateId<T> aggregateId, int upToSequence,
+        CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
     {
         var aggregate = new T();
 
-        var eventEntities = await domainDbContext.GetEventEntitiesUpToSequence(streamId, upToSequence, aggregate.EventTypeFilter, cancellationToken);
+        var eventEntities = await domainDbContext.GetEventEntitiesUpToSequence(streamId, upToSequence,
+            aggregate.EventTypeFilter, cancellationToken);
         if (eventEntities.Count == 0)
         {
             return aggregate;
@@ -104,11 +110,15 @@ public static partial class IDomainDbContextExtensions
     /// var aggregate = result.Value;
     /// </code>
     /// </example>
-    public static async Task<Result<T>> GetInMemoryAggregate<T>(this IDomainDbContext domainDbContext, IStreamId streamId, IAggregateId<T> aggregateId, DateTimeOffset upToDate, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
+    public static async Task<Result<T>> GetInMemoryAggregate<T>(this IDomainDbContext domainDbContext,
+        IStreamId streamId, IAggregateId<T> aggregateId, DateTimeOffset upToDate,
+        CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
     {
         var aggregate = new T();
 
-        var eventEntities = await domainDbContext.GetEventEntitiesUpToDate(streamId, upToDate, aggregate.EventTypeFilter, cancellationToken);
+        var eventEntities =
+            await domainDbContext.GetEventEntitiesUpToDate(streamId, upToDate, aggregate.EventTypeFilter,
+                cancellationToken);
         if (eventEntities.Count == 0)
         {
             return aggregate;

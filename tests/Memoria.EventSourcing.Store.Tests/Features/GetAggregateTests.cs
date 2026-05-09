@@ -269,7 +269,38 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
         }
     }
 
-    // TODO: Multiple properties
+    [Fact]
+    public async Task GivenAggregateFilteredByMultipleProperties_ThenOnlyEventsMatchingAllPropertiesAreApplied()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var aggregateId = new TestAggregateIdWithMultiplePropertyFilter(id, "Match", "Match");
+
+        var events = new IEvent[]
+        {
+            new TestAggregateCreatedEvent(id, "Match", "Match"),
+            new TestAggregateUpdatedEvent(id, "Match", "NoMatch"),
+            new TestAggregateUpdatedEvent(id, "NoMatch", "Match"),
+            new TestAggregateUpdatedEvent(id, "NoMatch", "NoMatch")
+        };
+        await DomainService.SaveEvents(streamId, events, expectedEventSequence: 0);
+
+        var getAggregateResult =
+            await DomainService.GetAggregate(streamId, aggregateId, readMode: ReadMode.SnapshotOrCreate);
+
+        using (new AssertionScope())
+        {
+            getAggregateResult.IsSuccess.Should().BeTrue();
+
+            getAggregateResult.Value.Should().NotBeNull();
+
+            getAggregateResult.Value.StreamId.Should().Be(streamId.Id);
+            getAggregateResult.Value.AggregateId.Should().Be(aggregateId.ToStoreId());
+            getAggregateResult.Value.Version.Should().Be(1);
+            getAggregateResult.Value.Name.Should().Be("Match");
+            getAggregateResult.Value.Description.Should().Be("Match");
+        }
+    }
 
     // TODO: In memory aggregate
 

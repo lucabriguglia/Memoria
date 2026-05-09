@@ -40,12 +40,15 @@ public static partial class IDomainDbContextExtensions
 
         if (eventPropertyFilter is { Length: > 0 })
         {
-            var eventProperty = eventPropertyFilter[0].Split("=");
-            var propertyName = eventProperty[0];
-            var propertyValue = eventProperty[1];
-            var propertyFilter = $"\"{propertyName}\":\"{propertyValue}\"";
+            foreach (var filter in eventPropertyFilter)
+            {
+                var eventProperty = filter.Split("=");
+                var propertyName = eventProperty[0];
+                var propertyValue = eventProperty[1];
+                var propertyFilter = $"\"{propertyName}\":\"{propertyValue}\"";
 
-            query = query.Where(eventEntity => eventEntity.Data.Contains(propertyFilter));
+                query = query.Where(eventEntity => eventEntity.Data.Contains(propertyFilter));
+            }
         }
 
         return await query

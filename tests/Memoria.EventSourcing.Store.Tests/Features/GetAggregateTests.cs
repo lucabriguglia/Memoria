@@ -210,7 +210,7 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
     {
         var id = Guid.NewGuid().ToString();
         var streamId = new TestStreamId(id);
-        var aggregateId = new TestAggregateIdWithFilter(id, "blah");
+        var aggregateId = new TestAggregateIdWithPropertyFilter(id, "blah");
 
         var events = new IEvent[]
         {
@@ -237,7 +237,47 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
         }
     }
 
-    // TODO: Filter only by property
+    [Fact]
+    public async Task GivenAggregateFilteredByPropertyOnly_ThenOnlyFilteredEventsAreApplied()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var aggregateId = new TestAggregateIdWithPropertyFilterForNoTypeFilter(id, "blah");
+
+        var events = new IEvent[]
+        {
+            new TestAggregateCreatedEvent(id, "Test Name", "Test Description"),
+            new TestAggregateUpdatedEvent(id, "Updated Name", "Updated Description"),
+            new SomethingHappenedEvent2(Something2: "blah"),
+            new SomethingHappenedEvent2(Something2: "Something")
+        };
+        await DomainService.SaveEvents(streamId, events, expectedEventSequence: 0);
+
+        var getAggregateResult =
+            await DomainService.GetAggregate(streamId, aggregateId, readMode: ReadMode.SnapshotOrCreate);
+
+        using (new AssertionScope())
+        {
+            getAggregateResult.IsSuccess.Should().BeTrue();
+
+            getAggregateResult.Value.Should().NotBeNull();
+
+            getAggregateResult.Value.StreamId.Should().Be(streamId.Id);
+            getAggregateResult.Value.AggregateId.Should().Be(aggregateId.ToStoreId());
+            getAggregateResult.Value.Version.Should().Be(1);
+            getAggregateResult.Value.Name.Should().Be("blah");
+        }
+    }
 
     // TODO: Multiple properties
+
+    // TODO: In memory aggregate
+
+    // TODO: from sequence
+    // TODO: to sequence
+    // TODO: between sequences
+
+    // TODO: from date
+    // TODO: to date
+    // TODO: between dates
 }

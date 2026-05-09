@@ -40,7 +40,8 @@ public abstract class TestBase : IDisposable
         TypeBindings.AggregateTypeBindings = new Dictionary<string, Type>
         {
             { "TestAggregate1:1", typeof(TestAggregate1) },
-            { "TestAggregate2:1", typeof(TestAggregate2) }
+            { "TestAggregate2:1", typeof(TestAggregate2) },
+            { "TestAggregateWithNoTypeFilter:1", typeof(TestAggregateWithNoTypeFilter) }
         };
     }
 

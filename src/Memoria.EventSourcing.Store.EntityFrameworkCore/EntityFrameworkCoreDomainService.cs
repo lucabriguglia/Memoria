@@ -69,7 +69,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
         CancellationToken cancellationToken = default)
     {
         return await domainDbContext.GetEventsBetweenSequences(streamId, fromSequence, toSequence, eventTypeFilter,
-            cancellationToken);
+            eventPropertyFilter, cancellationToken);
     }
 
     /// <summary>

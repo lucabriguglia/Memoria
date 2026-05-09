@@ -304,10 +304,6 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
 
     // TODO: In memory aggregate
 
-    // TODO: from sequence
-    // TODO: to sequence
-    // TODO: between sequences
-
     // TODO: from date
     // TODO: to date
     // TODO: between dates

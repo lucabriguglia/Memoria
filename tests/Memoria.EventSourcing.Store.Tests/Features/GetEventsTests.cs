@@ -290,6 +290,40 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
 
     [Fact]
     public async Task
+        GiveMultipleEventsStored_WhenOnlyEventsFromASpecificDateFilteredByEventPropertyAreRequested_ThenEventsFromASpecificDateFilteredByEventPropertyAreReturned()
+    {
+        var streamId = new TestStreamId(Guid.NewGuid().ToString());
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 10, 12, 10, 25));
+        await DomainService.SaveEvents(streamId, [
+            new SomethingHappenedEvent("Match"),
+            new SomethingHappenedEvent("Other1")
+        ], expectedEventSequence: 0);
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 15, 17, 45, 48));
+        await DomainService.SaveEvents(streamId, [
+            new SomethingHappenedEvent("Match"),
+            new SomethingHappenedEvent("Other2")
+        ], expectedEventSequence: 2);
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 15, 17, 45, 49));
+        await DomainService.SaveEvents(streamId, [
+            new SomethingHappenedEvent("Match2"),
+            new SomethingHappenedEvent("Other3")
+        ], expectedEventSequence: 4);
+
+        var result = await DomainService.GetEventsFromDate(streamId,
+            fromDate: new DateTimeOffset(new DateTime(2024, 6, 15, 17, 45, 48)),
+            eventPropertyFilter: new Dictionary<string, string> { { "Something", "Match" } });
+        using (new AssertionScope())
+        {
+            result.Value!.Count.Should().Be(1);
+            result.Value[0].Should().BeOfType<SomethingHappenedEvent>().Which.Something.Should().Be("Match");
+        }
+    }
+
+    [Fact]
+    public async Task
         GiveMultipleEventsStored_WhenOnlyEventsBetweenSpecificDatesAreRequested_ThenEventsBetweenSpecificDatesAreReturned()
     {
         var streamId = new TestStreamId(Guid.NewGuid().ToString());

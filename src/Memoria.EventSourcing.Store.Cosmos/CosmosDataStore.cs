@@ -236,35 +236,54 @@ public class CosmosDataStore : ICosmosDataStore
     /// <param name="fromSequence">The minimum sequence number to start retrieving events from (inclusive).</param>
     /// <param name="toSequence">The maximum sequence number to retrieve events up to (inclusive).</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter by. If null or empty, all events are returned.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents between the specified sequences, or a failure if an error occurred.</returns>
-    public async Task<Result<List<EventDocument>>> GetEventDocumentsBetweenSequences(IStreamId streamId, int fromSequence, int toSequence, Type[]? eventTypeFilter, CancellationToken cancellationToken = default)
+    public async Task<Result<List<EventDocument>>> GetEventDocumentsBetweenSequences(IStreamId streamId, int fromSequence, int toSequence, Type[]? eventTypeFilter,
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        QueryDefinition queryDefinition;
+        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.sequence >= @fromSequence AND c.sequence <= @toSequence AND c.documentType = @documentType");
 
-        var filterEventTypes = eventTypeFilter is not null && eventTypeFilter.Length > 0;
-        if (!filterEventTypes)
+        var filterEventTypes = eventTypeFilter is { Length: > 0 };
+        if (filterEventTypes)
         {
-            const string sql = "SELECT * FROM c WHERE c.streamId = @streamId AND c.sequence >= @fromSequence AND c.sequence <= @toSequence AND c.documentType = @documentType ORDER BY c.sequence";
-            queryDefinition = new QueryDefinition(sql)
-                .WithParameter("@streamId", streamId.Id)
-                .WithParameter("@fromSequence", fromSequence)
-                .WithParameter("@toSequence", toSequence)
-                .WithParameter("@documentType", DocumentType.Event);
+            sql.Append(" AND ARRAY_CONTAINS(@eventTypes, c.eventType)");
         }
-        else
+
+        var filterEventProperties = eventPropertyFilter is { Count: > 0 };
+        if (filterEventProperties)
+        {
+            for (var i = 0; i < eventPropertyFilter!.Count; i++)
+            {
+                sql.Append($" AND CONTAINS(c.data, @propertyFilter{i})");
+            }
+        }
+
+        sql.Append(" ORDER BY c.sequence");
+
+        var queryDefinition = new QueryDefinition(sql.ToString())
+            .WithParameter("@streamId", streamId.Id)
+            .WithParameter("@fromSequence", fromSequence)
+            .WithParameter("@toSequence", toSequence)
+            .WithParameter("@documentType", DocumentType.Event);
+
+        if (filterEventTypes)
         {
             var eventTypes = eventTypeFilter!
                 .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
                 .Select(b => b.Key).ToList();
 
-            const string sql = "SELECT * FROM c WHERE c.streamId = @streamId AND c.sequence >= @fromSequence AND c.sequence <= @toSequence AND c.documentType = @documentType AND ARRAY_CONTAINS(@eventTypes, c.eventType) ORDER BY c.sequence";
-            queryDefinition = new QueryDefinition(sql)
-                .WithParameter("@streamId", streamId.Id)
-                .WithParameter("@fromSequence", fromSequence)
-                .WithParameter("@toSequence", toSequence)
-                .WithParameter("@documentType", DocumentType.Event)
-                .WithParameter("@eventTypes", eventTypes);
+            queryDefinition = queryDefinition.WithParameter("@eventTypes", eventTypes);
+        }
+
+        if (filterEventProperties)
+        {
+            var index = 0;
+            foreach (var filter in eventPropertyFilter!)
+            {
+                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", $"\"{filter.Key}\":\"{filter.Value}\"");
+                index++;
+            }
         }
 
         var eventDocuments = new List<EventDocument>();

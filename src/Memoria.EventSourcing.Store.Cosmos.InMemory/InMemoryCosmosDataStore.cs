@@ -70,6 +70,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         int fromSequence,
         int toSequence,
         Type[]? eventTypeFilter,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         var documents = storage.EventDocuments.Values

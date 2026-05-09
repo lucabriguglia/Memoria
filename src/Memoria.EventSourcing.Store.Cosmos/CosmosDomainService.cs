@@ -215,7 +215,7 @@ public class CosmosDomainService : IDomainService
         CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult = await _cosmosDataStore.GetEventDocumentsBetweenSequences(streamId, fromSequence,
-            toSequence, eventTypeFilter, cancellationToken);
+            toSequence, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;

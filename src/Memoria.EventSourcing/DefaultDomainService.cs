@@ -28,6 +28,7 @@ public class DefaultDomainService : IDomainService
 
     public Task<Result<List<IEvent>>> GetEventsBetweenSequences(IStreamId streamId, int fromSequence, int toSequence,
         Type[]? eventTypeFilter = null,
+        string[]? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException(NotImplementedMessage);
@@ -35,6 +36,7 @@ public class DefaultDomainService : IDomainService
 
     public Task<Result<List<IEvent>>> GetEventsFromSequence(IStreamId streamId, int fromSequence,
         Type[]? eventTypeFilter = null,
+        string[]? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException(NotImplementedMessage);
@@ -42,6 +44,7 @@ public class DefaultDomainService : IDomainService
 
     public Task<Result<List<IEvent>>> GetEventsUpToSequence(IStreamId streamId, int upToSequence,
         Type[]? eventTypeFilter = null,
+        string[]? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException(NotImplementedMessage);
@@ -49,6 +52,7 @@ public class DefaultDomainService : IDomainService
 
     public Task<Result<List<IEvent>>> GetEventsUpToDate(IStreamId streamId, DateTimeOffset upToDate,
         Type[]? eventTypeFilter = null,
+        string[]? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException(NotImplementedMessage);
@@ -56,6 +60,7 @@ public class DefaultDomainService : IDomainService
 
     public Task<Result<List<IEvent>>> GetEventsFromDate(IStreamId streamId, DateTimeOffset fromDate,
         Type[]? eventTypeFilter = null,
+        string[]? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException(NotImplementedMessage);
@@ -63,7 +68,8 @@ public class DefaultDomainService : IDomainService
 
     public Task<Result<List<IEvent>>> GetEventsBetweenDates(IStreamId streamId, DateTimeOffset fromDate,
         DateTimeOffset toDate,
-        Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+        Type[]? eventTypeFilter = null,
+        string[]? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException(NotImplementedMessage);
     }
@@ -88,6 +94,7 @@ public class DefaultDomainService : IDomainService
     }
 
     public Task<Result<int>> GetLatestEventSequence(IStreamId streamId, Type[]? eventTypeFilter = null,
+        string[]? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException(NotImplementedMessage);

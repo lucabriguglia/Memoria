@@ -12,6 +12,7 @@ public static partial class IDomainDbContextExtensions
     /// <param name="streamId">The unique identifier for the event stream.</param>
     /// <param name="fromSequence">The minimum sequence number (inclusive).</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results.</param>
+    /// <param name="eventPropertyFilter">An optional array of event properties to filter the results.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A list of domain events from the starting sequence onwards.</returns>
     /// <example>
@@ -20,9 +21,12 @@ public static partial class IDomainDbContextExtensions
     /// var filteredEvents = await context.GetEventsFromSequence(streamId, fromSequence, new[] { typeof(SomeEvent) });
     /// </code>
     /// </example>
-    public static async Task<List<IEvent>> GetEventsFromSequence(this IDomainDbContext domainDbContext, IStreamId streamId, int fromSequence, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+    public static async Task<List<IEvent>> GetEventsFromSequence(this IDomainDbContext domainDbContext,
+        IStreamId streamId, int fromSequence, Type[]? eventTypeFilter = null, string[]? eventPropertyFilter = null,
+        CancellationToken cancellationToken = default)
     {
-        var eventEntities = await domainDbContext.GetEventEntitiesFromSequence(streamId, fromSequence, eventTypeFilter, cancellationToken);
+        var eventEntities = await domainDbContext.GetEventEntitiesFromSequence(streamId, fromSequence, eventTypeFilter,
+            eventPropertyFilter, cancellationToken);
         return eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
     }
 }

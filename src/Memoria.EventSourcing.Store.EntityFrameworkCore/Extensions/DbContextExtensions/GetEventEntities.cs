@@ -31,7 +31,17 @@ public static partial class IDomainDbContextExtensions
         {
             if (filterEventByProperty)
             {
-                // TODO
+                var eventProperty = eventPropertyFilter![0].Split("=");
+                var propertyName = eventProperty[0];
+                var propertyValue = eventProperty[1];
+                var propertyFilter = $"\"{propertyName}\":\"{propertyValue}\"";
+
+                return await domainDbContext.Events.AsNoTracking()
+                    .Where(eventEntity =>
+                        eventEntity.StreamId == streamId.Id
+                        && eventEntity.Data.Contains(propertyFilter))
+                    .OrderBy(eventEntity => eventEntity.Sequence)
+                    .ToListAsync(cancellationToken);
             }
 
             return await domainDbContext.Events.AsNoTracking()
@@ -49,10 +59,12 @@ public static partial class IDomainDbContextExtensions
             var eventProperty = eventPropertyFilter![0].Split("=");
             var propertyName = eventProperty[0];
             var propertyValue = eventProperty[1];
+            var propertyFilter = $"\"{propertyName}\":\"{propertyValue}\"";
 
             return await domainDbContext.Events.AsNoTracking()
                 .Where(eventEntity =>
-                    eventEntity.StreamId == streamId.Id && eventTypes2.Contains(eventEntity.EventType))
+                    eventEntity.StreamId == streamId.Id && eventTypes2.Contains(eventEntity.EventType)
+                                                        && eventEntity.Data.Contains(propertyFilter))
                 .OrderBy(eventEntity => eventEntity.Sequence)
                 .ToListAsync(cancellationToken);
         }

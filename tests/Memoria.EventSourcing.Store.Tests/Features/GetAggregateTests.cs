@@ -241,4 +241,6 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
     }
 
     // TODO: Filter only by property
+
+    // TODO: Multiple properties
 }

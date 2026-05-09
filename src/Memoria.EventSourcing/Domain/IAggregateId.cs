@@ -29,6 +29,11 @@ public interface IAggregateId
     /// Gets the unique string identifier.
     /// </summary>
     string Id { get; }
+
+    /// <summary>
+    /// Specifies a filter applied to properties of events.
+    /// </summary>
+    string[]? EventPropertyFilter { get; }
 }
 
 /// <summary>

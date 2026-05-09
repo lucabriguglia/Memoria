@@ -150,7 +150,8 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
         };
         await DomainService.SaveEvents(streamId, events, expectedEventSequence: 0);
 
-        var getAggregateResult = await DomainService.GetAggregate(streamId, aggregateId, readMode: ReadMode.SnapshotOrCreate);
+        var getAggregateResult =
+            await DomainService.GetAggregate(streamId, aggregateId, readMode: ReadMode.SnapshotOrCreate);
 
         using (new AssertionScope())
         {
@@ -169,7 +170,8 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
     }
 
     [Fact]
-    public async Task GivenEventsHandledByTheAggregateAreStoredSeparately_WhenApplyNewEventsIsRequested_ThenTheUpdatedAggregateIsReturned()
+    public async Task
+        GivenEventsHandledByTheAggregateAreStoredSeparately_WhenApplyNewEventsIsRequested_ThenTheUpdatedAggregateIsReturned()
     {
         var id = Guid.NewGuid().ToString();
         var streamId = new TestStreamId(id);
@@ -184,7 +186,8 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
         };
         await DomainService.SaveEvents(streamId, events, expectedEventSequence: 1);
 
-        var updatedAggregateResult = await DomainService.GetAggregate(streamId, aggregateId, ReadMode.SnapshotWithNewEvents);
+        var updatedAggregateResult =
+            await DomainService.GetAggregate(streamId, aggregateId, ReadMode.SnapshotWithNewEvents);
 
         using (new AssertionScope())
         {
@@ -199,6 +202,41 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
             updatedAggregateResult.Value.Id.Should().Be(aggregate.Id);
             updatedAggregateResult.Value.Name.Should().Be("Updated Name");
             updatedAggregateResult.Value.Description.Should().Be("Updated Description");
+        }
+    }
+
+    [Fact]
+    public async Task GivenAggregateIdFilteredByProperty_ThenOnlyFilteredEventsAreApplied()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var aggregateId = new TestAggregateIdWithFilter(id, "blah");
+
+        var events = new IEvent[]
+        {
+            new TestAggregateCreatedEvent(id, "Test Name", "Test Description"),
+            new TestAggregateUpdatedEvent(id, "Updated Name", "Updated Description"),
+            new SomethingHappenedEvent2(Something2: "blah"),
+            new SomethingHappenedEvent2(Something2: "Something")
+        };
+        await DomainService.SaveEvents(streamId, events, expectedEventSequence: 0);
+
+        var getAggregateResult =
+            await DomainService.GetAggregate(streamId, aggregateId, readMode: ReadMode.SnapshotOrCreate);
+
+        using (new AssertionScope())
+        {
+            getAggregateResult.IsSuccess.Should().BeTrue();
+
+            getAggregateResult.Value.Should().NotBeNull();
+
+            getAggregateResult.Value.StreamId.Should().Be(streamId.Id);
+            getAggregateResult.Value.AggregateId.Should().Be(aggregateId.ToStoreId());
+            getAggregateResult.Value.Version.Should().Be(3);
+
+            getAggregateResult.Value.Id.Should().Be(id);
+            getAggregateResult.Value.Name.Should().Be("blah");
+            getAggregateResult.Value.Description.Should().Be("Updated Description");
         }
     }
 }

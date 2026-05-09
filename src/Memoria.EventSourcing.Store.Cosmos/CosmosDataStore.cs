@@ -480,34 +480,53 @@ public class CosmosDataStore : ICosmosDataStore
     /// <param name="streamId">The stream identifier to retrieve events from.</param>
     /// <param name="upToDate">The maximum date to retrieve events up to (inclusive).</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter by. If null or empty, all events are returned.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents up to the specified date, or a failure if an error occurred.</returns>
     public async Task<Result<List<EventDocument>>> GetEventDocumentsUpToDate(IStreamId streamId, DateTimeOffset upToDate, Type[]? eventTypeFilter = null,
-        CancellationToken cancellationToken = default)
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        QueryDefinition queryDefinition;
+        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate <= @upToDate AND c.documentType = @documentType");
 
-        var filterEventTypes = eventTypeFilter is not null && eventTypeFilter.Length > 0;
-        if (!filterEventTypes)
+        var filterEventTypes = eventTypeFilter is { Length: > 0 };
+        if (filterEventTypes)
         {
-            const string sql = "SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate <= @upToDate AND c.documentType = @documentType ORDER BY c.sequence";
-            queryDefinition = new QueryDefinition(sql)
-                .WithParameter("@streamId", streamId.Id)
-                .WithParameter("@upToDate", upToDate)
-                .WithParameter("@documentType", DocumentType.Event);
+            sql.Append(" AND ARRAY_CONTAINS(@eventTypes, c.eventType)");
         }
-        else
+
+        var filterEventProperties = eventPropertyFilter is { Count: > 0 };
+        if (filterEventProperties)
+        {
+            for (var i = 0; i < eventPropertyFilter!.Count; i++)
+            {
+                sql.Append($" AND CONTAINS(c.data, @propertyFilter{i})");
+            }
+        }
+
+        sql.Append(" ORDER BY c.sequence");
+
+        var queryDefinition = new QueryDefinition(sql.ToString())
+            .WithParameter("@streamId", streamId.Id)
+            .WithParameter("@upToDate", upToDate)
+            .WithParameter("@documentType", DocumentType.Event);
+
+        if (filterEventTypes)
         {
             var eventTypes = eventTypeFilter!
                 .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
                 .Select(b => b.Key).ToList();
 
-            const string sql = "SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate <= @upToDate AND c.documentType = @documentType AND ARRAY_CONTAINS(@eventTypes, c.eventType) ORDER BY c.sequence";
-            queryDefinition = new QueryDefinition(sql)
-                .WithParameter("@streamId", streamId.Id)
-                .WithParameter("@upToDate", upToDate)
-                .WithParameter("@documentType", DocumentType.Event)
-                .WithParameter("@eventTypes", eventTypes);
+            queryDefinition = queryDefinition.WithParameter("@eventTypes", eventTypes);
+        }
+
+        if (filterEventProperties)
+        {
+            var index = 0;
+            foreach (var filter in eventPropertyFilter!)
+            {
+                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", $"\"{filter.Key}\":\"{filter.Value}\"");
+                index++;
+            }
         }
 
         var eventDocuments = new List<EventDocument>();
@@ -542,34 +561,53 @@ public class CosmosDataStore : ICosmosDataStore
     /// <param name="streamId">The stream identifier to retrieve events from.</param>
     /// <param name="fromDate">The minimum date to start retrieving events from (inclusive).</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter by. If null or empty, all events are returned.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents from the specified date, or a failure if an error occurred.</returns>
     public async Task<Result<List<EventDocument>>> GetEventDocumentsFromDate(IStreamId streamId, DateTimeOffset fromDate, Type[]? eventTypeFilter = null,
-        CancellationToken cancellationToken = default)
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        QueryDefinition queryDefinition;
+        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate >= @fromDate AND c.documentType = @documentType");
 
-        var filterEventTypes = eventTypeFilter is not null && eventTypeFilter.Length > 0;
-        if (!filterEventTypes)
+        var filterEventTypes = eventTypeFilter is { Length: > 0 };
+        if (filterEventTypes)
         {
-            const string sql = "SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate >= @fromDate AND c.documentType = @documentType ORDER BY c.sequence";
-            queryDefinition = new QueryDefinition(sql)
-                .WithParameter("@streamId", streamId.Id)
-                .WithParameter("@fromDate", fromDate)
-                .WithParameter("@documentType", DocumentType.Event);
+            sql.Append(" AND ARRAY_CONTAINS(@eventTypes, c.eventType)");
         }
-        else
+
+        var filterEventProperties = eventPropertyFilter is { Count: > 0 };
+        if (filterEventProperties)
+        {
+            for (var i = 0; i < eventPropertyFilter!.Count; i++)
+            {
+                sql.Append($" AND CONTAINS(c.data, @propertyFilter{i})");
+            }
+        }
+
+        sql.Append(" ORDER BY c.sequence");
+
+        var queryDefinition = new QueryDefinition(sql.ToString())
+            .WithParameter("@streamId", streamId.Id)
+            .WithParameter("@fromDate", fromDate)
+            .WithParameter("@documentType", DocumentType.Event);
+
+        if (filterEventTypes)
         {
             var eventTypes = eventTypeFilter!
                 .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
                 .Select(b => b.Key).ToList();
 
-            const string sql = "SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate >= @fromDate AND c.documentType = @documentType AND ARRAY_CONTAINS(@eventTypes, c.eventType) ORDER BY c.sequence";
-            queryDefinition = new QueryDefinition(sql)
-                .WithParameter("@streamId", streamId.Id)
-                .WithParameter("@fromDate", fromDate)
-                .WithParameter("@documentType", DocumentType.Event)
-                .WithParameter("@eventTypes", eventTypes);
+            queryDefinition = queryDefinition.WithParameter("@eventTypes", eventTypes);
+        }
+
+        if (filterEventProperties)
+        {
+            var index = 0;
+            foreach (var filter in eventPropertyFilter!)
+            {
+                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", $"\"{filter.Key}\":\"{filter.Value}\"");
+                index++;
+            }
         }
 
         var eventDocuments = new List<EventDocument>();
@@ -605,36 +643,54 @@ public class CosmosDataStore : ICosmosDataStore
     /// <param name="fromDate">The minimum date to start retrieving events from (inclusive).</param>
     /// <param name="toDate">The maximum date to retrieve events up to (inclusive).</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter by. If null or empty, all events are returned.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents between the specified dates, or a failure if an error occurred.</returns>
     public async Task<Result<List<EventDocument>>> GetEventDocumentsBetweenDates(IStreamId streamId, DateTimeOffset fromDate, DateTimeOffset toDate,
-        Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        QueryDefinition queryDefinition;
+        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate >= @fromDate AND c.createdDate <= @toDate AND c.documentType = @documentType");
 
-        var filterEventTypes = eventTypeFilter is not null && eventTypeFilter.Length > 0;
-        if (!filterEventTypes)
+        var filterEventTypes = eventTypeFilter is { Length: > 0 };
+        if (filterEventTypes)
         {
-            const string sql = "SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate >= @fromDate AND c.createdDate <= @toDate AND c.documentType = @documentType ORDER BY c.sequence";
-            queryDefinition = new QueryDefinition(sql)
-                .WithParameter("@streamId", streamId.Id)
-                .WithParameter("@fromDate", fromDate)
-                .WithParameter("@toDate", toDate)
-                .WithParameter("@documentType", DocumentType.Event);
+            sql.Append(" AND ARRAY_CONTAINS(@eventTypes, c.eventType)");
         }
-        else
+
+        var filterEventProperties = eventPropertyFilter is { Count: > 0 };
+        if (filterEventProperties)
+        {
+            for (var i = 0; i < eventPropertyFilter!.Count; i++)
+            {
+                sql.Append($" AND CONTAINS(c.data, @propertyFilter{i})");
+            }
+        }
+
+        sql.Append(" ORDER BY c.sequence");
+
+        var queryDefinition = new QueryDefinition(sql.ToString())
+            .WithParameter("@streamId", streamId.Id)
+            .WithParameter("@fromDate", fromDate)
+            .WithParameter("@toDate", toDate)
+            .WithParameter("@documentType", DocumentType.Event);
+
+        if (filterEventTypes)
         {
             var eventTypes = eventTypeFilter!
                 .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
                 .Select(b => b.Key).ToList();
 
-            const string sql = "SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate >= @fromDate AND c.createdDate <= @toDate AND c.documentType = @documentType AND ARRAY_CONTAINS(@eventTypes, c.eventType) ORDER BY c.sequence";
-            queryDefinition = new QueryDefinition(sql)
-                .WithParameter("@streamId", streamId.Id)
-                .WithParameter("@fromDate", fromDate)
-                .WithParameter("@toDate", toDate)
-                .WithParameter("@documentType", DocumentType.Event)
-                .WithParameter("@eventTypes", eventTypes);
+            queryDefinition = queryDefinition.WithParameter("@eventTypes", eventTypes);
+        }
+
+        if (filterEventProperties)
+        {
+            var index = 0;
+            foreach (var filter in eventPropertyFilter!)
+            {
+                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", $"\"{filter.Key}\":\"{filter.Value}\"");
+                index++;
+            }
         }
 
         var eventDocuments = new List<EventDocument>();

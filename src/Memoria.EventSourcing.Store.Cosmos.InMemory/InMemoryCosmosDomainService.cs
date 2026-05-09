@@ -201,7 +201,7 @@ public class InMemoryCosmosDomainService(
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
-            await _dataStore.GetEventDocumentsUpToDate(streamId, upToDate, eventTypeFilter, cancellationToken);
+            await _dataStore.GetEventDocumentsUpToDate(streamId, upToDate, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
@@ -215,7 +215,7 @@ public class InMemoryCosmosDomainService(
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
-            await _dataStore.GetEventDocumentsFromDate(streamId, fromDate, eventTypeFilter, cancellationToken);
+            await _dataStore.GetEventDocumentsFromDate(streamId, fromDate, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
@@ -230,7 +230,7 @@ public class InMemoryCosmosDomainService(
     {
         var eventDocumentsResult =
             await _dataStore.GetEventDocumentsBetweenDates(streamId, fromDate, toDate, eventTypeFilter,
-                cancellationToken);
+                eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
@@ -298,7 +298,7 @@ public class InMemoryCosmosDomainService(
 
         var eventDocumentsResult =
             await _dataStore.GetEventDocumentsUpToDate(streamId, upToDate, aggregate.EventTypeFilter,
-                cancellationToken);
+                cancellationToken: cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;

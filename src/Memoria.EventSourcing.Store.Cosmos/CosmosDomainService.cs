@@ -287,7 +287,7 @@ public class CosmosDomainService : IDomainService
         CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
-            await _cosmosDataStore.GetEventDocumentsUpToDate(streamId, upToDate, eventTypeFilter, cancellationToken);
+            await _cosmosDataStore.GetEventDocumentsUpToDate(streamId, upToDate, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
@@ -311,7 +311,7 @@ public class CosmosDomainService : IDomainService
         CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
-            await _cosmosDataStore.GetEventDocumentsFromDate(streamId, fromDate, eventTypeFilter, cancellationToken);
+            await _cosmosDataStore.GetEventDocumentsFromDate(streamId, fromDate, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
@@ -337,7 +337,7 @@ public class CosmosDomainService : IDomainService
     {
         var eventDocumentsResult =
             await _cosmosDataStore.GetEventDocumentsBetweenDates(streamId, fromDate, toDate, eventTypeFilter,
-                cancellationToken);
+                eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
@@ -431,7 +431,7 @@ public class CosmosDomainService : IDomainService
 
         var eventDocumentsResult =
             await _cosmosDataStore.GetEventDocumentsUpToDate(streamId, upToDate, aggregate.EventTypeFilter,
-                cancellationToken);
+                cancellationToken: cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;

@@ -121,6 +121,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         IStreamId streamId,
         DateTimeOffset upToDate,
         Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         var documents = storage.EventDocuments.Values
@@ -137,6 +138,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         IStreamId streamId,
         DateTimeOffset fromDate,
         Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         var documents = storage.EventDocuments.Values
@@ -154,6 +156,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         DateTimeOffset fromDate,
         DateTimeOffset toDate,
         Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         var documents = storage.EventDocuments.Values

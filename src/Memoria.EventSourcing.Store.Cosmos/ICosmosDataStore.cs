@@ -154,6 +154,7 @@ public interface ICosmosDataStore : IDisposable
     /// <param name="streamId">The identifier of the stream from which the event documents are retrieved.</param>
     /// <param name="upToDate">The date up to which the event documents should be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents or a failure.</returns>
     /// <example>
@@ -168,6 +169,7 @@ public interface ICosmosDataStore : IDisposable
         IStreamId streamId,
         DateTimeOffset upToDate,
         Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -176,6 +178,7 @@ public interface ICosmosDataStore : IDisposable
     /// <param name="streamId">The identifier of the stream from which the event documents are retrieved.</param>
     /// <param name="fromDate">The date from which the event documents should be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents or a failure.</returns>
     /// <example>
@@ -190,6 +193,7 @@ public interface ICosmosDataStore : IDisposable
         IStreamId streamId,
         DateTimeOffset fromDate,
         Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -199,6 +203,7 @@ public interface ICosmosDataStore : IDisposable
     /// <param name="fromDate">The starting date.</param>
     /// <param name="toDate">The ending date.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents or a failure.</returns>
     /// <example>
@@ -214,6 +219,7 @@ public interface ICosmosDataStore : IDisposable
         DateTimeOffset fromDate,
         DateTimeOffset toDate,
         Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

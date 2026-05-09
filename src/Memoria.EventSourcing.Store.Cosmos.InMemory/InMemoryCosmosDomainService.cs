@@ -173,7 +173,7 @@ public class InMemoryCosmosDomainService(
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
         var eventDocumentsResult =
-            await _dataStore.GetEventDocumentsFromSequence(streamId, fromSequence, eventTypeFilter, cancellationToken);
+            await _dataStore.GetEventDocumentsFromSequence(streamId, fromSequence, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;

@@ -239,7 +239,7 @@ public class CosmosDomainService : IDomainService
     {
         var eventDocumentsResult =
             await _cosmosDataStore.GetEventDocumentsFromSequence(streamId, fromSequence, eventTypeFilter,
-                cancellationToken);
+                eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;

@@ -86,6 +86,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         IStreamId streamId,
         int fromSequence,
         Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
         var documents = storage.EventDocuments.Values
@@ -175,7 +176,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
 
         var currentAggregateVersion = aggregate.Version;
 
-        var newEventDocumentsResult = await GetEventDocumentsFromSequence(streamId, fromSequence: aggregate.LatestEventSequence + 1, aggregate.EventTypeFilter, cancellationToken);
+        var newEventDocumentsResult = await GetEventDocumentsFromSequence(streamId, fromSequence: aggregate.LatestEventSequence + 1, aggregate.EventTypeFilter, cancellationToken: cancellationToken);
         if (newEventDocumentsResult.IsNotSuccess)
         {
             return newEventDocumentsResult.Failure!;

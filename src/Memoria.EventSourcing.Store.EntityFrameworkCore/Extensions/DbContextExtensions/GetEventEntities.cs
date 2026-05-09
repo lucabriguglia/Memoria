@@ -38,8 +38,7 @@ public static partial class IDomainDbContextExtensions
 
                 return await domainDbContext.Events.AsNoTracking()
                     .Where(eventEntity =>
-                        eventEntity.StreamId == streamId.Id
-                        && eventEntity.Data.Contains(propertyFilter))
+                        eventEntity.StreamId == streamId.Id && eventEntity.Data.Contains(propertyFilter))
                     .OrderBy(eventEntity => eventEntity.Sequence)
                     .ToListAsync(cancellationToken);
             }
@@ -62,9 +61,9 @@ public static partial class IDomainDbContextExtensions
             var propertyFilter = $"\"{propertyName}\":\"{propertyValue}\"";
 
             return await domainDbContext.Events.AsNoTracking()
-                .Where(eventEntity =>
-                    eventEntity.StreamId == streamId.Id && eventTypes2.Contains(eventEntity.EventType)
-                                                        && eventEntity.Data.Contains(propertyFilter))
+                .Where(eventEntity => eventEntity.StreamId == streamId.Id &&
+                                      eventTypes2.Contains(eventEntity.EventType) &&
+                                      eventEntity.Data.Contains(propertyFilter))
                 .OrderBy(eventEntity => eventEntity.Sequence)
                 .ToListAsync(cancellationToken);
         }

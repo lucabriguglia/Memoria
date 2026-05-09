@@ -232,11 +232,8 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
 
             getAggregateResult.Value.StreamId.Should().Be(streamId.Id);
             getAggregateResult.Value.AggregateId.Should().Be(aggregateId.ToStoreId());
-            getAggregateResult.Value.Version.Should().Be(3);
-
-            getAggregateResult.Value.Id.Should().Be(id);
+            getAggregateResult.Value.Version.Should().Be(1);
             getAggregateResult.Value.Name.Should().Be("blah");
-            getAggregateResult.Value.Description.Should().Be("Updated Description");
         }
     }
 

@@ -213,7 +213,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
         IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
-        return await domainDbContext.GetLatestEventSequence(streamId, eventTypeFilter, cancellationToken);
+        return await domainDbContext.GetLatestEventSequence(streamId, eventTypeFilter, eventPropertyFilter, cancellationToken);
     }
 
     /// <summary>

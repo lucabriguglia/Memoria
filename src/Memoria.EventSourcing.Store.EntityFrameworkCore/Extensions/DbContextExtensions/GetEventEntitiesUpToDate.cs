@@ -27,28 +27,11 @@ public static partial class IDomainDbContextExtensions
     /// </example>
     public static async Task<List<EventEntity>> GetEventEntitiesUpToDate(this IDomainDbContext domainDbContext, IStreamId streamId, DateTimeOffset upToDate, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var query = domainDbContext.Events.AsNoTracking().Where(eventEntity =>
-            eventEntity.StreamId == streamId.Id && eventEntity.CreatedDate <= upToDate);
-
-        if (eventTypeFilter is { Length: > 0 })
-        {
-            var eventTypes = eventTypeFilter
-                .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
-                .Select(b => b.Key).ToList();
-
-            query = query.Where(eventEntity => eventTypes.Contains(eventEntity.EventType));
-        }
-
-        if (eventPropertyFilter is { Count: > 0 })
-        {
-            foreach (var filter in eventPropertyFilter)
-            {
-                var propertyFilter = $"\"{filter.Key}\":\"{filter.Value}\"";
-                query = query.Where(eventEntity => eventEntity.Data.Contains(propertyFilter));
-            }
-        }
-
-        return await query
+        return await domainDbContext.Events.AsNoTracking()
+            .Where(eventEntity =>
+                eventEntity.StreamId == streamId.Id &&
+                eventEntity.CreatedDate <= upToDate)
+            .ApplyFilters(eventTypeFilter, eventPropertyFilter)
             .OrderBy(eventEntity => eventEntity.Sequence)
             .ToListAsync(cancellationToken);
     }

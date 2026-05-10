@@ -25,8 +25,10 @@ If you're using this repository for your learning, samples, workshop, or your pr
 - Four different read modes that allow multiple write/read patterns based on specific needs.
 - In memory aggregate reconstruction up to a specific event sequence or date if provided _**(soon up to aggregate version)**_
 - Events applied to the aggregate filtered by event type
+- Events applied to the aggregate filtered by event property (key/value pairs declared on the aggregate id)
 - Retrieval of all events applied to an aggregate
 - Querying stream events from or up to a specific event sequence or date/date range
+- Querying stream events filtered by event type and/or event property
 - Optimistic concurrency control with an expected event sequence
 - Automatic event/notification publication after a command is successfully processed that returns a list of results from all notification handlers
 - Automatic event/message publication after a command is successfully processed using Service Bus or RabbitMQ
@@ -41,6 +43,7 @@ If you're using this repository for your learning, samples, workshop, or your pr
 ### ✅ Recently Completed
 - New package for in-memory Service Bus for easier testing in projects using Memoria
 - New package for in-memory RabbitMQ for easier testing in projects using Memoria
+- Event property filtering across aggregates and stream queries
 
 ### ⏭️ Next
 - Create an ecommerce demo application to showcase Memoria features
@@ -318,6 +321,34 @@ var result = await domainService.GetEventsBetweenDates(streamId, fromDate, toDat
 // Event type filter can be applied to all previous queries
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var result = await domainService.GetEvents(streamId, eventTypes);
+
+// Event property filter can also be applied to all previous queries.
+// Events are matched by the key/value pairs found on their serialized properties,
+// and can be combined with the event type filter.
+var eventProperties = new Dictionary<string, string>
+{
+    { "OrderId", orderId }
+};
+var result = await domainService.GetEvents(streamId, eventTypes, eventProperties);
+```
+
+### Filter Events Applied to an Aggregate by Property
+
+When multiple aggregates share the same stream, the events applied to a specific aggregate
+can be narrowed down by declaring an `EventPropertyFilter` on its `IAggregateId`. The filter is
+applied automatically when retrieving the aggregate or reconstructing it in memory, alongside
+the aggregate's `EventTypeFilter`.
+
+```C#
+public class OrderId(Guid orderId) : IAggregateId<Order>
+{
+    public string Id => $"order:{orderId}";
+
+    public IDictionary<string, string>? EventPropertyFilter { get; } = new Dictionary<string, string>
+    {
+        { "OrderId", orderId }
+    };
+}
 ```
 
 📘 _[Full documentation](https://lucabriguglia.github.io/Memoria/)_

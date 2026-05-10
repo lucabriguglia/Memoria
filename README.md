@@ -79,7 +79,6 @@ If you're using this repository for your learning, samples, workshop, or your pr
 
 Three kinds of requests can be sent through the dispatcher:
 
-~~~~
 ### Commands
 
 ```C#

@@ -127,7 +127,7 @@ var aggregateResult = await domainService.GetInMemoryAggregate(streamId, aggrega
 
 <a name="get-domain-events"></a>
 ### Get Events
-Retrieves all domain events from a specified stream, with optional filtering by event types.
+Retrieves all domain events from a specified stream, with optional filtering by event types and/or event properties.
 ```C#
 var streamId = new CustomerStreamId(customerId);
 var eventsResult = await domainService.GetEvents(streamId);
@@ -138,10 +138,17 @@ var streamId = new CustomerStreamId(customerId);
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var eventsResult = await domainService.GetEvents(streamId, eventTypes);
 ```
+Optionally, you can also filter the events by specific event properties (key/value pairs). All entries in the dictionary must match for an event to be included. Property and type filters can be combined.
+```C#
+var streamId = new CustomerStreamId(customerId);
+var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
+var eventProperties = new Dictionary<string, string> { ["OrderId"] = orderId.ToString() };
+var eventsResult = await domainService.GetEvents(streamId, eventTypes, eventProperties);
+```
 
 <a name="get-domain-events-from-sequence"></a>
 ### Get Events From Sequence
-Retrieves domain events from a specified stream starting from a specific sequence number onwards, with optional filtering by event types.
+Retrieves domain events from a specified stream starting from a specific sequence number onwards, with optional filtering by event types and/or event properties.
 ```C#
 var streamId = new CustomerStreamId(customerId);
 var fromSequence = 5;
@@ -154,10 +161,18 @@ var fromSequence = 5;
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var eventsResult = await domainService.GetEventsFromSequence(streamId, fromSequence, eventTypes);
 ```
+Optionally, you can also filter the events by specific event properties.
+```C#
+var streamId = new CustomerStreamId(customerId);
+var fromSequence = 5;
+var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
+var eventProperties = new Dictionary<string, string> { ["OrderId"] = orderId.ToString() };
+var eventsResult = await domainService.GetEventsFromSequence(streamId, fromSequence, eventTypes, eventProperties);
+```
 
 <a name="get-domain-events-up-to-sequence"></a>
 ### Get Events Up To Sequence
-Retrieves domain events from a specified stream up to and including a specific sequence number, with optional filtering by event types.
+Retrieves domain events from a specified stream up to and including a specific sequence number, with optional filtering by event types and/or event properties.
 ```C#
 var streamId = new CustomerStreamId(customerId);
 var upToSequence = 10;
@@ -170,10 +185,18 @@ var upToSequence = 10;
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var eventsResult = await domainService.GetEventsUpToSequence(streamId, upToSequence, eventTypes);
 ```
+Optionally, you can also filter the events by specific event properties.
+```C#
+var streamId = new CustomerStreamId(customerId);
+var upToSequence = 10;
+var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
+var eventProperties = new Dictionary<string, string> { ["OrderId"] = orderId.ToString() };
+var eventsResult = await domainService.GetEventsUpToSequence(streamId, upToSequence, eventTypes, eventProperties);
+```
 
 <a name="get-domain-events-between-sequences"></a>
 ### Get Events Between Sequences
-Retrieves domain events from a specified stream from and to specific sequence numbers, with optional filtering by event types.
+Retrieves domain events from a specified stream from and to specific sequence numbers, with optional filtering by event types and/or event properties.
 ```C#
 var streamId = new CustomerStreamId(customerId);
 var fromSequence = 5;
@@ -188,10 +211,19 @@ var toSequence = 10;
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var eventsResult = await domainService.GetEventsBetweenSequences(streamId, fromSequence, toSequence, eventTypes);
 ```
+Optionally, you can also filter the events by specific event properties.
+```C#
+var streamId = new CustomerStreamId(customerId);
+var fromSequence = 5;
+var toSequence = 10;
+var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
+var eventProperties = new Dictionary<string, string> { ["OrderId"] = orderId.ToString() };
+var eventsResult = await domainService.GetEventsBetweenSequences(streamId, fromSequence, toSequence, eventTypes, eventProperties);
+```
 
 <a name="get-domain-events-from-date"></a>
 ### Get Events From Date
-Retrieves domain events from a specified stream starting from a specific date onwards, with optional filtering by event types.
+Retrieves domain events from a specified stream starting from a specific date onwards, with optional filtering by event types and/or event properties.
 ```C#
 var streamId = new CustomerStreamId(customerId);
 var fromDate = new DateTime(2024, 6, 15, 17, 45, 48);
@@ -204,10 +236,18 @@ var fromDate = new DateTime(2024, 6, 15, 17, 45, 48);
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var eventsResult = await domainService.GetEventsFromDate(streamId, fromDate, eventTypes);
 ```
+Optionally, you can also filter the events by specific event properties.
+```C#
+var streamId = new CustomerStreamId(customerId);
+var fromDate = new DateTime(2024, 6, 15, 17, 45, 48);
+var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
+var eventProperties = new Dictionary<string, string> { ["OrderId"] = orderId.ToString() };
+var eventsResult = await domainService.GetEventsFromDate(streamId, fromDate, eventTypes, eventProperties);
+```
 
 <a name="get-domain-events-up-to-date"></a>
 ### Get Events Up To Date
-Retrieves domain events from a specified stream up to and including a specific date, with optional filtering by event types.
+Retrieves domain events from a specified stream up to and including a specific date, with optional filtering by event types and/or event properties.
 ```C#
 var streamId = new CustomerStreamId(customerId);
 var upToDate = new DateTime(2024, 6, 15, 17, 45, 48);
@@ -220,10 +260,18 @@ var upToDate = new DateTime(2024, 6, 15, 17, 45, 48);
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var eventsResult = await domainService.GetEventsUpToDate(streamId, upToDate, eventTypes);
 ```
+Optionally, you can also filter the events by specific event properties.
+```C#
+var streamId = new CustomerStreamId(customerId);
+var upToDate = new DateTime(2024, 6, 15, 17, 45, 48);
+var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
+var eventProperties = new Dictionary<string, string> { ["OrderId"] = orderId.ToString() };
+var eventsResult = await domainService.GetEventsUpToDate(streamId, upToDate, eventTypes, eventProperties);
+```
 
 <a name="get-domain-events-between-dates"></a>
 ### Get Events Between Dates
-Retrieves domain events from a specified stream from and to specific dates, with optional filtering by event types.
+Retrieves domain events from a specified stream from and to specific dates, with optional filtering by event types and/or event properties.
 ```C#
 var streamId = new CustomerStreamId(customerId);
 var fromDate = new DateTime(2024, 6, 15, 17, 45, 48);
@@ -238,6 +286,15 @@ var toDate = new DateTime(2024, 6, 25, 12, 46, 22);
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var eventsResult = await domainService.GetEventsBetweenDates(streamId, fromDate, toDate, eventTypes);
 ```
+Optionally, you can also filter the events by specific event properties.
+```C#
+var streamId = new CustomerStreamId(customerId);
+var fromDate = new DateTime(2024, 6, 15, 17, 45, 48);
+var toDate = new DateTime(2024, 6, 25, 12, 46, 22);
+var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
+var eventProperties = new Dictionary<string, string> { ["OrderId"] = orderId.ToString() };
+var eventsResult = await domainService.GetEventsBetweenDates(streamId, fromDate, toDate, eventTypes, eventProperties);
+```
 
 <a name="get-domain-events-applied-to-aggregate"></a>
 ### Get Events Applied To Aggregate
@@ -250,7 +307,7 @@ var eventsResult = await domainService.GetEventsAppliedToAggregate(streamId, agg
 
 <a name="get-latest-event-sequence"></a>
 ### Get Latest Event Sequence
-Retrieves the latest event sequence number for a specified stream, with optional filtering by event types. This method provides the current position in an event stream, essential for optimistic concurrency control and determining where to append new events in event sourcing operations.
+Retrieves the latest event sequence number for a specified stream, with optional filtering by event types and/or event properties. This method provides the current position in an event stream, essential for optimistic concurrency control and determining where to append new events in event sourcing operations.
 ```C#
 var streamId = new CustomerStreamId(customerId);
 var latestEventSequence = await domainService.GetLatestEventSequence(streamId);
@@ -260,4 +317,11 @@ Optionally, you can filter the events by specific event types.
 var streamId = new CustomerStreamId(customerId);
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var latestEventSequence = await domainService.GetLatestEventSequence(streamId, eventTypes);
+```
+Optionally, you can also filter the events by specific event properties.
+```C#
+var streamId = new CustomerStreamId(customerId);
+var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
+var eventProperties = new Dictionary<string, string> { ["OrderId"] = orderId.ToString() };
+var latestEventSequence = await domainService.GetLatestEventSequence(streamId, eventTypes, eventProperties);
 ```

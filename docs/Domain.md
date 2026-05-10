@@ -38,9 +38,29 @@ An Aggregate Id uniquely identifies aggregate instances within the domain and se
 public class OrderAggregateId(string orderId) : IAggregateId<OrderAggregate>
 {
     public string Id => $"order:{orderId}";
+
+    public IDictionary<string, string>? EventPropertyFilter { get; } = null;
 }
 
 var aggregateId = new OrderAggregateId(orderId);
+```
+
+### Event Property Filter
+
+In addition to the aggregate's `EventTypeFilter`, the aggregate id can declare an optional `EventPropertyFilter` made of key/value pairs. When the aggregate is retrieved or reconstructed in memory, only the events whose properties match every entry in the filter will be applied.
+
+This is particularly useful when multiple aggregate instances share the same stream and the same event types, and need to be told apart by the value of one or more event properties (for example, a specific order id, a tenant id, or a region).
+
+```C#
+public class OrderAggregateId(Guid orderId) : IAggregateId<OrderAggregate>
+{
+    public string Id => $"order:{orderId}";
+
+    public IDictionary<string, string>? EventPropertyFilter { get; } = new Dictionary<string, string>
+    {
+        ["OrderId"] = orderId.ToString()
+    };
+}
 ```
 
 <a name="aggregate"></a>

@@ -15,7 +15,9 @@ public class InMemoryCosmosDomainService(
 {
     private readonly InMemoryCosmosDataStore _dataStore = new(storage, timeProvider, httpContextAccessor);
 
-    public async Task<Result<T?>> GetAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId, ReadMode readMode = ReadMode.SnapshotOnly, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
+    public async Task<Result<T?>> GetAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId,
+        ReadMode readMode = ReadMode.SnapshotOnly, CancellationToken cancellationToken = default)
+        where T : IAggregateRoot, new()
     {
         var aggregateDocumentResult = await _dataStore.GetAggregateDocument(streamId, aggregateId, cancellationToken);
         if (aggregateDocumentResult.IsNotSuccess)
@@ -31,7 +33,8 @@ public class InMemoryCosmosDomainService(
                 case ReadMode.SnapshotOnly or ReadMode.SnapshotOrCreate:
                     return currentAggregateDocument.ToAggregate<T>();
                 case ReadMode.SnapshotWithNewEvents or ReadMode.SnapshotWithNewEventsOrCreate:
-                    return await _dataStore.UpdateAggregateDocument(streamId, aggregateId, currentAggregateDocument, cancellationToken);
+                    return await _dataStore.UpdateAggregateDocument(streamId, aggregateId, currentAggregateDocument,
+                        cancellationToken);
             }
         }
 
@@ -42,11 +45,13 @@ public class InMemoryCosmosDomainService(
 
         var aggregate = new T();
 
-        var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId, aggregate.EventTypeFilter, cancellationToken);
+        var eventDocumentsResult =
+            await _dataStore.GetEventDocuments(streamId, aggregate.EventTypeFilter, aggregateId.EventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
         }
+
         var eventDocuments = eventDocumentsResult.Value!.ToList();
         if (eventDocuments.Count == 0)
         {
@@ -65,8 +70,10 @@ public class InMemoryCosmosDomainService(
 
         try
         {
-            var latestEventSequenceForAggregate = eventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
-            var aggregateDocument = aggregate.ToAggregateDocument(streamId, aggregateId, latestEventSequenceForAggregate);
+            var latestEventSequenceForAggregate =
+                eventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
+            var aggregateDocument =
+                aggregate.ToAggregateDocument(streamId, aggregateId, latestEventSequenceForAggregate);
             aggregateDocument.CreatedDate = timeStamp;
             aggregateDocument.CreatedBy = currentUserNameIdentifier;
             aggregateDocument.UpdatedDate = timeStamp;
@@ -95,6 +102,7 @@ public class InMemoryCosmosDomainService(
                     bag = [];
                     storage.AggregateEventDocuments.TryAdd(aggregateKey, bag);
                 }
+
                 bag.Add(aggregateEventDocument);
             }
 
@@ -107,107 +115,142 @@ public class InMemoryCosmosDomainService(
         }
     }
 
-    public async Task<Result<List<IEvent>>> GetEvents(IStreamId streamId, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+    public async Task<Result<List<IEvent>>> GetEvents(IStreamId streamId, Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId, eventTypeFilter, cancellationToken);
+        var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
         }
+
         return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
     }
 
-    public async Task<Result<List<IEvent>>> GetEventsAppliedToAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
+    public async Task<Result<List<IEvent>>> GetEventsAppliedToAggregate<T>(IStreamId streamId,
+        IAggregateId<T> aggregateId, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
     {
-        var aggregateEventDocumentsResult = await _dataStore.GetAggregateEventDocuments(streamId, aggregateId, cancellationToken);
+        var aggregateEventDocumentsResult =
+            await _dataStore.GetAggregateEventDocuments(streamId, aggregateId, cancellationToken);
         if (aggregateEventDocumentsResult.IsNotSuccess)
         {
             return aggregateEventDocumentsResult.Failure!;
         }
+
         var aggregateEventDocuments = aggregateEventDocumentsResult.Value!;
         if (aggregateEventDocuments.Count == 0)
         {
             return new List<IEvent>();
         }
 
-        var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId, aggregateEventDocuments.Select(ae => ae.EventId).ToArray(), cancellationToken);
+        var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId,
+            aggregateEventDocuments.Select(ae => ae.EventId).ToArray(), cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
         }
+
         var eventDocuments = eventDocumentsResult.Value!;
         return eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
     }
 
-    public async Task<Result<List<IEvent>>> GetEventsBetweenSequences(IStreamId streamId, int fromSequence, int toSequence, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+    public async Task<Result<List<IEvent>>> GetEventsBetweenSequences(IStreamId streamId, int fromSequence,
+        int toSequence, Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var eventDocumentsResult = await _dataStore.GetEventDocumentsBetweenSequences(streamId, fromSequence, toSequence, eventTypeFilter, cancellationToken);
+        var eventDocumentsResult = await _dataStore.GetEventDocumentsBetweenSequences(streamId, fromSequence,
+            toSequence, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
         }
+
         return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
     }
 
-    public async Task<Result<List<IEvent>>> GetEventsFromSequence(IStreamId streamId, int fromSequence, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+    public async Task<Result<List<IEvent>>> GetEventsFromSequence(IStreamId streamId, int fromSequence,
+        Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var eventDocumentsResult = await _dataStore.GetEventDocumentsFromSequence(streamId, fromSequence, eventTypeFilter, cancellationToken);
+        var eventDocumentsResult =
+            await _dataStore.GetEventDocumentsFromSequence(streamId, fromSequence, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
         }
+
         return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
     }
 
-    public async Task<Result<List<IEvent>>> GetEventsUpToSequence(IStreamId streamId, int upToSequence, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+    public async Task<Result<List<IEvent>>> GetEventsUpToSequence(IStreamId streamId, int upToSequence,
+        Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var eventDocumentsResult = await _dataStore.GetEventDocumentsUpToSequence(streamId, upToSequence, eventTypeFilter, cancellationToken);
+        var eventDocumentsResult =
+            await _dataStore.GetEventDocumentsUpToSequence(streamId, upToSequence, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
         }
+
         return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
     }
 
-    public async Task<Result<List<IEvent>>> GetEventsUpToDate(IStreamId streamId, DateTimeOffset upToDate, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+    public async Task<Result<List<IEvent>>> GetEventsUpToDate(IStreamId streamId, DateTimeOffset upToDate,
+        Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var eventDocumentsResult = await _dataStore.GetEventDocumentsUpToDate(streamId, upToDate, eventTypeFilter, cancellationToken);
+        var eventDocumentsResult =
+            await _dataStore.GetEventDocumentsUpToDate(streamId, upToDate, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
         }
+
         return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
     }
 
-    public async Task<Result<List<IEvent>>> GetEventsFromDate(IStreamId streamId, DateTimeOffset fromDate, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+    public async Task<Result<List<IEvent>>> GetEventsFromDate(IStreamId streamId, DateTimeOffset fromDate,
+        Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var eventDocumentsResult = await _dataStore.GetEventDocumentsFromDate(streamId, fromDate, eventTypeFilter, cancellationToken);
+        var eventDocumentsResult =
+            await _dataStore.GetEventDocumentsFromDate(streamId, fromDate, eventTypeFilter, eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
         }
+
         return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
     }
 
-    public async Task<Result<List<IEvent>>> GetEventsBetweenDates(IStreamId streamId, DateTimeOffset fromDate, DateTimeOffset toDate, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+    public async Task<Result<List<IEvent>>> GetEventsBetweenDates(IStreamId streamId, DateTimeOffset fromDate,
+        DateTimeOffset toDate, Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var eventDocumentsResult = await _dataStore.GetEventDocumentsBetweenDates(streamId, fromDate, toDate, eventTypeFilter, cancellationToken);
+        var eventDocumentsResult =
+            await _dataStore.GetEventDocumentsBetweenDates(streamId, fromDate, toDate, eventTypeFilter,
+                eventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
         }
+
         return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
     }
 
-    public async Task<Result<T>> GetInMemoryAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
+    public async Task<Result<T>> GetInMemoryAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId,
+        CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
     {
         var aggregate = new T();
 
-        var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId, aggregate.EventTypeFilter, cancellationToken);
+        var eventDocumentsResult =
+            await _dataStore.GetEventDocuments(streamId, aggregate.EventTypeFilter, aggregateId.EventPropertyFilter, cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
         }
+
         var eventDocuments = eventDocumentsResult.Value!.ToList();
         if (eventDocuments.Count == 0)
         {
@@ -222,15 +265,18 @@ public class InMemoryCosmosDomainService(
         return aggregate;
     }
 
-    public async Task<Result<T>> GetInMemoryAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId, int upToSequence, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
+    public async Task<Result<T>> GetInMemoryAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId,
+        int upToSequence, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
     {
         var aggregate = new T();
 
-        var eventDocumentsResult = await _dataStore.GetEventDocumentsUpToSequence(streamId, upToSequence, aggregate.EventTypeFilter, cancellationToken);
+        var eventDocumentsResult = await _dataStore.GetEventDocumentsUpToSequence(streamId, upToSequence,
+            aggregate.EventTypeFilter, cancellationToken: cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
         }
+
         var eventDocuments = eventDocumentsResult.Value!.ToList();
         if (eventDocuments.Count == 0)
         {
@@ -245,15 +291,19 @@ public class InMemoryCosmosDomainService(
         return aggregate;
     }
 
-    public async Task<Result<T>> GetInMemoryAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId, DateTimeOffset upToDate, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
+    public async Task<Result<T>> GetInMemoryAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId,
+        DateTimeOffset upToDate, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
     {
         var aggregate = new T();
 
-        var eventDocumentsResult = await _dataStore.GetEventDocumentsUpToDate(streamId, upToDate, aggregate.EventTypeFilter, cancellationToken);
+        var eventDocumentsResult =
+            await _dataStore.GetEventDocumentsUpToDate(streamId, upToDate, aggregate.EventTypeFilter,
+                cancellationToken: cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
         }
+
         var eventDocuments = eventDocumentsResult.Value!.ToList();
         if (eventDocuments.Count == 0)
         {
@@ -268,13 +318,29 @@ public class InMemoryCosmosDomainService(
         return aggregate;
     }
 
-    public Task<Result<int>> GetLatestEventSequence(IStreamId streamId, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+    public async Task<Result<int>> GetLatestEventSequence(IStreamId streamId, Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
+        CancellationToken cancellationToken = default)
     {
-        var latestSequence = storage.StreamSequences.GetOrAdd(streamId.Id, 0);
-        return Task.FromResult(Result<int>.Ok(latestSequence));
+        var hasFilters = eventTypeFilter is { Length: > 0 } || eventPropertyFilter is { Count: > 0 };
+        if (!hasFilters)
+        {
+            var latestSequence = storage.StreamSequences.GetOrAdd(streamId.Id, 0);
+            return Result<int>.Ok(latestSequence);
+        }
+
+        var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId, eventTypeFilter, eventPropertyFilter, cancellationToken);
+        if (eventDocumentsResult.IsNotSuccess)
+        {
+            return eventDocumentsResult.Failure!;
+        }
+
+        var eventDocuments = eventDocumentsResult.Value!;
+        return eventDocuments.Count == 0 ? 0 : eventDocuments.Max(doc => doc.Sequence);
     }
 
-    public async Task<Result> SaveAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId, T aggregate, int expectedEventSequence, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
+    public async Task<Result> SaveAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId, T aggregate,
+        int expectedEventSequence, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
     {
         if (!aggregate.UncommittedEvents.Any())
         {
@@ -286,6 +352,7 @@ public class InMemoryCosmosDomainService(
         {
             return latestEventSequenceResult.Failure!;
         }
+
         var latestEventSequence = latestEventSequenceResult.Value;
         if (latestEventSequence != expectedEventSequence)
         {
@@ -302,7 +369,8 @@ public class InMemoryCosmosDomainService(
 
         try
         {
-            var aggregateDocument = aggregate.ToAggregateDocument(streamId, aggregateId, newLatestEventSequenceForAggregate);
+            var aggregateDocument =
+                aggregate.ToAggregateDocument(streamId, aggregateId, newLatestEventSequenceForAggregate);
             aggregateDocument.UpdatedDate = timeStamp;
             aggregateDocument.UpdatedBy = currentUserNameIdentifier;
             if (aggregateIsNew)
@@ -312,11 +380,13 @@ public class InMemoryCosmosDomainService(
             }
             else
             {
-                var existingAggregateDocumentResult = await _dataStore.GetAggregateDocument(streamId, aggregateId, cancellationToken);
+                var existingAggregateDocumentResult =
+                    await _dataStore.GetAggregateDocument(streamId, aggregateId, cancellationToken);
                 if (existingAggregateDocumentResult.IsNotSuccess)
                 {
                     return existingAggregateDocumentResult.Failure!;
                 }
+
                 var existingAggregateDocument = existingAggregateDocumentResult.Value;
                 if (existingAggregateDocument != null)
                 {
@@ -374,6 +444,7 @@ public class InMemoryCosmosDomainService(
                     bag = [];
                     storage.AggregateEventDocuments.TryAdd(aggregateKey, bag);
                 }
+
                 bag.Add(aggregateEventDocument);
             }
 
@@ -386,7 +457,8 @@ public class InMemoryCosmosDomainService(
         }
     }
 
-    public async Task<Result> SaveEvents(IStreamId streamId, IEvent[] events, int expectedEventSequence, CancellationToken cancellationToken = default)
+    public async Task<Result> SaveEvents(IStreamId streamId, IEvent[] events, int expectedEventSequence,
+        CancellationToken cancellationToken = default)
     {
         if (events.Length == 0)
         {
@@ -398,6 +470,7 @@ public class InMemoryCosmosDomainService(
         {
             return latestEventSequenceResult.Failure!;
         }
+
         var latestEventSequence = latestEventSequenceResult.Value;
         if (latestEventSequence != expectedEventSequence)
         {
@@ -436,13 +509,15 @@ public class InMemoryCosmosDomainService(
         }
     }
 
-    public async Task<Result<T?>> UpdateAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
+    public async Task<Result<T?>> UpdateAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId,
+        CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
     {
         var aggregateDocumentResult = await _dataStore.GetAggregateDocument(streamId, aggregateId, cancellationToken);
         if (aggregateDocumentResult.IsNotSuccess)
         {
             return aggregateDocumentResult.Failure!;
         }
+
         var aggregateDocument = aggregateDocumentResult.Value;
         return await _dataStore.UpdateAggregateDocument(streamId, aggregateId, aggregateDocument, cancellationToken);
     }

@@ -17,6 +17,7 @@ public static partial class IDomainDbContextExtensions
     /// <param name="fromSequence">The start sequence.</param>
     /// <param name="toSequence">The end sequence.</param>
     /// <param name="eventTypeFilter">Optional filter for event types.</param>
+    /// <param name="eventPropertyFilter">Optional filter for event properties.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A list of event entities.</returns>
     /// <example>
@@ -25,23 +26,30 @@ public static partial class IDomainDbContextExtensions
     /// var filteredEntities = await context.GetEventEntitiesBetweenSequences(streamId, fromSequence, toSequence, new[] { typeof(SomeEvent) });
     /// </code>
     /// </example>
-    public static async Task<List<EventEntity>> GetEventEntitiesBetweenSequences(this IDomainDbContext domainDbContext, IStreamId streamId, int fromSequence, int toSequence, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default)
+    public static async Task<List<EventEntity>> GetEventEntitiesBetweenSequences(this IDomainDbContext domainDbContext, IStreamId streamId, int fromSequence, int toSequence, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var filterEventTypes = eventTypeFilter is not null && eventTypeFilter.Length > 0;
-        if (!filterEventTypes)
+        var query = domainDbContext.Events.AsNoTracking().Where(eventEntity =>
+            eventEntity.StreamId == streamId.Id && eventEntity.Sequence >= fromSequence && eventEntity.Sequence <= toSequence);
+
+        if (eventTypeFilter is { Length: > 0 })
         {
-            return await domainDbContext.Events.AsNoTracking()
-                .Where(eventEntity => eventEntity.StreamId == streamId.Id && eventEntity.Sequence >= fromSequence && eventEntity.Sequence <= toSequence)
-                .OrderBy(eventEntity => eventEntity.Sequence)
-                .ToListAsync(cancellationToken);
+            var eventTypes = eventTypeFilter
+                .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
+                .Select(b => b.Key).ToList();
+
+            query = query.Where(eventEntity => eventTypes.Contains(eventEntity.EventType));
         }
 
-        var eventTypes = eventTypeFilter!
-            .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
-            .Select(b => b.Key).ToList();
+        if (eventPropertyFilter is { Count: > 0 })
+        {
+            foreach (var filter in eventPropertyFilter)
+            {
+                var propertyFilter = $"\"{filter.Key}\":\"{filter.Value}\"";
+                query = query.Where(eventEntity => eventEntity.Data.Contains(propertyFilter));
+            }
+        }
 
-        return await domainDbContext.Events.AsNoTracking()
-            .Where(eventEntity => eventEntity.StreamId == streamId.Id && eventEntity.Sequence >= fromSequence && eventEntity.Sequence <= toSequence && eventTypes.Contains(eventEntity.EventType))
+        return await query
             .OrderBy(eventEntity => eventEntity.Sequence)
             .ToListAsync(cancellationToken);
     }

@@ -23,6 +23,7 @@ public interface IDomainService : IDisposable
     /// </summary>
     /// <param name="streamId">The unique identifier of the stream for which domain events are to be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the domain events. If null, no filtering is applied.</param>
+    /// <param name="eventPropertyFilter">An optional array of event properties to filter the domain events. If null, no filtering is applied.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a result wrapping a list of domain events.</returns>
     /// <example>
@@ -34,7 +35,7 @@ public interface IDomainService : IDisposable
     /// var events = result.Value;
     /// </example>
     Task<Result<List<IEvent>>> GetEvents(IStreamId streamId, Type[]? eventTypeFilter = null,
-        CancellationToken cancellationToken = default);
+        IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the list of domain events that were applied to the specified aggregate.
@@ -63,6 +64,7 @@ public interface IDomainService : IDisposable
     /// <param name="fromSequence">The starting sequence number (inclusive).</param>
     /// <param name="toSequence">The ending sequence number (inclusive).</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the retrieved domain events.</param>
+    /// <param name="eventPropertyFilter">An optional array of event properties to filter the domain events.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a list of domain events wrapped in a <see cref="Result{TValue}"/>.</returns>
     /// <example>
@@ -78,6 +80,7 @@ public interface IDomainService : IDisposable
         int fromSequence,
         int toSequence,
         Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -86,6 +89,7 @@ public interface IDomainService : IDisposable
     /// <param name="streamId">The unique identifier of the stream to which the domain events belong.</param>
     /// <param name="fromSequence">The sequence number from which to start retrieving domain events.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the retrieved domain events. If null, no filtering is applied.</param>
+    /// <param name="eventPropertyFilter">An optional array of event properties to filter the domain events.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the retrieved domain events wrapped in a <see cref="Result{TValue}"/>.</returns>
     /// <example>
@@ -97,7 +101,8 @@ public interface IDomainService : IDisposable
     /// var events = result.Value;
     /// </example>
     Task<Result<List<IEvent>>> GetEventsFromSequence(IStreamId streamId, int fromSequence,
-        Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default);
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves a list of domain events up to a specified sequence number from a given stream,
@@ -106,6 +111,7 @@ public interface IDomainService : IDisposable
     /// <param name="streamId">The unique identifier of the stream containing the domain events.</param>
     /// <param name="upToSequence">The sequence number up to which events should be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the domain events.</param>
+    /// <param name="eventPropertyFilter">An optional array of event properties to filter the domain events.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a list of domain events wrapped in a <see cref="Result{TValue}"/>.</returns>
     /// <example>
@@ -117,7 +123,8 @@ public interface IDomainService : IDisposable
     /// var events = result.Value;
     /// </example>
     Task<Result<List<IEvent>>> GetEventsUpToSequence(IStreamId streamId, int upToSequence,
-        Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default);
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves a list of domain events up to a specified date from a given stream,
@@ -126,6 +133,7 @@ public interface IDomainService : IDisposable
     /// <param name="streamId">The unique identifier of the stream containing the domain events.</param>
     /// <param name="upToDate">The date up to which events should be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the domain events.</param>
+    /// <param name="eventPropertyFilter">An optional array of event properties to filter the domain events.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a list of domain events wrapped in a <see cref="Result{TValue}"/>.</returns>
     /// <example>
@@ -139,7 +147,7 @@ public interface IDomainService : IDisposable
     Task<Result<List<IEvent>>> GetEventsUpToDate(
         IStreamId streamId,
         DateTimeOffset upToDate,
-        Type[]? eventTypeFilter = null,
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -149,6 +157,7 @@ public interface IDomainService : IDisposable
     /// <param name="streamId">The unique identifier of the stream containing the domain events.</param>
     /// <param name="fromDate">The date from which events should be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the domain events.</param>
+    /// <param name="eventPropertyFilter">An optional array of event properties to filter the domain events.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a list of domain events wrapped in a <see cref="Result{TValue}"/>.</returns>
     /// <example>
@@ -162,7 +171,7 @@ public interface IDomainService : IDisposable
     Task<Result<List<IEvent>>> GetEventsFromDate(
         IStreamId streamId,
         DateTimeOffset fromDate,
-        Type[]? eventTypeFilter = null,
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -173,6 +182,7 @@ public interface IDomainService : IDisposable
     /// <param name="fromDate">The starting date from which events should be retrieved.</param>
     /// <param name="toDate">The ending date up to which events should be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the domain events.</param>
+    /// <param name="eventPropertyFilter">An optional array of event properties to filter the domain events.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a list of domain events wrapped in a <see cref="Result{TValue}"/>.</returns>
     /// <example>
@@ -187,7 +197,7 @@ public interface IDomainService : IDisposable
         IStreamId streamId,
         DateTimeOffset fromDate,
         DateTimeOffset toDate,
-        Type[]? eventTypeFilter = null,
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -265,6 +275,7 @@ public interface IDomainService : IDisposable
     /// var sequence = result.Value;
     /// </example>
     Task<Result<int>> GetLatestEventSequence(IStreamId streamId, Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

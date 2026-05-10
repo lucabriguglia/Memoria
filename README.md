@@ -25,8 +25,10 @@ If you're using this repository for your learning, samples, workshop, or your pr
 - Four different read modes that allow multiple write/read patterns based on specific needs.
 - In memory aggregate reconstruction up to a specific event sequence or date if provided _**(soon up to aggregate version)**_
 - Events applied to the aggregate filtered by event type
+- Events applied to the aggregate filtered by event property (key/value pairs declared on the aggregate id)
 - Retrieval of all events applied to an aggregate
 - Querying stream events from or up to a specific event sequence or date/date range
+- Querying stream events filtered by event type and/or event property
 - Optimistic concurrency control with an expected event sequence
 - Automatic event/notification publication after a command is successfully processed that returns a list of results from all notification handlers
 - Automatic event/message publication after a command is successfully processed using Service Bus or RabbitMQ
@@ -41,6 +43,7 @@ If you're using this repository for your learning, samples, workshop, or your pr
 ### ✅ Recently Completed
 - New package for in-memory Service Bus for easier testing in projects using Memoria
 - New package for in-memory RabbitMQ for easier testing in projects using Memoria
+- Event property filtering across aggregates and stream queries
 
 ### ⏭️ Next
 - Create an ecommerce demo application to showcase Memoria features
@@ -56,21 +59,21 @@ If you're using this repository for your learning, samples, workshop, or your pr
 
 ## 📦 Nuget Packages
 
-| Package                                                                                                                                               | Latest Stable                                                                                                                                                  |
-|-------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [Memoria](https://www.nuget.org/packages/Memoria)                                                                                                   | [![Nuget Package](https://img.shields.io/badge/nuget-1.1.0-blue.svg)](https://www.nuget.org/packages/Memoria)                                                  |
-| [Memoria.EventSourcing](https://www.nuget.org/packages/Memoria.EventSourcing)                                                                       | [![Nuget Package](https://img.shields.io/badge/nuget-1.1.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing)                                    |
-| [Memoria.EventSourcing.Store.Cosmos](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos)                                             | [![Nuget Package](https://img.shields.io/badge/nuget-1.1.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos)                       |
-| [Memoria.EventSourcing.Store.Cosmos.InMemory](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos.InMemory)                           | [![Nuget Package](https://img.shields.io/badge/nuget-1.1.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos.InMemory)              |
-| [Memoria.EventSourcing.Store.EntityFrameworkCore](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore)                   | [![Nuget Package](https://img.shields.io/badge/nuget-1.1.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore)          |
-| [Memoria.EventSourcing.Store.EntityFrameworkCore.Identity](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity) | [![Nuget Package](https://img.shields.io/badge/nuget-1.1.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity) |
-| [Memoria.Messaging.RabbitMq](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq)                                                             | [![Nuget Package](https://img.shields.io/badge/nuget-1.1.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq)                               |
-| [Memoria.Messaging.RabbitMq.InMemory](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq.InMemory)                                           | [![Nuget Package](https://img.shields.io/badge/nuget-1.1.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq.InMemory)                      |
-| [Memoria.Messaging.ServiceBus](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus)                                                         | [![Nuget Package](https://img.shields.io/badge/nuget-1.1.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus)                             |
-| [Memoria.Messaging.ServiceBus.InMemory](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus.InMemory)                                       | [![Nuget Package](https://img.shields.io/badge/nuget-1.1.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus.InMemory)                    |
-| [Memoria.Validation.FluentValidation](https://www.nuget.org/packages/Memoria.Validation.FluentValidation)                                           | [![Nuget Package](https://img.shields.io/badge/nuget-1.1.0-blue.svg)](https://www.nuget.org/packages/Memoria.Validation.FluentValidation)                      |
-| [Memoria.Caching.Redis](https://www.nuget.org/packages/Memoria.Caching.Redis)                                                                       | [![Nuget Package](https://img.shields.io/badge/nuget-1.1.0-blue.svg)](https://www.nuget.org/packages/Memoria.Caching.Redis)                                    |
-| [Memoria.Caching.Memory](https://www.nuget.org/packages/Memoria.Caching.Memory)                                                                     | [![Nuget Package](https://img.shields.io/badge/nuget-1.1.0-blue.svg)](https://www.nuget.org/packages/Memoria.Caching.Memory)                                   |
+| Package                                                                                                                                             | Latest Stable                                                                                                                                                  |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [Memoria](https://www.nuget.org/packages/Memoria)                                                                                                   | [![Nuget Package](https://img.shields.io/badge/nuget-1.2.0-blue.svg)](https://www.nuget.org/packages/Memoria)                                                  |
+| [Memoria.EventSourcing](https://www.nuget.org/packages/Memoria.EventSourcing)                                                                       | [![Nuget Package](https://img.shields.io/badge/nuget-1.2.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing)                                    |
+| [Memoria.EventSourcing.Store.Cosmos](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos)                                             | [![Nuget Package](https://img.shields.io/badge/nuget-1.2.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos)                       |
+| [Memoria.EventSourcing.Store.Cosmos.InMemory](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos.InMemory)                           | [![Nuget Package](https://img.shields.io/badge/nuget-1.2.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos.InMemory)              |
+| [Memoria.EventSourcing.Store.EntityFrameworkCore](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore)                   | [![Nuget Package](https://img.shields.io/badge/nuget-1.2.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore)          |
+| [Memoria.EventSourcing.Store.EntityFrameworkCore.Identity](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity) | [![Nuget Package](https://img.shields.io/badge/nuget-1.2.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity) |
+| [Memoria.Messaging.RabbitMq](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq)                                                             | [![Nuget Package](https://img.shields.io/badge/nuget-1.2.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq)                               |
+| [Memoria.Messaging.RabbitMq.InMemory](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq.InMemory)                                           | [![Nuget Package](https://img.shields.io/badge/nuget-1.2.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq.InMemory)                      |
+| [Memoria.Messaging.ServiceBus](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus)                                                         | [![Nuget Package](https://img.shields.io/badge/nuget-1.2.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus)                             |
+| [Memoria.Messaging.ServiceBus.InMemory](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus.InMemory)                                       | [![Nuget Package](https://img.shields.io/badge/nuget-1.2.0-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus.InMemory)                    |
+| [Memoria.Validation.FluentValidation](https://www.nuget.org/packages/Memoria.Validation.FluentValidation)                                           | [![Nuget Package](https://img.shields.io/badge/nuget-1.2.0-blue.svg)](https://www.nuget.org/packages/Memoria.Validation.FluentValidation)                      |
+| [Memoria.Caching.Redis](https://www.nuget.org/packages/Memoria.Caching.Redis)                                                                       | [![Nuget Package](https://img.shields.io/badge/nuget-1.2.0-blue.svg)](https://www.nuget.org/packages/Memoria.Caching.Redis)                                    |
+| [Memoria.Caching.Memory](https://www.nuget.org/packages/Memoria.Caching.Memory)                                                                     | [![Nuget Package](https://img.shields.io/badge/nuget-1.2.0-blue.svg)](https://www.nuget.org/packages/Memoria.Caching.Memory)                                   |
 
 ## 🔄 Simple mediator
 
@@ -317,6 +320,34 @@ var result = await domainService.GetEventsBetweenDates(streamId, fromDate, toDat
 // Event type filter can be applied to all previous queries
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var result = await domainService.GetEvents(streamId, eventTypes);
+
+// Event property filter can also be applied to all previous queries.
+// Events are matched by the key/value pairs found on their serialized properties,
+// and can be combined with the event type filter.
+var eventProperties = new Dictionary<string, string>
+{
+    { "OrderId", orderId }
+};
+var result = await domainService.GetEvents(streamId, eventTypes, eventProperties);
+```
+
+### Filter Events Applied to an Aggregate by Property
+
+When multiple aggregates share the same stream, the events applied to a specific aggregate
+can be narrowed down by declaring an `EventPropertyFilter` on its `IAggregateId`. The filter is
+applied automatically when retrieving the aggregate or reconstructing it in memory, alongside
+the aggregate's `EventTypeFilter`.
+
+```C#
+public class OrderId(Guid orderId) : IAggregateId<Order>
+{
+    public string Id => $"order:{orderId}";
+
+    public IDictionary<string, string>? EventPropertyFilter { get; } = new Dictionary<string, string>
+    {
+        { "OrderId", orderId }
+    };
+}
 ```
 
 📘 _[Full documentation](https://lucabriguglia.github.io/Memoria/)_

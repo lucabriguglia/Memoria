@@ -51,6 +51,7 @@ public interface ICosmosDataStore : IDisposable
     /// </summary>
     /// <param name="streamId">The identifier of the stream from which the events are to be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results. If null, all event types will be retrieved.</param>
+    /// <param name="eventPropertyFilter">An optional array of event properties to filter the results. If null, all events will be retrieved.</param>
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>A result containing the list of event documents or a failure.</returns>
     /// <example>
@@ -62,6 +63,7 @@ public interface ICosmosDataStore : IDisposable
     /// var documents = result.Value;
     /// </example>
     Task<Result<List<EventDocument>>> GetEventDocuments(IStreamId streamId, Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -89,6 +91,7 @@ public interface ICosmosDataStore : IDisposable
     /// <param name="fromSequence">The starting sequence number.</param>
     /// <param name="toSequence">The ending sequence number.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents or a failure.</returns>
     /// <example>
@@ -100,7 +103,8 @@ public interface ICosmosDataStore : IDisposable
     /// var documents = result.Value;
     /// </example>
     Task<Result<List<EventDocument>>> GetEventDocumentsBetweenSequences(IStreamId streamId, int fromSequence,
-        int toSequence, Type[]? eventTypeFilter, CancellationToken cancellationToken = default);
+        int toSequence, Type[]? eventTypeFilter, IDictionary<string, string>? eventPropertyFilter = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves a list of event documents from the specified sequence in the Cosmos data store.
@@ -108,6 +112,7 @@ public interface ICosmosDataStore : IDisposable
     /// <param name="streamId">The identifier of the stream for which to retrieve event documents.</param>
     /// <param name="fromSequence">The sequence number from which to start retrieving event documents.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results. If null, all event types are included.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation of the operation.</param>
     /// <returns>A result containing a list of retrieved event documents or a failure.</returns>
     /// <example>
@@ -119,7 +124,8 @@ public interface ICosmosDataStore : IDisposable
     /// var documents = result.Value;
     /// </example>
     Task<Result<List<EventDocument>>> GetEventDocumentsFromSequence(IStreamId streamId, int fromSequence,
-        Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default);
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves event documents from the Cosmos data store up to a specified sequence number.
@@ -127,6 +133,7 @@ public interface ICosmosDataStore : IDisposable
     /// <param name="streamId">The identifier of the stream from which the event documents are retrieved.</param>
     /// <param name="upToSequence">The maximum sequence number up to which the event documents should be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the retrieved documents.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents retrieved or a failure.</returns>
     /// <example>
@@ -138,7 +145,8 @@ public interface ICosmosDataStore : IDisposable
     /// var documents = result.Value;
     /// </example>
     Task<Result<List<EventDocument>>> GetEventDocumentsUpToSequence(IStreamId streamId, int upToSequence,
-        Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default);
+        Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves event documents from the Cosmos data store up to a specified date.
@@ -146,6 +154,7 @@ public interface ICosmosDataStore : IDisposable
     /// <param name="streamId">The identifier of the stream from which the event documents are retrieved.</param>
     /// <param name="upToDate">The date up to which the event documents should be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents or a failure.</returns>
     /// <example>
@@ -160,6 +169,7 @@ public interface ICosmosDataStore : IDisposable
         IStreamId streamId,
         DateTimeOffset upToDate,
         Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -168,6 +178,7 @@ public interface ICosmosDataStore : IDisposable
     /// <param name="streamId">The identifier of the stream from which the event documents are retrieved.</param>
     /// <param name="fromDate">The date from which the event documents should be retrieved.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents or a failure.</returns>
     /// <example>
@@ -182,6 +193,7 @@ public interface ICosmosDataStore : IDisposable
         IStreamId streamId,
         DateTimeOffset fromDate,
         Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -191,6 +203,7 @@ public interface ICosmosDataStore : IDisposable
     /// <param name="fromDate">The starting date.</param>
     /// <param name="toDate">The ending date.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results.</param>
+    /// <param name="eventPropertyFilter">An optional dictionary of event properties to filter the results. If null, no property filtering is applied.</param>
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
     /// <returns>A result containing a list of event documents or a failure.</returns>
     /// <example>
@@ -206,6 +219,7 @@ public interface ICosmosDataStore : IDisposable
         DateTimeOffset fromDate,
         DateTimeOffset toDate,
         Type[]? eventTypeFilter = null,
+        IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

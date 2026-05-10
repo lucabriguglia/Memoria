@@ -27,9 +27,12 @@ public static partial class IDomainDbContextExtensions
     /// var aggregate = result.Value;
     /// </code>
     /// </example>
-    public static async Task<Result<T?>> GetAggregate<T>(this IDomainDbContext domainDbContext, IStreamId streamId, IAggregateId<T> aggregateId, ReadMode readMode = ReadMode.SnapshotOnly, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
+    public static async Task<Result<T?>> GetAggregate<T>(this IDomainDbContext domainDbContext, IStreamId streamId,
+        IAggregateId<T> aggregateId, ReadMode readMode = ReadMode.SnapshotOnly,
+        CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
     {
-        var aggregateEntity = await domainDbContext.Aggregates.AsNoTracking().FirstOrDefaultAsync(entity => entity.Id == aggregateId.ToStoreId(), cancellationToken);
+        var aggregateEntity = await domainDbContext.Aggregates.AsNoTracking()
+            .FirstOrDefaultAsync(entity => entity.Id == aggregateId.ToStoreId(), cancellationToken);
         if (aggregateEntity is not null)
         {
             var currentAggregate = aggregateEntity.ToAggregate<T>();
@@ -38,7 +41,8 @@ public static partial class IDomainDbContextExtensions
                 case ReadMode.SnapshotOnly or ReadMode.SnapshotOrCreate:
                     return currentAggregate;
                 case ReadMode.SnapshotWithNewEvents or ReadMode.SnapshotWithNewEventsOrCreate:
-                    return await domainDbContext.UpdateAggregate(streamId, aggregateId, currentAggregate, cancellationToken);
+                    return await domainDbContext.UpdateAggregate(streamId, aggregateId, currentAggregate,
+                        cancellationToken);
             }
         }
 
@@ -49,7 +53,8 @@ public static partial class IDomainDbContextExtensions
 
         var aggregate = new T();
 
-        var eventEntities = await domainDbContext.GetEventEntities(streamId, aggregate.EventTypeFilter, cancellationToken);
+        var eventEntities = await domainDbContext.GetEventEntities(streamId, aggregate.EventTypeFilter,
+            aggregateId.EventPropertyFilter, cancellationToken);
         if (eventEntities.Count == 0)
         {
             return default(T);
@@ -63,8 +68,10 @@ public static partial class IDomainDbContextExtensions
             return default(T);
         }
 
-        var latestEventSequenceForAggregate = eventEntities.OrderBy(eventEntity => eventEntity.Sequence).Last().Sequence;
-        var trackedAggregateEntity = domainDbContext.TrackAggregateEntity(streamId, aggregateId, aggregate, latestEventSequenceForAggregate, aggregateIsNew: true);
+        var latestEventSequenceForAggregate =
+            eventEntities.OrderBy(eventEntity => eventEntity.Sequence).Last().Sequence;
+        var trackedAggregateEntity = domainDbContext.TrackAggregateEntity(streamId, aggregateId, aggregate,
+            latestEventSequenceForAggregate, aggregateIsNew: true);
         domainDbContext.TrackAggregateEventEntities(trackedAggregateEntity, eventEntities);
 
         try

@@ -27,7 +27,8 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
     }
 
     [Fact]
-    public async Task GiveMultipleEventsSaved_WhenOnlyEventsUpToASpecificSequenceAreRequested_ThenOnlyEventsUpToTheSpecificSequenceAreReturned()
+    public async Task
+        GiveMultipleEventsSaved_WhenOnlyEventsUpToASpecificSequenceAreRequested_ThenOnlyEventsUpToTheSpecificSequenceAreReturned()
     {
         var id = Guid.NewGuid().ToString();
         var streamId = new TestStreamId(id);
@@ -43,8 +44,30 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
         events.Value!.Count.Should().Be(3);
     }
 
+    [Theory]
+    [InlineData(4, 1)]
+    [InlineData(2, 0)]
+    public async Task
+        GiveMultipleEventsSaved_WhenOnlyEventsUpToASpecificSequenceAndWithASpecificPropertyAreRequested_ThenOnlyEventsUpToTheSpecificSequenceAreReturned(int upToSequence, int expectedResult)
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var aggregateId = new TestAggregateIdWithCustomPropertyFilter(id, propertyName: "Description",
+            propertyValue: "Updated Description 2");
+        var aggregate = new TestAggregate1(id, "Test Name", "Test Description");
+        aggregate.Update("Updated Name", "Updated Description");
+        aggregate.Update("Updated Name 2", "Updated Description 2");
+        aggregate.Update("Updated Name 3", "Updated Description 3");
+
+        await DomainService.SaveAggregate(streamId, aggregateId, aggregate, expectedEventSequence: 0);
+        var events = await DomainService.GetEventsUpToSequence(streamId, upToSequence: upToSequence, eventPropertyFilter: aggregateId.EventPropertyFilter);
+
+        events.Value!.Count.Should().Be(expectedResult);
+    }
+    
     [Fact]
-    public async Task GiveMultipleEventsSaved_WhenOnlyEventsFromASpecificSequenceAreRequested_ThenOnlyEventsFromTheSpecificSequenceAreReturned()
+    public async Task
+        GiveMultipleEventsSaved_WhenOnlyEventsFromASpecificSequenceAreRequested_ThenOnlyEventsFromTheSpecificSequenceAreReturned()
     {
         var id = Guid.NewGuid().ToString();
         var streamId = new TestStreamId(id);
@@ -61,7 +84,30 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
     }
 
     [Fact]
-    public async Task GiveMultipleEventsStored_WhenOnlyEventsBetweenSpecificSequencesAreRequested_ThenOnlyEventsBetweenSpecificSequencesAreReturned()
+    public async Task
+        GiveMultipleEventsSaved_WhenOnlyEventsFromASpecificSequenceAndWithASpecificPropertyAreRequested_ThenOnlyEventsFromTheSpecificSequenceAreReturned()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var aggregateId = new TestAggregateIdWithCustomPropertyFilter(id, propertyName: "Description",
+            propertyValue: "Updated Description 4");
+        var aggregate = new TestAggregate1(id, "Test Name", "Test Description");
+        aggregate.Update("Updated Name", "Updated Description");
+        aggregate.Update("Updated Name 2", "Updated Description 2");
+        aggregate.Update("Updated Name 3", "Updated Description 3");
+        aggregate.Update("Updated Name 4", "Updated Description 4");
+        aggregate.Update("Updated Name 5", "Updated Description 5");
+
+        await DomainService.SaveAggregate(streamId, aggregateId, aggregate, expectedEventSequence: 0);
+        var events = await DomainService.GetEventsFromSequence(streamId, fromSequence: 2,
+            eventPropertyFilter: aggregateId.EventPropertyFilter);
+
+        events.Value!.Count.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task
+        GiveMultipleEventsStored_WhenOnlyEventsBetweenSpecificSequencesAreRequested_ThenOnlyEventsBetweenSpecificSequencesAreReturned()
     {
         var id = Guid.NewGuid().ToString();
         var streamId = new TestStreamId(id);
@@ -79,7 +125,29 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
     }
 
     [Fact]
-    public async Task GiveMultipleEventsStored_WhenOnlyEventsUpToASpecificDateAreRequested_ThenEventsUpToASpecificDateAreReturned()
+    public async Task
+        GiveMultipleEventsStored_WhenOnlyEventsBetweenSpecificSequencesAndWithASpecificPropertyAreRequested_ThenOnlyEventsBetweenSpecificSequencesAreReturned()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var aggregateId = new TestAggregateIdWithCustomPropertyFilter(id, propertyName: "Description",
+            propertyValue: "Updated Description 2");
+        var aggregate = new TestAggregate1(id, "Test Name", "Test Description");
+        aggregate.Update("Updated Name 1", "Updated Description 1");
+        aggregate.Update("Updated Name 2", "Updated Description 2");
+        aggregate.Update("Updated Name 3", "Updated Description 2");
+        aggregate.Update("Updated Name 4", "Updated Description 3");
+
+        await DomainService.SaveAggregate(streamId, aggregateId, aggregate, expectedEventSequence: 0);
+        var events = await DomainService.GetEventsBetweenSequences(streamId, fromSequence: 2, toSequence: 5,
+            eventPropertyFilter: aggregateId.EventPropertyFilter);
+
+        events.Value!.Count.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task
+        GiveMultipleEventsStored_WhenOnlyEventsUpToASpecificDateAreRequested_ThenEventsUpToASpecificDateAreReturned()
     {
         var streamId = new TestStreamId(Guid.NewGuid().ToString());
 
@@ -101,7 +169,8 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
             new SomethingHappenedEvent("Something6")
         ], expectedEventSequence: 4);
 
-        var result = await DomainService.GetEventsUpToDate(streamId, upToDate: new DateTimeOffset(new DateTime(2024, 6, 15, 17, 45, 48)));
+        var result = await DomainService.GetEventsUpToDate(streamId,
+            upToDate: new DateTimeOffset(new DateTime(2024, 6, 15, 17, 45, 48)));
         using (new AssertionScope())
         {
             result.Value!.Count.Should().Be(4);
@@ -113,7 +182,8 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
     }
 
     [Fact]
-    public async Task GiveMultipleEventsStored_WhenOnlyEventsUpToASpecificDateFilteredByEventTypeAreRequested_ThenEventsUpToASpecificDateFilteredByEventTypeAreReturned()
+    public async Task
+        GiveMultipleEventsStored_WhenOnlyEventsUpToASpecificDateFilteredByEventTypeAreRequested_ThenEventsUpToASpecificDateFilteredByEventTypeAreReturned()
     {
         var streamId = new TestStreamId(Guid.NewGuid().ToString());
 
@@ -135,7 +205,9 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
             new SomethingHappenedEvent("Something4")
         ], expectedEventSequence: 4);
 
-        var result = await DomainService.GetEventsUpToDate(streamId, upToDate: new DateTimeOffset(new DateTime(2024, 6, 15, 17, 45, 48)), eventTypeFilter: [typeof(SomethingHappenedEvent)]);
+        var result = await DomainService.GetEventsUpToDate(streamId,
+            upToDate: new DateTimeOffset(new DateTime(2024, 6, 15, 17, 45, 48)),
+            eventTypeFilter: [typeof(SomethingHappenedEvent)]);
         using (new AssertionScope())
         {
             result.Value!.Count.Should().Be(2);
@@ -145,7 +217,42 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
     }
 
     [Fact]
-    public async Task GiveMultipleEventsStored_WhenOnlyEventsFromASpecificDateAreRequested_ThenEventsFromASpecificDateAreReturned()
+    public async Task
+        GiveMultipleEventsStored_WhenOnlyEventsUpToASpecificDateFilteredByEventPropertyAreRequested_ThenEventsUpToASpecificDateFilteredByEventPropertyAreReturned()
+    {
+        var streamId = new TestStreamId(Guid.NewGuid().ToString());
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 10, 12, 10, 25));
+        await DomainService.SaveEvents(streamId, [
+            new SomethingHappenedEvent("Match"),
+            new SomethingHappenedEvent("Other1")
+        ], expectedEventSequence: 0);
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 15, 17, 45, 48));
+        await DomainService.SaveEvents(streamId, [
+            new SomethingHappenedEvent("Match2"),
+            new SomethingHappenedEvent("Other2")
+        ], expectedEventSequence: 2);
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 15, 17, 45, 49));
+        await DomainService.SaveEvents(streamId, [
+            new SomethingHappenedEvent("Match"),
+            new SomethingHappenedEvent("Other3")
+        ], expectedEventSequence: 4);
+
+        var result = await DomainService.GetEventsUpToDate(streamId,
+            upToDate: new DateTimeOffset(new DateTime(2024, 6, 15, 17, 45, 48)),
+            eventPropertyFilter: new Dictionary<string, string> { { "Something", "Match" } });
+        using (new AssertionScope())
+        {
+            result.Value!.Count.Should().Be(1);
+            result.Value[0].Should().BeOfType<SomethingHappenedEvent>().Which.Something.Should().Be("Match");
+        }
+    }
+
+    [Fact]
+    public async Task
+        GiveMultipleEventsStored_WhenOnlyEventsFromASpecificDateAreRequested_ThenEventsFromASpecificDateAreReturned()
     {
         var streamId = new TestStreamId(Guid.NewGuid().ToString());
 
@@ -167,7 +274,8 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
             new SomethingHappenedEvent("Something6")
         ], expectedEventSequence: 4);
 
-        var result = await DomainService.GetEventsFromDate(streamId, fromDate: new DateTimeOffset(new DateTime(2024, 6, 15, 17, 45, 48)));
+        var result = await DomainService.GetEventsFromDate(streamId,
+            fromDate: new DateTimeOffset(new DateTime(2024, 6, 15, 17, 45, 48)));
         using (new AssertionScope())
         {
             result.Value!.Count.Should().Be(4);
@@ -179,7 +287,8 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
     }
 
     [Fact]
-    public async Task GiveMultipleEventsStored_WhenOnlyEventsFromASpecificDateFilteredByEventTypeAreRequested_ThenEventsFromASpecificDateFilteredByEventTypeAreReturned()
+    public async Task
+        GiveMultipleEventsStored_WhenOnlyEventsFromASpecificDateFilteredByEventTypeAreRequested_ThenEventsFromASpecificDateFilteredByEventTypeAreReturned()
     {
         var streamId = new TestStreamId(Guid.NewGuid().ToString());
 
@@ -201,7 +310,9 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
             new SomethingHappenedEvent("Something4")
         ], expectedEventSequence: 4);
 
-        var result = await DomainService.GetEventsFromDate(streamId, fromDate: new DateTimeOffset(new DateTime(2024, 6, 15, 17, 45, 48)), eventTypeFilter: [typeof(SomethingHappenedEvent)]);
+        var result = await DomainService.GetEventsFromDate(streamId,
+            fromDate: new DateTimeOffset(new DateTime(2024, 6, 15, 17, 45, 48)),
+            eventTypeFilter: [typeof(SomethingHappenedEvent)]);
         using (new AssertionScope())
         {
             result.Value!.Count.Should().Be(3);
@@ -212,7 +323,42 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
     }
 
     [Fact]
-    public async Task GiveMultipleEventsStored_WhenOnlyEventsBetweenSpecificDatesAreRequested_ThenEventsBetweenSpecificDatesAreReturned()
+    public async Task
+        GiveMultipleEventsStored_WhenOnlyEventsFromASpecificDateFilteredByEventPropertyAreRequested_ThenEventsFromASpecificDateFilteredByEventPropertyAreReturned()
+    {
+        var streamId = new TestStreamId(Guid.NewGuid().ToString());
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 10, 12, 10, 25));
+        await DomainService.SaveEvents(streamId, [
+            new SomethingHappenedEvent("Match"),
+            new SomethingHappenedEvent("Other1")
+        ], expectedEventSequence: 0);
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 15, 17, 45, 48));
+        await DomainService.SaveEvents(streamId, [
+            new SomethingHappenedEvent("Match"),
+            new SomethingHappenedEvent("Other2")
+        ], expectedEventSequence: 2);
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 15, 17, 45, 49));
+        await DomainService.SaveEvents(streamId, [
+            new SomethingHappenedEvent("Match2"),
+            new SomethingHappenedEvent("Other3")
+        ], expectedEventSequence: 4);
+
+        var result = await DomainService.GetEventsFromDate(streamId,
+            fromDate: new DateTimeOffset(new DateTime(2024, 6, 15, 17, 45, 48)),
+            eventPropertyFilter: new Dictionary<string, string> { { "Something", "Match" } });
+        using (new AssertionScope())
+        {
+            result.Value!.Count.Should().Be(1);
+            result.Value[0].Should().BeOfType<SomethingHappenedEvent>().Which.Something.Should().Be("Match");
+        }
+    }
+
+    [Fact]
+    public async Task
+        GiveMultipleEventsStored_WhenOnlyEventsBetweenSpecificDatesAreRequested_ThenEventsBetweenSpecificDatesAreReturned()
     {
         var streamId = new TestStreamId(Guid.NewGuid().ToString());
 
@@ -248,7 +394,8 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
     }
 
     [Fact]
-    public async Task GiveMultipleEventsStored_WhenOnlyEventsBetweenSpecificDatesFilteredByEventTypeAreRequested_ThenEventsBetweenSpecificDatesFilteredByEventTypeAreReturned()
+    public async Task
+        GiveMultipleEventsStored_WhenOnlyEventsBetweenSpecificDatesFilteredByEventTypeAreRequested_ThenEventsBetweenSpecificDatesFilteredByEventTypeAreReturned()
     {
         var streamId = new TestStreamId(Guid.NewGuid().ToString());
 
@@ -279,6 +426,41 @@ public abstract class GetEventsTests(IDomainServiceFactory domainServiceFactory)
             result.Value!.Count.Should().Be(2);
             result.Value[0].Should().BeOfType<SomethingHappenedEvent>().Which.Something.Should().Be("Something1");
             result.Value[1].Should().BeOfType<SomethingHappenedEvent>().Which.Something.Should().Be("Something2");
+        }
+    }
+
+    [Fact]
+    public async Task
+        GiveMultipleEventsStored_WhenOnlyEventsBetweenSpecificDatesFilteredByEventPropertyAreRequested_ThenEventsBetweenSpecificDatesFilteredByEventPropertyAreReturned()
+    {
+        var streamId = new TestStreamId(Guid.NewGuid().ToString());
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 10, 12, 10, 25));
+        await DomainService.SaveEvents(streamId, [
+            new SomethingHappenedEvent("Match2"),
+            new SomethingHappenedEvent("Other1")
+        ], expectedEventSequence: 0);
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 15, 17, 45, 48));
+        await DomainService.SaveEvents(streamId, [
+            new SomethingHappenedEvent("Match"),
+            new SomethingHappenedEvent("Other2")
+        ], expectedEventSequence: 2);
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 15, 17, 45, 49));
+        await DomainService.SaveEvents(streamId, [
+            new SomethingHappenedEvent("Match"),
+            new SomethingHappenedEvent("Other3")
+        ], expectedEventSequence: 4);
+
+        var result = await DomainService.GetEventsBetweenDates(streamId,
+            fromDate: new DateTimeOffset(new DateTime(2024, 6, 10, 12, 10, 25)),
+            toDate: new DateTimeOffset(new DateTime(2024, 6, 15, 17, 45, 48)),
+            eventPropertyFilter: new Dictionary<string, string> { { "Something", "Match" } });
+        using (new AssertionScope())
+        {
+            result.Value!.Count.Should().Be(1);
+            result.Value[0].Should().BeOfType<SomethingHappenedEvent>().Which.Something.Should().Be("Match");
         }
     }
 }

@@ -150,7 +150,8 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
         };
         await DomainService.SaveEvents(streamId, events, expectedEventSequence: 0);
 
-        var getAggregateResult = await DomainService.GetAggregate(streamId, aggregateId, readMode: ReadMode.SnapshotOrCreate);
+        var getAggregateResult =
+            await DomainService.GetAggregate(streamId, aggregateId, readMode: ReadMode.SnapshotOrCreate);
 
         using (new AssertionScope())
         {
@@ -169,7 +170,8 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
     }
 
     [Fact]
-    public async Task GivenEventsHandledByTheAggregateAreStoredSeparately_WhenApplyNewEventsIsRequested_ThenTheUpdatedAggregateIsReturned()
+    public async Task
+        GivenEventsHandledByTheAggregateAreStoredSeparately_WhenApplyNewEventsIsRequested_ThenTheUpdatedAggregateIsReturned()
     {
         var id = Guid.NewGuid().ToString();
         var streamId = new TestStreamId(id);
@@ -184,7 +186,8 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
         };
         await DomainService.SaveEvents(streamId, events, expectedEventSequence: 1);
 
-        var updatedAggregateResult = await DomainService.GetAggregate(streamId, aggregateId, ReadMode.SnapshotWithNewEvents);
+        var updatedAggregateResult =
+            await DomainService.GetAggregate(streamId, aggregateId, ReadMode.SnapshotWithNewEvents);
 
         using (new AssertionScope())
         {
@@ -199,6 +202,103 @@ public abstract class GetAggregateTests(IDomainServiceFactory domainServiceFacto
             updatedAggregateResult.Value.Id.Should().Be(aggregate.Id);
             updatedAggregateResult.Value.Name.Should().Be("Updated Name");
             updatedAggregateResult.Value.Description.Should().Be("Updated Description");
+        }
+    }
+
+    [Fact]
+    public async Task GivenAggregateFilteredByTypeAndProperty_ThenOnlyFilteredEventsAreApplied()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var aggregateId = new TestAggregateIdWithPropertyFilter(id, "blah");
+
+        var events = new IEvent[]
+        {
+            new TestAggregateCreatedEvent(id, "Test Name", "Test Description"),
+            new TestAggregateUpdatedEvent(id, "Updated Name", "Updated Description"),
+            new SomethingHappenedEvent2(Something2: "blah"),
+            new SomethingHappenedEvent2(Something2: "Something")
+        };
+        await DomainService.SaveEvents(streamId, events, expectedEventSequence: 0);
+
+        var getAggregateResult =
+            await DomainService.GetAggregate(streamId, aggregateId, readMode: ReadMode.SnapshotOrCreate);
+
+        using (new AssertionScope())
+        {
+            getAggregateResult.IsSuccess.Should().BeTrue();
+
+            getAggregateResult.Value.Should().NotBeNull();
+
+            getAggregateResult.Value.StreamId.Should().Be(streamId.Id);
+            getAggregateResult.Value.AggregateId.Should().Be(aggregateId.ToStoreId());
+            getAggregateResult.Value.Version.Should().Be(1);
+            getAggregateResult.Value.Name.Should().Be("blah");
+        }
+    }
+
+    [Fact]
+    public async Task GivenAggregateFilteredByPropertyOnly_ThenOnlyFilteredEventsAreApplied()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var aggregateId = new TestAggregateIdWithPropertyFilterForNoTypeFilter(id, "blah");
+
+        var events = new IEvent[]
+        {
+            new TestAggregateCreatedEvent(id, "Test Name", "Test Description"),
+            new TestAggregateUpdatedEvent(id, "Updated Name", "Updated Description"),
+            new SomethingHappenedEvent2(Something2: "blah"),
+            new SomethingHappenedEvent2(Something2: "Something")
+        };
+        await DomainService.SaveEvents(streamId, events, expectedEventSequence: 0);
+
+        var getAggregateResult =
+            await DomainService.GetAggregate(streamId, aggregateId, readMode: ReadMode.SnapshotOrCreate);
+
+        using (new AssertionScope())
+        {
+            getAggregateResult.IsSuccess.Should().BeTrue();
+
+            getAggregateResult.Value.Should().NotBeNull();
+
+            getAggregateResult.Value.StreamId.Should().Be(streamId.Id);
+            getAggregateResult.Value.AggregateId.Should().Be(aggregateId.ToStoreId());
+            getAggregateResult.Value.Version.Should().Be(1);
+            getAggregateResult.Value.Name.Should().Be("blah");
+        }
+    }
+
+    [Fact]
+    public async Task GivenAggregateFilteredByMultipleProperties_ThenOnlyEventsMatchingAllPropertiesAreApplied()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var aggregateId = new TestAggregateIdWithMultiplePropertyFilter(id, "Match", "Match");
+
+        var events = new IEvent[]
+        {
+            new TestAggregateCreatedEvent(id, "Match", "Match"),
+            new TestAggregateUpdatedEvent(id, "Match", "NoMatch"),
+            new TestAggregateUpdatedEvent(id, "NoMatch", "Match"),
+            new TestAggregateUpdatedEvent(id, "NoMatch", "NoMatch")
+        };
+        await DomainService.SaveEvents(streamId, events, expectedEventSequence: 0);
+
+        var getAggregateResult =
+            await DomainService.GetAggregate(streamId, aggregateId, readMode: ReadMode.SnapshotOrCreate);
+
+        using (new AssertionScope())
+        {
+            getAggregateResult.IsSuccess.Should().BeTrue();
+
+            getAggregateResult.Value.Should().NotBeNull();
+
+            getAggregateResult.Value.StreamId.Should().Be(streamId.Id);
+            getAggregateResult.Value.AggregateId.Should().Be(aggregateId.ToStoreId());
+            getAggregateResult.Value.Version.Should().Be(1);
+            getAggregateResult.Value.Name.Should().Be("Match");
+            getAggregateResult.Value.Description.Should().Be("Match");
         }
     }
 }

@@ -1,5 +1,11 @@
 # Release Notes
 
+## Memoria 1.2.0
+_**Released 10/05/2026**_
+- Event property filtering on aggregate ids via `IAggregateId.EventPropertyFilter` (key/value pairs applied when retrieving or reconstructing an aggregate)
+- New `eventPropertyFilter` parameter across all `IDomainService` event queries (`GetEvents`, `GetEventsFromSequence`, `GetEventsUpToSequence`, `GetEventsBetweenSequences`, `GetEventsFromDate`, `GetEventsUpToDate`, `GetEventsBetweenDates`, `GetLatestEventSequence`)
+- Property and type filters can be combined and are supported by both Cosmos DB and Entity Framework Core store providers (and their in-memory variants)
+
 ## Memoria 1.1.0
 _**Released 01/02/2026**_
 - Upgrade to .NET 10

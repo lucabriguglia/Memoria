@@ -25,13 +25,15 @@ public abstract class TestBase : IDisposable
         {
             {"TestAggregateCreated:1", typeof(TestAggregateCreatedEvent)},
             {"TestAggregateUpdated:1", typeof(TestAggregateUpdatedEvent)},
-            {"SomethingHappened:1", typeof(SomethingHappenedEvent)}
+            {"SomethingHappened:1", typeof(SomethingHappenedEvent)},
+            { "SomethingHappened:2", typeof(SomethingHappenedEvent2) }
         };
 
         TypeBindings.AggregateTypeBindings = new Dictionary<string, Type>
         {
             {"TestAggregate1:1", typeof(TestAggregate1)},
-            {"TestAggregate2:1", typeof(TestAggregate2)}
+            {"TestAggregate2:1", typeof(TestAggregate2)},
+            { "TestAggregateWithNoTypeFilter:1", typeof(TestAggregateWithNoTypeFilter) }
         };
     }
 

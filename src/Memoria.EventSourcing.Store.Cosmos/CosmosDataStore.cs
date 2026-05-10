@@ -83,29 +83,8 @@ public class CosmosDataStore : ICosmosDataStore
             .WithParameter("@aggregateId", aggregateId.ToStoreId())
             .WithParameter("@documentType", DocumentType.AggregateEvent);
 
-        var aggregateEventDocuments = new List<AggregateEventDocument>();
-
-        try
-        {
-            using var iterator = _container.GetItemQueryIterator<AggregateEventDocument>(queryDefinition, requestOptions: new QueryRequestOptions
-            {
-                PartitionKey = new PartitionKey(streamId.Id)
-            });
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync(cancellationToken);
-                aggregateEventDocuments.AddRange(response);
-                response.AddActivityEvent(streamId, operation: "Get Aggregate Event Documents");
-            }
-        }
-        catch (Exception ex)
-        {
-            ex.AddException(streamId, operation: "Get Aggregate Event Documents");
-            return ErrorHandling.DefaultFailure;
-        }
-
-        return aggregateEventDocuments;
+        return await _container.QueryListAsync<AggregateEventDocument>(queryDefinition, streamId,
+            operation: "Get Aggregate Event Documents", cancellationToken);
     }
 
     /// <summary>
@@ -120,71 +99,17 @@ public class CosmosDataStore : ICosmosDataStore
     public async Task<Result<List<EventDocument>>> GetEventDocuments(IStreamId streamId, Type[]? eventTypeFilter,
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.documentType = @documentType");
-
-        var filterEventTypes = eventTypeFilter is { Length: > 0 };
-        if (filterEventTypes)
-        {
-            sql.Append(" AND ARRAY_CONTAINS(@eventTypes, c.eventType)");
-        }
-
-        var filterEventProperties = eventPropertyFilter is { Count: > 0 };
-        if (filterEventProperties)
-        {
-            for (var i = 0; i < eventPropertyFilter!.Count; i++)
-            {
-                sql.Append($" AND CONTAINS(c.data, @propertyFilter{i})");
-            }
-        }
-
-        sql.Append(" ORDER BY c.sequence");
+        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.documentType = @documentType")
+            .AppendEventFilters(eventTypeFilter, eventPropertyFilter)
+            .Append(" ORDER BY c.sequence");
 
         var queryDefinition = new QueryDefinition(sql.ToString())
             .WithParameter("@streamId", streamId.Id)
-            .WithParameter("@documentType", DocumentType.Event);
+            .WithParameter("@documentType", DocumentType.Event)
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
 
-        if (filterEventTypes)
-        {
-            var eventTypes = eventTypeFilter!
-                .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
-                .Select(b => b.Key).ToList();
-
-            queryDefinition = queryDefinition.WithParameter("@eventTypes", eventTypes);
-        }
-
-        if (filterEventProperties)
-        {
-            var index = 0;
-            foreach (var filter in eventPropertyFilter!)
-            {
-                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", $"\"{filter.Key}\":\"{filter.Value}\"");
-                index++;
-            }
-        }
-
-        var eventDocuments = new List<EventDocument>();
-
-        try
-        {
-            using var iterator = _container.GetItemQueryIterator<EventDocument>(queryDefinition, requestOptions: new QueryRequestOptions
-            {
-                PartitionKey = new PartitionKey(streamId.Id)
-            });
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync(cancellationToken);
-                eventDocuments.AddRange(response);
-                response.AddActivityEvent(streamId, operation: "Get Event Documents");
-            }
-        }
-        catch (Exception ex)
-        {
-            ex.AddException(streamId, operation: "Get Event Documents");
-            return ErrorHandling.DefaultFailure;
-        }
-
-        return eventDocuments;
+        return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
+            operation: "Get Event Documents", cancellationToken);
     }
 
     /// <summary>
@@ -203,29 +128,8 @@ public class CosmosDataStore : ICosmosDataStore
             .WithParameter("@documentType", DocumentType.Event)
             .WithParameter("@eventIds", eventIds);
 
-        var eventDocuments = new List<EventDocument>();
-
-        try
-        {
-            using var iterator = _container.GetItemQueryIterator<EventDocument>(queryDefinition, requestOptions: new QueryRequestOptions
-            {
-                PartitionKey = new PartitionKey(streamId.Id)
-            });
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync(cancellationToken);
-                eventDocuments.AddRange(response);
-                response.AddActivityEvent(streamId, operation: "Get Event Documents by IDs");
-            }
-        }
-        catch (Exception ex)
-        {
-            ex.AddException(streamId, operation: "Get Event Documents by IDs");
-            return ErrorHandling.DefaultFailure;
-        }
-
-        return eventDocuments;
+        return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
+            operation: "Get Event Documents by IDs", cancellationToken);
     }
 
     /// <summary>
@@ -242,73 +146,19 @@ public class CosmosDataStore : ICosmosDataStore
     public async Task<Result<List<EventDocument>>> GetEventDocumentsBetweenSequences(IStreamId streamId, int fromSequence, int toSequence, Type[]? eventTypeFilter,
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.sequence >= @fromSequence AND c.sequence <= @toSequence AND c.documentType = @documentType");
-
-        var filterEventTypes = eventTypeFilter is { Length: > 0 };
-        if (filterEventTypes)
-        {
-            sql.Append(" AND ARRAY_CONTAINS(@eventTypes, c.eventType)");
-        }
-
-        var filterEventProperties = eventPropertyFilter is { Count: > 0 };
-        if (filterEventProperties)
-        {
-            for (var i = 0; i < eventPropertyFilter!.Count; i++)
-            {
-                sql.Append($" AND CONTAINS(c.data, @propertyFilter{i})");
-            }
-        }
-
-        sql.Append(" ORDER BY c.sequence");
+        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.sequence >= @fromSequence AND c.sequence <= @toSequence AND c.documentType = @documentType")
+            .AppendEventFilters(eventTypeFilter, eventPropertyFilter)
+            .Append(" ORDER BY c.sequence");
 
         var queryDefinition = new QueryDefinition(sql.ToString())
             .WithParameter("@streamId", streamId.Id)
             .WithParameter("@fromSequence", fromSequence)
             .WithParameter("@toSequence", toSequence)
-            .WithParameter("@documentType", DocumentType.Event);
+            .WithParameter("@documentType", DocumentType.Event)
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
 
-        if (filterEventTypes)
-        {
-            var eventTypes = eventTypeFilter!
-                .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
-                .Select(b => b.Key).ToList();
-
-            queryDefinition = queryDefinition.WithParameter("@eventTypes", eventTypes);
-        }
-
-        if (filterEventProperties)
-        {
-            var index = 0;
-            foreach (var filter in eventPropertyFilter!)
-            {
-                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", $"\"{filter.Key}\":\"{filter.Value}\"");
-                index++;
-            }
-        }
-
-        var eventDocuments = new List<EventDocument>();
-
-        try
-        {
-            using var iterator = _container.GetItemQueryIterator<EventDocument>(queryDefinition, requestOptions: new QueryRequestOptions
-            {
-                PartitionKey = new PartitionKey(streamId.Id)
-            });
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync(cancellationToken);
-                eventDocuments.AddRange(response);
-                response.AddActivityEvent(streamId, operation: "Get Event Documents Between Sequences");
-            }
-        }
-        catch (Exception ex)
-        {
-            ex.AddException(streamId, operation: "Get Event Documents from Sequence");
-            return ErrorHandling.DefaultFailure;
-        }
-
-        return eventDocuments;
+        return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
+            operation: "Get Event Documents Between Sequences", cancellationToken);
     }
 
     /// <summary>
@@ -324,72 +174,18 @@ public class CosmosDataStore : ICosmosDataStore
     public async Task<Result<List<EventDocument>>> GetEventDocumentsFromSequence(IStreamId streamId, int fromSequence, Type[]? eventTypeFilter,
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.sequence >= @fromSequence AND c.documentType = @documentType");
-
-        var filterEventTypes = eventTypeFilter is { Length: > 0 };
-        if (filterEventTypes)
-        {
-            sql.Append(" AND ARRAY_CONTAINS(@eventTypes, c.eventType)");
-        }
-
-        var filterEventProperties = eventPropertyFilter is { Count: > 0 };
-        if (filterEventProperties)
-        {
-            for (var i = 0; i < eventPropertyFilter!.Count; i++)
-            {
-                sql.Append($" AND CONTAINS(c.data, @propertyFilter{i})");
-            }
-        }
-
-        sql.Append(" ORDER BY c.sequence");
+        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.sequence >= @fromSequence AND c.documentType = @documentType")
+            .AppendEventFilters(eventTypeFilter, eventPropertyFilter)
+            .Append(" ORDER BY c.sequence");
 
         var queryDefinition = new QueryDefinition(sql.ToString())
             .WithParameter("@streamId", streamId.Id)
             .WithParameter("@fromSequence", fromSequence)
-            .WithParameter("@documentType", DocumentType.Event);
+            .WithParameter("@documentType", DocumentType.Event)
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
 
-        if (filterEventTypes)
-        {
-            var eventTypes = eventTypeFilter!
-                .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
-                .Select(b => b.Key).ToList();
-
-            queryDefinition = queryDefinition.WithParameter("@eventTypes", eventTypes);
-        }
-
-        if (filterEventProperties)
-        {
-            var index = 0;
-            foreach (var filter in eventPropertyFilter!)
-            {
-                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", $"\"{filter.Key}\":\"{filter.Value}\"");
-                index++;
-            }
-        }
-
-        var eventDocuments = new List<EventDocument>();
-
-        try
-        {
-            using var iterator = _container.GetItemQueryIterator<EventDocument>(queryDefinition, requestOptions: new QueryRequestOptions
-            {
-                PartitionKey = new PartitionKey(streamId.Id)
-            });
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync(cancellationToken);
-                eventDocuments.AddRange(response);
-                response.AddActivityEvent(streamId, operation: "Get Event Documents from Sequence");
-            }
-        }
-        catch (Exception ex)
-        {
-            ex.AddException(streamId, operation: "Get Event Documents from Sequence");
-            return ErrorHandling.DefaultFailure;
-        }
-
-        return eventDocuments;
+        return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
+            operation: "Get Event Documents from Sequence", cancellationToken);
     }
 
     /// <summary>
@@ -405,72 +201,18 @@ public class CosmosDataStore : ICosmosDataStore
     public async Task<Result<List<EventDocument>>> GetEventDocumentsUpToSequence(IStreamId streamId, int upToSequence, Type[]? eventTypeFilter,
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.sequence <= @upToSequence AND c.documentType = @documentType");
-
-        var filterEventTypes = eventTypeFilter is { Length: > 0 };
-        if (filterEventTypes)
-        {
-            sql.Append(" AND ARRAY_CONTAINS(@eventTypes, c.eventType)");
-        }
-
-        var filterEventProperties = eventPropertyFilter is { Count: > 0 };
-        if (filterEventProperties)
-        {
-            for (var i = 0; i < eventPropertyFilter!.Count; i++)
-            {
-                sql.Append($" AND CONTAINS(c.data, @propertyFilter{i})");
-            }
-        }
-
-        sql.Append(" ORDER BY c.sequence");
+        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.sequence <= @upToSequence AND c.documentType = @documentType")
+            .AppendEventFilters(eventTypeFilter, eventPropertyFilter)
+            .Append(" ORDER BY c.sequence");
 
         var queryDefinition = new QueryDefinition(sql.ToString())
             .WithParameter("@streamId", streamId.Id)
             .WithParameter("@upToSequence", upToSequence)
-            .WithParameter("@documentType", DocumentType.Event);
+            .WithParameter("@documentType", DocumentType.Event)
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
 
-        if (filterEventTypes)
-        {
-            var eventTypes = eventTypeFilter!
-                .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
-                .Select(b => b.Key).ToList();
-
-            queryDefinition = queryDefinition.WithParameter("@eventTypes", eventTypes);
-        }
-
-        if (filterEventProperties)
-        {
-            var index = 0;
-            foreach (var filter in eventPropertyFilter!)
-            {
-                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", $"\"{filter.Key}\":\"{filter.Value}\"");
-                index++;
-            }
-        }
-
-        var eventDocuments = new List<EventDocument>();
-
-        try
-        {
-            using var iterator = _container.GetItemQueryIterator<EventDocument>(queryDefinition, requestOptions: new QueryRequestOptions
-            {
-                PartitionKey = new PartitionKey(streamId.Id)
-            });
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync(cancellationToken);
-                eventDocuments.AddRange(response);
-                response.AddActivityEvent(streamId, operation: "Get Event Documents up to Sequence");
-            }
-        }
-        catch (Exception ex)
-        {
-            ex.AddException(streamId, operation: "Get Event Documents up to Sequence");
-            return ErrorHandling.DefaultFailure;
-        }
-
-        return eventDocuments;
+        return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
+            operation: "Get Event Documents up to Sequence", cancellationToken);
     }
 
     /// <summary>
@@ -486,72 +228,18 @@ public class CosmosDataStore : ICosmosDataStore
     public async Task<Result<List<EventDocument>>> GetEventDocumentsUpToDate(IStreamId streamId, DateTimeOffset upToDate, Type[]? eventTypeFilter = null,
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate <= @upToDate AND c.documentType = @documentType");
-
-        var filterEventTypes = eventTypeFilter is { Length: > 0 };
-        if (filterEventTypes)
-        {
-            sql.Append(" AND ARRAY_CONTAINS(@eventTypes, c.eventType)");
-        }
-
-        var filterEventProperties = eventPropertyFilter is { Count: > 0 };
-        if (filterEventProperties)
-        {
-            for (var i = 0; i < eventPropertyFilter!.Count; i++)
-            {
-                sql.Append($" AND CONTAINS(c.data, @propertyFilter{i})");
-            }
-        }
-
-        sql.Append(" ORDER BY c.sequence");
+        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate <= @upToDate AND c.documentType = @documentType")
+            .AppendEventFilters(eventTypeFilter, eventPropertyFilter)
+            .Append(" ORDER BY c.sequence");
 
         var queryDefinition = new QueryDefinition(sql.ToString())
             .WithParameter("@streamId", streamId.Id)
             .WithParameter("@upToDate", upToDate)
-            .WithParameter("@documentType", DocumentType.Event);
+            .WithParameter("@documentType", DocumentType.Event)
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
 
-        if (filterEventTypes)
-        {
-            var eventTypes = eventTypeFilter!
-                .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
-                .Select(b => b.Key).ToList();
-
-            queryDefinition = queryDefinition.WithParameter("@eventTypes", eventTypes);
-        }
-
-        if (filterEventProperties)
-        {
-            var index = 0;
-            foreach (var filter in eventPropertyFilter!)
-            {
-                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", $"\"{filter.Key}\":\"{filter.Value}\"");
-                index++;
-            }
-        }
-
-        var eventDocuments = new List<EventDocument>();
-
-        try
-        {
-            using var iterator = _container.GetItemQueryIterator<EventDocument>(queryDefinition, requestOptions: new QueryRequestOptions
-            {
-                PartitionKey = new PartitionKey(streamId.Id)
-            });
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync(cancellationToken);
-                eventDocuments.AddRange(response);
-                response.AddActivityEvent(streamId, operation: "Get Event Documents up to Date");
-            }
-        }
-        catch (Exception ex)
-        {
-            ex.AddException(streamId, operation: "Get Event Documents up to Sequence");
-            return ErrorHandling.DefaultFailure;
-        }
-
-        return eventDocuments;
+        return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
+            operation: "Get Event Documents up to Date", cancellationToken);
     }
 
     /// <summary>
@@ -567,72 +255,18 @@ public class CosmosDataStore : ICosmosDataStore
     public async Task<Result<List<EventDocument>>> GetEventDocumentsFromDate(IStreamId streamId, DateTimeOffset fromDate, Type[]? eventTypeFilter = null,
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate >= @fromDate AND c.documentType = @documentType");
-
-        var filterEventTypes = eventTypeFilter is { Length: > 0 };
-        if (filterEventTypes)
-        {
-            sql.Append(" AND ARRAY_CONTAINS(@eventTypes, c.eventType)");
-        }
-
-        var filterEventProperties = eventPropertyFilter is { Count: > 0 };
-        if (filterEventProperties)
-        {
-            for (var i = 0; i < eventPropertyFilter!.Count; i++)
-            {
-                sql.Append($" AND CONTAINS(c.data, @propertyFilter{i})");
-            }
-        }
-
-        sql.Append(" ORDER BY c.sequence");
+        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate >= @fromDate AND c.documentType = @documentType")
+            .AppendEventFilters(eventTypeFilter, eventPropertyFilter)
+            .Append(" ORDER BY c.sequence");
 
         var queryDefinition = new QueryDefinition(sql.ToString())
             .WithParameter("@streamId", streamId.Id)
             .WithParameter("@fromDate", fromDate)
-            .WithParameter("@documentType", DocumentType.Event);
+            .WithParameter("@documentType", DocumentType.Event)
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
 
-        if (filterEventTypes)
-        {
-            var eventTypes = eventTypeFilter!
-                .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
-                .Select(b => b.Key).ToList();
-
-            queryDefinition = queryDefinition.WithParameter("@eventTypes", eventTypes);
-        }
-
-        if (filterEventProperties)
-        {
-            var index = 0;
-            foreach (var filter in eventPropertyFilter!)
-            {
-                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", $"\"{filter.Key}\":\"{filter.Value}\"");
-                index++;
-            }
-        }
-
-        var eventDocuments = new List<EventDocument>();
-
-        try
-        {
-            using var iterator = _container.GetItemQueryIterator<EventDocument>(queryDefinition, requestOptions: new QueryRequestOptions
-            {
-                PartitionKey = new PartitionKey(streamId.Id)
-            });
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync(cancellationToken);
-                eventDocuments.AddRange(response);
-                response.AddActivityEvent(streamId, operation: "Get Event Documents from Date");
-            }
-        }
-        catch (Exception ex)
-        {
-            ex.AddException(streamId, operation: "Get Event Documents up to Sequence");
-            return ErrorHandling.DefaultFailure;
-        }
-
-        return eventDocuments;
+        return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
+            operation: "Get Event Documents from Date", cancellationToken);
     }
 
     /// <summary>
@@ -649,73 +283,19 @@ public class CosmosDataStore : ICosmosDataStore
     public async Task<Result<List<EventDocument>>> GetEventDocumentsBetweenDates(IStreamId streamId, DateTimeOffset fromDate, DateTimeOffset toDate,
         Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate >= @fromDate AND c.createdDate <= @toDate AND c.documentType = @documentType");
-
-        var filterEventTypes = eventTypeFilter is { Length: > 0 };
-        if (filterEventTypes)
-        {
-            sql.Append(" AND ARRAY_CONTAINS(@eventTypes, c.eventType)");
-        }
-
-        var filterEventProperties = eventPropertyFilter is { Count: > 0 };
-        if (filterEventProperties)
-        {
-            for (var i = 0; i < eventPropertyFilter!.Count; i++)
-            {
-                sql.Append($" AND CONTAINS(c.data, @propertyFilter{i})");
-            }
-        }
-
-        sql.Append(" ORDER BY c.sequence");
+        var sql = new System.Text.StringBuilder("SELECT * FROM c WHERE c.streamId = @streamId AND c.createdDate >= @fromDate AND c.createdDate <= @toDate AND c.documentType = @documentType")
+            .AppendEventFilters(eventTypeFilter, eventPropertyFilter)
+            .Append(" ORDER BY c.sequence");
 
         var queryDefinition = new QueryDefinition(sql.ToString())
             .WithParameter("@streamId", streamId.Id)
             .WithParameter("@fromDate", fromDate)
             .WithParameter("@toDate", toDate)
-            .WithParameter("@documentType", DocumentType.Event);
+            .WithParameter("@documentType", DocumentType.Event)
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
 
-        if (filterEventTypes)
-        {
-            var eventTypes = eventTypeFilter!
-                .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
-                .Select(b => b.Key).ToList();
-
-            queryDefinition = queryDefinition.WithParameter("@eventTypes", eventTypes);
-        }
-
-        if (filterEventProperties)
-        {
-            var index = 0;
-            foreach (var filter in eventPropertyFilter!)
-            {
-                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", $"\"{filter.Key}\":\"{filter.Value}\"");
-                index++;
-            }
-        }
-
-        var eventDocuments = new List<EventDocument>();
-
-        try
-        {
-            using var iterator = _container.GetItemQueryIterator<EventDocument>(queryDefinition, requestOptions: new QueryRequestOptions
-            {
-                PartitionKey = new PartitionKey(streamId.Id)
-            });
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync(cancellationToken);
-                eventDocuments.AddRange(response);
-                response.AddActivityEvent(streamId, operation: "Get Event Documents between Dates");
-            }
-        }
-        catch (Exception ex)
-        {
-            ex.AddException(streamId, operation: "Get Event Documents between Dates");
-            return ErrorHandling.DefaultFailure;
-        }
-
-        return eventDocuments;
+        return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
+            operation: "Get Event Documents between Dates", cancellationToken);
     }
 
     /// <summary>

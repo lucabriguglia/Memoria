@@ -463,45 +463,13 @@ public class CosmosDomainService : IDomainService
         IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
-        var sql = new System.Text.StringBuilder("SELECT VALUE MAX(c.sequence) FROM c WHERE c.streamId = @streamId AND c.documentType = @documentType");
-
-        var filterEventTypes = eventTypeFilter is { Length: > 0 };
-        if (filterEventTypes)
-        {
-            sql.Append(" AND ARRAY_CONTAINS(@eventTypes, c.eventType)");
-        }
-
-        var filterEventProperties = eventPropertyFilter is { Count: > 0 };
-        if (filterEventProperties)
-        {
-            for (var i = 0; i < eventPropertyFilter!.Count; i++)
-            {
-                sql.Append($" AND CONTAINS(c.data, @propertyFilter{i})");
-            }
-        }
+        var sql = new System.Text.StringBuilder("SELECT VALUE MAX(c.sequence) FROM c WHERE c.streamId = @streamId AND c.documentType = @documentType")
+            .AppendEventFilters(eventTypeFilter, eventPropertyFilter);
 
         var queryDefinition = new QueryDefinition(sql.ToString())
             .WithParameter("@streamId", streamId.Id)
-            .WithParameter("@documentType", DocumentType.Event);
-
-        if (filterEventTypes)
-        {
-            var eventTypes = eventTypeFilter!
-                .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
-                .Select(b => b.Key).ToList();
-
-            queryDefinition = queryDefinition.WithParameter("@eventTypes", eventTypes);
-        }
-
-        if (filterEventProperties)
-        {
-            var index = 0;
-            foreach (var filter in eventPropertyFilter!)
-            {
-                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", $"\"{filter.Key}\":\"{filter.Value}\"");
-                index++;
-            }
-        }
+            .WithParameter("@documentType", DocumentType.Event)
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
 
         try
         {

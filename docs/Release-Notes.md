@@ -1,5 +1,9 @@
 # Release Notes
 
+## Memoria 1.2.1
+_**Released 12/05/2026**_
+- Dependencies upgrade
+
 ## Memoria 1.2.0
 _**Released 10/05/2026**_
 - Event property filtering on aggregate ids via `IAggregateId.EventPropertyFilter` (key/value pairs applied when retrieving or reconstructing an aggregate)

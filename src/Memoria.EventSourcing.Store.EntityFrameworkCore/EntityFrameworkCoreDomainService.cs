@@ -1,5 +1,6 @@
 ﻿using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Filtering;
 using Memoria.Results;
 
 namespace Memoria.EventSourcing.Store.EntityFrameworkCore;
@@ -7,7 +8,7 @@ namespace Memoria.EventSourcing.Store.EntityFrameworkCore;
 /// <summary>
 /// Entity Framework Core implementation of the domain service for managing aggregates and domain events.
 /// </summary>
-public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) : IDomainService
+public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext, IEventDataFilter? dataFilter = null) : IDomainService
 {
     /// <summary>
     /// Retrieves an aggregate from the specified stream, applying the selected read mode.
@@ -37,7 +38,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
     public async Task<Result<List<IEvent>>> GetEvents(IStreamId streamId, Type[]? eventTypeFilter = null,
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
     {
-        return await domainDbContext.GetEvents(streamId, eventTypeFilter, eventPropertyFilter, cancellationToken);
+        return await domainDbContext.GetEvents(streamId, eventTypeFilter, eventPropertyFilter, dataFilter, cancellationToken);
     }
 
     /// <summary>
@@ -69,7 +70,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
         CancellationToken cancellationToken = default)
     {
         return await domainDbContext.GetEventsBetweenSequences(streamId, fromSequence, toSequence, eventTypeFilter,
-            eventPropertyFilter, cancellationToken);
+            eventPropertyFilter, dataFilter, cancellationToken);
     }
 
     /// <summary>
@@ -86,7 +87,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
         CancellationToken cancellationToken = default)
     {
         return await domainDbContext.GetEventsFromSequence(streamId, fromSequence, eventTypeFilter, eventPropertyFilter,
-            cancellationToken);
+            dataFilter, cancellationToken);
     }
 
     /// <summary>
@@ -102,7 +103,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
         Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
-        return await domainDbContext.GetEventsUpToSequence(streamId, upToSequence, eventTypeFilter, eventPropertyFilter, cancellationToken);
+        return await domainDbContext.GetEventsUpToSequence(streamId, upToSequence, eventTypeFilter, eventPropertyFilter, dataFilter, cancellationToken);
     }
 
     /// <summary>
@@ -118,7 +119,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
         Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
-        return await domainDbContext.GetEventsUpToDate(streamId, upToDate, eventTypeFilter, eventPropertyFilter, cancellationToken);
+        return await domainDbContext.GetEventsUpToDate(streamId, upToDate, eventTypeFilter, eventPropertyFilter, dataFilter, cancellationToken);
     }
 
     /// <summary>
@@ -134,7 +135,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
         Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
-        return await domainDbContext.GetEventsFromDate(streamId, fromDate, eventTypeFilter, eventPropertyFilter, cancellationToken);
+        return await domainDbContext.GetEventsFromDate(streamId, fromDate, eventTypeFilter, eventPropertyFilter, dataFilter, cancellationToken);
     }
 
     /// <summary>
@@ -153,7 +154,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
         CancellationToken cancellationToken = default)
     {
         return await domainDbContext.GetEventsBetweenDates(streamId, fromDate, toDate, eventTypeFilter,
-            eventPropertyFilter, cancellationToken);
+            eventPropertyFilter, dataFilter, cancellationToken);
     }
 
     /// <summary>
@@ -213,7 +214,7 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext) 
         IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)
     {
-        return await domainDbContext.GetLatestEventSequence(streamId, eventTypeFilter, eventPropertyFilter, cancellationToken);
+        return await domainDbContext.GetLatestEventSequence(streamId, eventTypeFilter, eventPropertyFilter, dataFilter, cancellationToken);
     }
 
     /// <summary>

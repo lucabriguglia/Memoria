@@ -21,4 +21,5 @@ Memoria is a .NET framework that can be used as a simple mediator or as an Event
     - [Entity Framework Core](Entity-Framework-Core.md)
       - [Extensions](Entity-Framework-Core-Extensions.md)
       - [Scenarios](Entity-Framework-Core-Scenarios.md)
+      - [PostgreSQL](Entity-Framework-Core-Npgsql.md)
 - [Release Notes](Release-Notes.md)

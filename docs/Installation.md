@@ -26,6 +26,7 @@ Or via Paket CLI
 | Memoria.EventSourcing.Store.Cosmos.InMemory              | Event Sourcing with InMemory CosmosDB              |
 | Memoria.EventSourcing.Store.EntityFrameworkCore          | Event Sourcing with Entity Framework Core          |
 | Memoria.EventSourcing.Store.EntityFrameworkCore.Identity | Event Sourcing with Entity Framework Core Identity |
+| Memoria.EventSourcing.Store.EntityFrameworkCore.Npgsql   | PostgreSQL JSON property filter for the EF Core store |
 | Memoria.Messaging.RabbitMq                               | Messaging with RabbitMQ                            |
 | Memoria.Messaging.ServiceBus                             | Messaging with Service Bus                         |
 | Memoria.Validation.FluentValidation                      | Command validation with FluentValidation           |

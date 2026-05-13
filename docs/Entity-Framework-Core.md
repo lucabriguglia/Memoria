@@ -17,6 +17,8 @@ The event sourcing functionalities can be used with the following Entity Framewo
 
 Memoria also provides support for IdentityDbContext from ASP.NET Core Identity, allowing you to integrate event sourcing with user management and authentication features.
 
+For PostgreSQL, install the companion [Memoria.EventSourcing.Store.EntityFrameworkCore.Npgsql](Entity-Framework-Core-Npgsql.md) package when storing the event data column as `jsonb` so that `eventPropertyFilter` queries translate correctly.
+
 ## Diagnostics
 
 Memoria emits diagnostic events using `System.Diagnostics` to help you monitor and troubleshoot your application.
@@ -31,3 +33,4 @@ Memoria emits diagnostic events using `System.Diagnostics` to help you monitor a
 - [Domain Service](Domain-Service.md)
 - [Scenarios](Entity-Framework-Core-Scenarios)
 - [Extensions](Entity-Framework-Core-Extensions)
+- [PostgreSQL](Entity-Framework-Core-Npgsql)

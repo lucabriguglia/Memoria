@@ -1,4 +1,5 @@
 ﻿using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Filtering;
 using Microsoft.EntityFrameworkCore;
 
 namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
@@ -19,11 +20,11 @@ public static partial class IDomainDbContextExtensions
     /// var sequence = await context.GetLatestEventSequence(streamId);
     /// </code>
     /// </example>
-    public static async Task<int> GetLatestEventSequence(this IDomainDbContext domainDbContext, IStreamId streamId, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+    public static async Task<int> GetLatestEventSequence(this IDomainDbContext domainDbContext, IStreamId streamId, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, IEventDataFilter? dataFilter = null, CancellationToken cancellationToken = default)
     {
         return await domainDbContext.Events.AsNoTracking()
             .Where(eventEntity => eventEntity.StreamId == streamId.Id)
-            .ApplyFilters(eventTypeFilter, eventPropertyFilter)
+            .ApplyFilters(eventTypeFilter, eventPropertyFilter, dataFilter)
             .MaxAsync(eventEntity => (int?)eventEntity.Sequence, cancellationToken) ?? 0;
     }
 }

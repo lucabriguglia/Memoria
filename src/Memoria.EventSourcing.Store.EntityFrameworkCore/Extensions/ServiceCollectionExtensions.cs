@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Memoria.EventSourcing.Store.EntityFrameworkCore.Filtering;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -19,7 +20,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
         services.AddScoped<IDomainDbContext>(serviceProvider => serviceProvider.GetRequiredService<TDbContext>());
+        services.TryAddSingleton<IEventDataFilter, SubstringEventDataFilter>();
         services.Replace(ServiceDescriptor.Scoped<IDomainService>(provider =>
-            new EntityFrameworkCoreDomainService(provider.GetRequiredService<IDomainDbContext>())));
+            new EntityFrameworkCoreDomainService(
+                provider.GetRequiredService<IDomainDbContext>(),
+                provider.GetRequiredService<IEventDataFilter>())));
     }
 }

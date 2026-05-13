@@ -98,6 +98,14 @@ services.AddDbContext<ApplicationDbContext>(options =>
 // Register the event sourcing store provider
 services.AddMemoriaEntityFrameworkCore<ApplicationDbContext>();
 ```
+
+If you target PostgreSQL with `jsonb` storage for the event data column, also install **Memoria.EventSourcing.Store.EntityFrameworkCore.Npgsql** and register the Postgres-aware property filter. The default substring filter does not match `jsonb` columns because Postgres normalizes the JSON text; this package replaces it with one that uses the `@>` JSON containment operator. See [Entity Framework Core: PostgreSQL](Entity-Framework-Core-Npgsql.md) for the column mapping and indexing details.
+
+```C#
+services.AddMemoriaEntityFrameworkCore<ApplicationDbContext>();
+services.AddMemoriaEntityFrameworkCoreNpgsql();
+```
+
 Memoria also supports ASP.NET Core Identity. Install the **Memoria.EventSourcing.Store.EntityFrameworkCore.Identity** package and use the IdentityDomainDbContext in your application:
 ```C#
 // Your db context that inherits from DomainDbContext

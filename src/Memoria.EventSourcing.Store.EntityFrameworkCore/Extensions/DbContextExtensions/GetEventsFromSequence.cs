@@ -1,5 +1,6 @@
 ﻿using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Filtering;
 
 namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
 
@@ -23,10 +24,11 @@ public static partial class IDomainDbContextExtensions
     /// </example>
     public static async Task<List<IEvent>> GetEventsFromSequence(this IDomainDbContext domainDbContext,
         IStreamId streamId, int fromSequence, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
+        IEventDataFilter? dataFilter = null,
         CancellationToken cancellationToken = default)
     {
         var eventEntities = await domainDbContext.GetEventEntitiesFromSequence(streamId, fromSequence, eventTypeFilter,
-            eventPropertyFilter, cancellationToken);
+            eventPropertyFilter, dataFilter, cancellationToken);
         return eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
     }
 }

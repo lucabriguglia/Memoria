@@ -1,5 +1,10 @@
 # Release Notes
 
+## Memoria 1.3.1
+_**Released 13/05/2026**_
+- `eventPropertyFilter` now works correctly for non-string property values (numbers, booleans, null), not just strings, across the Entity Framework Core, Npgsql, and Cosmos DB store providers
+- New `Memoria.EventSourcing.Filtering.EventPropertyFilterValue` helper that coerces a stringly-typed filter value into the matching JSON-scalar literal so filters target the same form Newtonsoft.Json wrote into the event data
+
 ## Memoria 1.3.0
 _**Released 13/05/2026**_
 - New `Memoria.EventSourcing.Store.EntityFrameworkCore.Npgsql` package: replaces the default substring-based event property filter with one that uses the Postgres `@>` JSON-containment operator, so `eventPropertyFilter` works correctly against `jsonb` columns and benefits from GIN indexes

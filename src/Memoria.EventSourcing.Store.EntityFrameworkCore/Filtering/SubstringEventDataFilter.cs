@@ -1,4 +1,6 @@
+using Memoria.EventSourcing.Filtering;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
+using Newtonsoft.Json;
 
 namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Filtering;
 
@@ -12,7 +14,7 @@ public sealed class SubstringEventDataFilter : IEventDataFilter
     /// <inheritdoc />
     public IQueryable<EventEntity> ApplyPropertyFilter(IQueryable<EventEntity> query, string propertyName, string propertyValue)
     {
-        var needle = $"\"{propertyName}\":\"{propertyValue}\"";
+        var needle = $"{JsonConvert.ToString(propertyName)}:{EventPropertyFilterValue.ToJsonLiteral(propertyValue)}";
         return query.Where(eventEntity => eventEntity.Data.Contains(needle));
     }
 }

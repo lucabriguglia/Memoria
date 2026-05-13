@@ -1,7 +1,8 @@
-using System.Text.Json;
+using Memoria.EventSourcing.Filtering;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Filtering;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 
 namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Npgsql;
 
@@ -16,7 +17,7 @@ public sealed class NpgsqlJsonEventDataFilter : IEventDataFilter
     /// <inheritdoc />
     public IQueryable<EventEntity> ApplyPropertyFilter(IQueryable<EventEntity> query, string propertyName, string propertyValue)
     {
-        var contained = JsonSerializer.Serialize(new Dictionary<string, string> { [propertyName] = propertyValue });
+        var contained = $"{{{JsonConvert.ToString(propertyName)}:{EventPropertyFilterValue.ToJsonLiteral(propertyValue)}}}";
         return query.Where(eventEntity => EF.Functions.JsonContains(eventEntity.Data, contained));
     }
 }

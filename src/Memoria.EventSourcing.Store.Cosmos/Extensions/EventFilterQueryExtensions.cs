@@ -1,6 +1,8 @@
 using System.Text;
 using Memoria.EventSourcing.Domain;
+using Memoria.EventSourcing.Filtering;
 using Microsoft.Azure.Cosmos;
+using Newtonsoft.Json;
 
 namespace Memoria.EventSourcing.Store.Cosmos.Extensions;
 
@@ -42,7 +44,8 @@ internal static class EventFilterQueryExtensions
             var index = 0;
             foreach (var filter in eventPropertyFilter)
             {
-                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", $"\"{filter.Key}\":\"{filter.Value}\"");
+                var needle = $"{JsonConvert.ToString(filter.Key)}:{EventPropertyFilterValue.ToJsonLiteral(filter.Value)}";
+                queryDefinition = queryDefinition.WithParameter($"@propertyFilter{index}", needle);
                 index++;
             }
         }

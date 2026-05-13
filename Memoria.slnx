@@ -33,6 +33,7 @@
     <Project Path="src/Memoria.EventSourcing/Memoria.EventSourcing.csproj" />
     <Project Path="src/Memoria.EventSourcing.Store.EntityFrameworkCore/Memoria.EventSourcing.Store.EntityFrameworkCore.csproj" />
     <Project Path="src/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity.csproj" />
+    <Project Path="src/Memoria.EventSourcing.Store.EntityFrameworkCore.Npgsql/Memoria.EventSourcing.Store.EntityFrameworkCore.Npgsql.csproj" />
     <Project Path="src/Memoria.EventSourcing.Store.Cosmos/Memoria.EventSourcing.Store.Cosmos.csproj" />
     <Project Path="src/Memoria.EventSourcing.Store.Cosmos.InMemory/Memoria.EventSourcing.Store.Cosmos.InMemory.csproj" />
     <Project Path="src/Memoria.Messaging.RabbitMq/Memoria.Messaging.RabbitMq.csproj" />
@@ -46,6 +47,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Memoria.Tests/Memoria.Tests.csproj" />
     <Project Path="tests/Memoria.EventSourcing.Store.EntityFrameworkCore.Tests/Memoria.EventSourcing.Store.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/Memoria.EventSourcing.Store.EntityFrameworkCore.Npgsql.Tests/Memoria.EventSourcing.Store.EntityFrameworkCore.Npgsql.Tests.csproj" />
     <Project Path="tests/Memoria.EventSourcing.Store.Cosmos.Tests/Memoria.EventSourcing.Store.Cosmos.Tests.csproj" />
     <Project Path="tests/Memoria.EventSourcing.Store.Cosmos.InMemory.Tests/Memoria.EventSourcing.Store.Cosmos.InMemory.Tests.csproj" />
     <Project Path="tests/Memoria.EventSourcing.Store.Tests/Memoria.EventSourcing.Store.Tests.csproj" />

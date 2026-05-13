@@ -35,7 +35,7 @@ public static partial class IDomainDbContextExtensions
         var aggregate = new T();
 
         var eventEntities = await domainDbContext.GetEventEntities(streamId, aggregate.EventTypeFilter,
-            aggregateId.EventPropertyFilter, cancellationToken);
+            aggregateId.EventPropertyFilter, cancellationToken: cancellationToken);
         if (eventEntities.Count == 0)
         {
             return aggregate;
@@ -76,7 +76,7 @@ public static partial class IDomainDbContextExtensions
         var aggregate = new T();
 
         var eventEntities = await domainDbContext.GetEventEntitiesUpToSequence(streamId, upToSequence,
-            aggregate.EventTypeFilter, aggregateId.EventPropertyFilter, cancellationToken);
+            aggregate.EventTypeFilter, aggregateId.EventPropertyFilter, cancellationToken: cancellationToken);
         if (eventEntities.Count == 0)
         {
             return aggregate;
@@ -118,7 +118,7 @@ public static partial class IDomainDbContextExtensions
 
         var eventEntities =
             await domainDbContext.GetEventEntitiesUpToDate(streamId, upToDate, aggregate.EventTypeFilter, aggregateId.EventPropertyFilter,
-                cancellationToken);
+                cancellationToken: cancellationToken);
         if (eventEntities.Count == 0)
         {
             return aggregate;

@@ -14,7 +14,7 @@ public static partial class IDomainDbContextExtensions
 
         var newEventEntities = await domainDbContext.GetEventEntitiesFromSequence(streamId,
             fromSequence: aggregate.LatestEventSequence + 1, aggregate.EventTypeFilter, aggregateId.EventPropertyFilter,
-            cancellationToken);
+            cancellationToken: cancellationToken);
         if (newEventEntities.Count == 0)
         {
             return aggregate.Version > 0 ? aggregate : default;

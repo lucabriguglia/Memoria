@@ -1,5 +1,6 @@
 ﻿using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Filtering;
 using Microsoft.EntityFrameworkCore;
 
 namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
@@ -26,14 +27,14 @@ public static partial class IDomainDbContextExtensions
     /// var filteredEntities = await context.GetEventEntitiesBetweenDates(streamId, fromDate, toDate, new[] { typeof(SomeEvent) });
     /// </code>
     /// </example>
-    public static async Task<List<EventEntity>> GetEventEntitiesBetweenDates(this IDomainDbContext domainDbContext, IStreamId streamId, DateTimeOffset fromDate, DateTimeOffset toDate, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+    public static async Task<List<EventEntity>> GetEventEntitiesBetweenDates(this IDomainDbContext domainDbContext, IStreamId streamId, DateTimeOffset fromDate, DateTimeOffset toDate, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, IEventDataFilter? dataFilter = null, CancellationToken cancellationToken = default)
     {
         return await domainDbContext.Events.AsNoTracking()
             .Where(eventEntity =>
                 eventEntity.StreamId == streamId.Id &&
                 eventEntity.CreatedDate >= fromDate &&
                 eventEntity.CreatedDate <= toDate)
-            .ApplyFilters(eventTypeFilter, eventPropertyFilter)
+            .ApplyFilters(eventTypeFilter, eventPropertyFilter, dataFilter)
             .OrderBy(eventEntity => eventEntity.Sequence)
             .ToListAsync(cancellationToken);
     }

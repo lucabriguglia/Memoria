@@ -1,5 +1,6 @@
 ﻿using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Filtering;
 
 namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
 
@@ -23,9 +24,9 @@ public static partial class IDomainDbContextExtensions
     /// var filteredEvents = await context.GetEventsUpToDate(streamId, upToDate, new[] { typeof(SomeEvent) });
     /// </code>
     /// </example>
-    public static async Task<List<IEvent>> GetEventsUpToDate(this IDomainDbContext domainDbContext, IStreamId streamId, DateTimeOffset upToDate, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)
+    public static async Task<List<IEvent>> GetEventsUpToDate(this IDomainDbContext domainDbContext, IStreamId streamId, DateTimeOffset upToDate, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, IEventDataFilter? dataFilter = null, CancellationToken cancellationToken = default)
     {
-        var eventEntities = await domainDbContext.GetEventEntitiesUpToDate(streamId, upToDate, eventTypeFilter, eventPropertyFilter, cancellationToken);
+        var eventEntities = await domainDbContext.GetEventEntitiesUpToDate(streamId, upToDate, eventTypeFilter, eventPropertyFilter, dataFilter, cancellationToken);
         return eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Filtering;
 using Microsoft.EntityFrameworkCore;
 
 namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
@@ -13,6 +14,7 @@ public static partial class IDomainDbContextExtensions
     /// <param name="streamId">The unique identifier for the event stream.</param>
     /// <param name="eventTypeFilter">An optional array of event types to filter the results.</param>
     /// <param name="eventPropertyFilter">An optional array of event properties to filter the results.</param>
+    /// <param name="dataFilter">Optional strategy used to apply <paramref name="eventPropertyFilter"/>. Defaults to a substring match on the JSON data column.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A list of event entities from the stream.</returns>
     /// <example>
@@ -23,11 +25,12 @@ public static partial class IDomainDbContextExtensions
     /// </example>
     public static async Task<List<EventEntity>> GetEventEntities(this IDomainDbContext domainDbContext,
         IStreamId streamId, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null,
+        IEventDataFilter? dataFilter = null,
         CancellationToken cancellationToken = default)
     {
         return await domainDbContext.Events.AsNoTracking()
             .Where(eventEntity => eventEntity.StreamId == streamId.Id)
-            .ApplyFilters(eventTypeFilter, eventPropertyFilter)
+            .ApplyFilters(eventTypeFilter, eventPropertyFilter, dataFilter)
             .OrderBy(eventEntity => eventEntity.Sequence)
             .ToListAsync(cancellationToken);
     }

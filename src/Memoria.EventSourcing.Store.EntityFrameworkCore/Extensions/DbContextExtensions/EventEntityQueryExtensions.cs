@@ -1,12 +1,16 @@
 using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
+using Memoria.EventSourcing.Store.EntityFrameworkCore.Filtering;
 
 namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
 
 internal static class EventEntityQueryExtensions
 {
+    private static readonly IEventDataFilter DefaultDataFilter = new SubstringEventDataFilter();
+
     public static IQueryable<EventEntity> ApplyFilters(this IQueryable<EventEntity> query,
-        Type[]? eventTypeFilter, IDictionary<string, string>? eventPropertyFilter)
+        Type[]? eventTypeFilter, IDictionary<string, string>? eventPropertyFilter,
+        IEventDataFilter? dataFilter = null)
     {
         if (eventTypeFilter is { Length: > 0 })
         {
@@ -19,10 +23,10 @@ internal static class EventEntityQueryExtensions
 
         if (eventPropertyFilter is { Count: > 0 })
         {
-            foreach (var filter in eventPropertyFilter)
+            var filter = dataFilter ?? DefaultDataFilter;
+            foreach (var property in eventPropertyFilter)
             {
-                var propertyFilter = $"\"{filter.Key}\":\"{filter.Value}\"";
-                query = query.Where(eventEntity => eventEntity.Data.Contains(propertyFilter));
+                query = filter.ApplyPropertyFilter(query, property.Key, property.Value);
             }
         }
 

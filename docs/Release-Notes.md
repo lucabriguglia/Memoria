@@ -1,5 +1,11 @@
 # Release Notes
 
+## Memoria 1.3.0
+_**Released 13/05/2026**_
+- New `Memoria.EventSourcing.Store.EntityFrameworkCore.Npgsql` package: replaces the default substring-based event property filter with one that uses the Postgres `@>` JSON-containment operator, so `eventPropertyFilter` works correctly against `jsonb` columns and benefits from GIN indexes
+- New `IEventDataFilter` extension point in `Memoria.EventSourcing.Store.EntityFrameworkCore` (in the `Filtering` namespace) for plugging in provider-specific JSON filter strategies; the default `SubstringEventDataFilter` preserves existing behavior on `text` columns
+- `EntityFrameworkCoreDomainService` and every `IDomainDbContext` event-query extension method now accept an optional `IEventDataFilter` (non-breaking; defaults to substring)
+
 ## Memoria 1.2.1
 _**Released 12/05/2026**_
 - Dependencies upgrade

@@ -19,6 +19,7 @@
     <File Path="docs/Release-Notes.md" />
     <File Path="docs/Event-Sourcing.md" />
     <File Path="docs/Entity-Framework-Core.md" />
+    <File Path="docs/Entity-Framework-Core-Npgsql.md" />
     <File Path="docs/Cosmos.md" />
     <File Path="docs/Domain.md" />
     <File Path="docs/Notifications.md" />

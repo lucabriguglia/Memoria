@@ -6,6 +6,12 @@ Memoria is a .NET framework that can be used as a simple mediator or as an Event
 
 ## Documentation
 
+### Getting started
+
+- [Install](getting-started/install.md)
+- [Quickstart: Mediator](getting-started/quickstart-mediator.md)
+- [Quickstart: Event Sourcing](getting-started/quickstart-event-sourcing.md)
+
 ### Concepts
 
 - [Overview](concepts/overview.md) — mediator vs. event sourcing
@@ -15,12 +21,18 @@ Memoria is a .NET framework that can be used as a simple mediator or as an Event
 - [Result Pattern](concepts/result-pattern.md)
 - [Glossary](concepts/glossary.md)
 
-### Getting started
+### Guides
 
-- [Install](getting-started/install.md)
-- [Quickstart: Mediator](getting-started/quickstart-mediator.md)
-- [Quickstart: Event Sourcing](getting-started/quickstart-event-sourcing.md)
-- [Commands](Commands.md) · [Queries](Queries.md) · [Notifications](Notifications.md) — full feature reference
+- [Validate commands](guides/validate-commands.md)
+- [Use a custom command handler](guides/custom-command-handlers.md)
+- [Run a sequence of commands](guides/command-sequences.md)
+- [Publish to Service Bus](guides/publish-to-service-bus.md) · [Publish to RabbitMQ](guides/publish-to-rabbitmq.md)
+- [Cache query results](guides/cache-queries.md)
+- [Multiple aggregates per stream](guides/multiple-aggregates-per-stream.md)
+- [Replay events in memory](guides/replay-events-in-memory.md)
+- [Use PostgreSQL with jsonb](guides/use-postgres-jsonb.md)
+- [Integrate with ASP.NET Core Identity](guides/integrate-aspnet-identity.md)
+- [Test without external dependencies](guides/test-without-external-deps.md)
 
 ### Reference
 
@@ -37,12 +49,7 @@ Memoria is a .NET framework that can be used as a simple mediator or as an Event
   - [Messaging: RabbitMQ](reference/configuration/messaging-rabbitmq.md)
   - [Caching](reference/configuration/caching.md)
 
-### Scenarios
-
-- [Event Sourcing Scenarios](Event-Sourcing-Scenarios.md)
-- [Entity Framework Core Scenarios](Entity-Framework-Core-Scenarios.md)
-- [PostgreSQL with jsonb](Entity-Framework-Core-Npgsql.md)
-
 ---
 
+- [Examples](examples.md)
 - [Release Notes](Release-Notes.md)

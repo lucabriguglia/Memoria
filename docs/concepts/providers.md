@@ -26,7 +26,7 @@ For storage, messaging, and caching, Memoria ships dedicated **InMemory** packag
 - **Relational, transactional writes, complex queries** → Entity Framework Core. SQL Server, SQLite, PostgreSQL, MySQL, and EF Core's In-Memory provider are all supported.
 - **Cloud-native, horizontally-scaled writes** → Cosmos DB. The store provider uses transactional batches per stream.
 - **ASP.NET Core Identity in the same database** → Entity Framework Core with the [Identity companion package](../reference/configuration/ef-core-identity.md).
-- **PostgreSQL with `jsonb` event data** → Entity Framework Core + the [Npgsql companion package](../Entity-Framework-Core-Npgsql.md) so `eventPropertyFilter` translates to the `@>` containment operator.
+- **PostgreSQL with `jsonb` event data** → Entity Framework Core + the [Npgsql companion package](../guides/use-postgres-jsonb.md) so `eventPropertyFilter` translates to the `@>` containment operator.
 
 ## Related
 

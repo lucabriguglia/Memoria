@@ -65,7 +65,7 @@ services.AddMemoriaEntityFrameworkCore<ApplicationDbContext>();
 services.AddMemoriaEntityFrameworkCoreNpgsql();
 ```
 
-See [PostgreSQL](../../Entity-Framework-Core-Npgsql.md) for the column mapping and indexing details.
+See [Use PostgreSQL with jsonb](../../guides/use-postgres-jsonb.md) for the column mapping and indexing details.
 
 ## ASP.NET Core Identity
 
@@ -84,5 +84,5 @@ Memoria emits diagnostic events using `System.Diagnostics` to help you monitor a
 
 - [Domain Service](../domain-service.md)
 - [Extensions](../ef-core-extensions.md)
-- [Scenarios](../../Entity-Framework-Core-Scenarios.md)
-- [PostgreSQL](../../Entity-Framework-Core-Npgsql.md)
+- [Multiple aggregates per stream](../../guides/multiple-aggregates-per-stream.md)
+- [Use PostgreSQL with jsonb](../../guides/use-postgres-jsonb.md)

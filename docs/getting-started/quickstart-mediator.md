@@ -1,3 +1,13 @@
+---
+redirect_from:
+  - /Commands.html
+  - /Commands/
+  - /Queries.html
+  - /Queries/
+  - /Notifications.html
+  - /Notifications/
+---
+
 # Quickstart: Mediator
 
 A five-minute walk-through of the three message kinds Memoria dispatches: **commands**, **queries**, and **notifications**. Every handler returns a [`Result`](../concepts/result-pattern.md) so failures travel through types, not exceptions.
@@ -43,7 +53,7 @@ public class CreateProductHandler : ICommandHandler<CreateProduct>
 var result = await dispatcher.Send(new CreateProduct { Name = "Espresso" });
 ```
 
-Commands can return a value by implementing `ICommand<TResponse>` and `ICommandHandler<TCommand, TResponse>`. Beyond the happy path, see [Commands](../Commands.md) for validation, custom handlers, command sequences, and publishing notifications/messages on success.
+Commands can return a value by implementing `ICommand<TResponse>` and `ICommandHandler<TCommand, TResponse>`. Beyond the happy path, see the guides for [validating commands](../guides/validate-commands.md), [running command sequences](../guides/command-sequences.md), [using custom handlers](../guides/custom-command-handlers.md), and [publishing notifications and messages on success](../guides/publish-to-service-bus.md).
 
 ## 3. Run a query
 
@@ -73,7 +83,7 @@ public class GetProductHandler : IQueryHandler<GetProduct, Product>
 var result = await dispatcher.Get(new GetProduct { Id = 123 });
 ```
 
-Need automatic caching? See [Queries](../Queries.md) for the `CacheableQuery` base class.
+Need automatic caching? See [Cache queries](../guides/cache-queries.md).
 
 ## 4. Publish a notification
 

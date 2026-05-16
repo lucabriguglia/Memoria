@@ -9,23 +9,43 @@ namespace Memoria.Validation.FluentValidation.Extensions;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
+    private static readonly Type ValidatorOpenGeneric = typeof(IValidator<>);
+
     /// <summary>
     /// Adds Memoria FluentValidation services to the specified service collection.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to register the services with.</param>
-    /// <param name="types">An optional array of <see cref="Type"/> objects representing classes whose assemblies should be scanned for validators.</param>
+    /// <param name="types">The types whose assemblies are scanned for validators.</param>
     public static void AddMemoriaFluentValidation(this IServiceCollection services, params Type[] types)
     {
         ArgumentNullException.ThrowIfNull(services);
 
         services.Replace(ServiceDescriptor.Scoped<IValidationProvider, FluentValidationProvider>());
 
-        var typeList = types.ToList();
+        RegisterValidators(services, types);
+    }
 
-        services.Scan(s => s
-            .FromAssembliesOf(typeList)
-            .AddClasses(classes => classes.AssignableTo(typeof(IValidator<>)))
-                .AsImplementedInterfaces()
-                .WithScopedLifetime());
+    private static void RegisterValidators(IServiceCollection services, Type[] types)
+    {
+        var assemblies = types.Select(t => t.Assembly).Distinct();
+
+        foreach (var assembly in assemblies)
+        {
+            foreach (var type in assembly.GetTypes())
+            {
+                if (!type.IsClass || type.IsAbstract || type.IsGenericTypeDefinition)
+                {
+                    continue;
+                }
+
+                foreach (var interfaceType in type.GetInterfaces())
+                {
+                    if (interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == ValidatorOpenGeneric)
+                    {
+                        services.AddScoped(interfaceType, type);
+                    }
+                }
+            }
+        }
     }
 }

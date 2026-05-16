@@ -9,7 +9,7 @@ From Latin _memoria_ (memory)
 Memoria is extremely flexible and expandable. It can be used as a simple mediator or as a full Event Sourcing solution with Cosmos DB or Entity Framework Core as storage.
 
 - 📘 _[Full documentation](https://lucabriguglia.github.io/Memoria/)_
-- 📣 _[Release Notes](https://lucabriguglia.github.io/Memoria/Release-Notes.html)_
+- 📣 _[Release Notes](https://lucabriguglia.github.io/Memoria/release-notes.html)_
 - 📚 _[Examples in repository](https://github.com/lucabriguglia/Memoria/tree/main/examples)_
 - 🛒 _[EventShop (ecommerce demo application)](https://github.com/lucabriguglia/EventShop)_
 
@@ -57,8 +57,8 @@ If you're using this repository for your learning, samples, workshop, or your pr
 - File store provider for event sourcing
 - Amazon SQS messaging provider
 
-📣 _[Release Notes](https://lucabriguglia.github.io/Memoria/Release-Notes.html)_
-    
+📣 _[Release Notes](https://lucabriguglia.github.io/Memoria/release-notes.html)_
+
 ## 📦 Nuget Packages
 
 | Package                                                                                                                                             | Latest Stable                                                                                                                                                  |
@@ -78,280 +78,38 @@ If you're using this repository for your learning, samples, workshop, or your pr
 | [Memoria.Caching.Redis](https://www.nuget.org/packages/Memoria.Caching.Redis)                                                                       | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.1-blue.svg)](https://www.nuget.org/packages/Memoria.Caching.Redis)                                    |
 | [Memoria.Caching.Memory](https://www.nuget.org/packages/Memoria.Caching.Memory)                                                                     | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.1-blue.svg)](https://www.nuget.org/packages/Memoria.Caching.Memory)                                   |
 
-## 🔄 Simple mediator
+## 🔄 A taste of the API
 
-Three kinds of requests can be sent through the dispatcher:
-
-### Commands
+### Mediator
 
 ```C#
-public class DoSomething : ICommand
+public record CreateProduct(string Name) : ICommand;
+
+public class CreateProductHandler : ICommandHandler<CreateProduct>
 {
+    public Task<Result> Handle(CreateProduct command) =>
+        Task.FromResult(Result.Ok());
 }
 
-public class DoSomethingHandler : ICommandHandler<DoSomething>
-{
-    private readonly IMyService _myService;
-
-    public DoSomethingHandler(IMyService myService)
-    {
-        _myService = myService;
-    }
-
-    public async Task<Result> Handle(DoSomething command)
-    {
-        await _myService.MyMethod();
-
-        return Result.Ok();
-    }
-}
-
-await _dispatcher.Send(new DoSomething());
+await dispatcher.Send(new CreateProduct("Espresso"));
 ```
 
-### Queries
+See the [Mediator Quickstart](https://lucabriguglia.github.io/Memoria/getting-started/quickstart-mediator.html) for queries, notifications, validation, custom handlers, command sequences, and `SendAndPublish`.
+
+### Event Sourcing
 
 ```C#
-public class Something
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-}
+[EventType("OrderPlaced")]
+public record OrderPlaced(Guid OrderId, decimal Amount) : IEvent;
 
-public class GetSomething : IQuery<Something>
-{
-    public int Id { get; set; }
-}
-
-public class GetSomethingQueryHandler : IQueryHandler<GetSomething, Something>
-{
-    private readonly MyDbContext _dbContext;
-
-    public GetProductsHandler(MyDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
-        
-    public Task<Result<Something>> Handle(GetSomething query)
-    {
-        return _dbContext.Somethings.FirstOrDefaultAsync(s => s.Id == query.Id);
-    }
-}
-
-var something = await _dispatcher.Get(new GetSomething { Id = 123 });
-```
-
-### Notifications
-
-```C#
-public class SomethingHappened : INotifcation
-{
-}
-
-public class SomethingHappenedHandlerOne : INotifcationHandler<SomethingHappened>
-{
-    private readonly IServiceOne _serviceOne;
-
-    public SomethingHappenedHandlerOne(IServiceOne serviceOne)
-    {
-        _serviceOne = serviceOne;
-    }
-
-    public Task<Result> Handle(SomethingHappened notification)
-    {
-        return _serviceOne.DoSomethingElse();
-    }
-}
-
-public class SomethingHappenedHandlerTwo : INotifcationHandler<SomethingHappened>
-{
-    private readonly IServiceTwo _serviceTwo;
-
-    public SomethingHappenedHandlerTwo(IServiceTwo serviceTwo)
-    {
-        _serviceTwo = serviceTwo;
-    }
-
-    public Task<Result> Handle(SomethingHappened notification)
-    {
-        return _serviceTwo.DoSomethingElse();
-    }
-}
-
-await _dispatcher.Publish(new SomethingHappened());
-```
-
-## 💾 Event Sourcing
-
-You can use the `IDomainService` interface to access the event-sourcing functionalities for every store provider.
-
-In the Cosmos DB store provider you can also use the `ICosmosDataStore` interface to access Cosmos DB specific features.
-
-In the Entity Framework Core store provider you can also use the `IDomainDbContext` extensions to access Entity Framework Core specific features.
-In the Entity Framework Core store provider, IdentityDbContext from ASP.NET Core Identity is also supported.
-
-### Save Events and Aggregate Snapshot
-
-Defines an aggregate with an event filter and applies events to update its state.
-
-```C#
-[AggregateType("Order")]
-puclic class Order : AggregateRoot
-{
-    public override Type[] EventTypeFilter { get; } =
-    [
-        typeof(OrderPlaced)
-    ];
-        
-    public Guid OrderId { get; private set; }
-    public decimal Amount { get; private set; }
-
-    public Order() { }
-
-    public Order(Guid orderId, decimal amount)
-    {
-        Add(new OrderPlaced
-        {
-            OrderId = orderId,
-            Amount = amount
-        };);
-    }
-
-    protected override bool Apply<T>(T @event)
-    {
-        return @event switch
-        {
-            OrderPlaced @event => Apply(@event)
-            _ => false
-        };
-    }
-
-    private bool Apply(OrderPlaced @event)
-    {
-        OrderId = @event.OrderId;
-        Amount = @event.Amount;
-
-        return true;
-    }
-}
-
-var streamId = new CustomerStreamId(customerId);
-var aggregateId = new OrderId(orderId);
-var aggregate = new Order(orderId, amount: 25.45m);
-
-// SaveAggregate stores the uncommitted events and the snapshot of the aggregate
-var saveAggregateResult = await domainService.SaveAggregate(streamId, aggregateId, aggregate, expectedEventSequence: 0);
-
-// The alternative is to store the events and the snapshot separately
-var saveEventsResult = await domainService.SaveEvents(streamId, aggregate.UncommittedEvents(), expectedEventSequence: 0);
-var updateAggregateResult = await domainService.UpdateAggregate(streamId, aggregateId);
-```
-
-### Get Aggregate Snapshot
-
-Retrieves an aggregate using one of four read modes, allowing for flexible read/write patterns based on specific needs.
-
-```C#
 var streamId = new CustomerStreamId(customerId);
 var aggregateId = new OrderAggregateId(orderId);
+var order = new Order(orderId, amount: 25.45m);
 
-// Retrieves the aggregate from its snapshot only. If no snapshot exists, returns null.
-var aggregate = await domainService.GetAggregate(streamId, aggregateId, ReadMode.SnapshotOnly);
-
-// Retrieves the aggregate from its snapshot if it exists and applies any new events that 
-// have occurred since the snapshot. If no snapshot exists, returns null.
-var aggregate = await domainService.GetAggregate(streamId, aggregateId, ReadMode.SnapshotWithNewEvents);
-
-// Retrieves the aggregate from its snapshot if it exists; otherwise, reconstructs it from events. 
-// If no events exist, returns null.
-var aggregate = await domainService.GetAggregate(streamId, aggregateId, ReadMode.SnapshotOrCreate);
-
-// Retrieves the aggregate from its snapshot if it exists, applies any new events that 
-// have occurred since the snapshot, or reconstructs it from events if no snapshot exists. 
-// If no events exist, returns null.
-var aggregate = await domainService.GetAggregate(streamId, aggregateId, ReadMode.SnapshotWithNewEventsOrCreate);
+await domainService.SaveAggregate(streamId, aggregateId, order, expectedEventSequence: 0);
 ```
 
-### Get InMemory Aggregate
-
-With Memoria, you can replay events in-memory up to a specific event sequence or date, giving you precise control for debugging or auditing.
-
-```C#
-var streamId = new CustomerStreamId(customerId);
-var aggregateId = new OrderAggregateId(orderId);
-
-// Reconstructs the aggregate from all its events
-var aggregate = await domainService.GetInMemoryAggregate(streamId, aggregateId);
-
-// Reconstructs the aggregate up to a specific event sequence number
-var aggregate = await domainService.GetInMemoryAggregate(streamId, aggregateId, upToSequence);
-
-// Reconstructs the aggregate up to a specific date
-var aggregate = await domainService.GetInMemoryAggregate(streamId, aggregateId, upToDate);
-```
-
-### Get Events
-
-Need to inspect your event stream? Memoria makes it easy to retrieve events with flexible querying.
-
-Get all events, filter by sequence, date, or event type. Whether you’re auditing, debugging, or building reports, these methods give you full control over your event history.
-
-```C#
-var streamId = new CustomerStreamId(customerId);
-
-// Get all events for the stream
-var result = await domainService.GetEvents(streamId);
-
-// Get events from a specific event sequence number
-var result = await domainService.GetEventsFromSequence(streamId, fromSequence);
-
-// Get events up to a specific event sequence number
-var result = await domainService.GetEventsUpToSequence(streamId, toSequence);
-
-// Get events between two specific event sequence numbers
-var result = await domainService.GetEventsBetweenSequences(streamId, fromSequence, toSequence);
-
-// Get events from a specific date
-var result = await domainService.GetEventsFromDate(streamId, fromDate);
-
-// Get events up to a specific date
-var result = await domainService.GetEventsUpToDate(streamId, toDate);
-
-// Get events between two specific dates
-var result = await domainService.GetEventsBetweenDates(streamId, fromDate, toDate);
-
-// Event type filter can be applied to all previous queries
-var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
-var result = await domainService.GetEvents(streamId, eventTypes);
-
-// Event property filter can also be applied to all previous queries.
-// Events are matched by the key/value pairs found on their serialized properties,
-// and can be combined with the event type filter.
-var eventProperties = new Dictionary<string, string>
-{
-    { "OrderId", orderId }
-};
-var result = await domainService.GetEvents(streamId, eventTypes, eventProperties);
-```
-
-### Filter Events Applied to an Aggregate by Property
-
-When multiple aggregates share the same stream, the events applied to a specific aggregate
-can be narrowed down by declaring an `EventPropertyFilter` on its `IAggregateId`. The filter is
-applied automatically when retrieving the aggregate or reconstructing it in memory, alongside
-the aggregate's `EventTypeFilter`.
-
-```C#
-public class OrderId(Guid orderId) : IAggregateId<Order>
-{
-    public string Id => $"order:{orderId}";
-
-    public IDictionary<string, string>? EventPropertyFilter { get; } = new Dictionary<string, string>
-    {
-        { "OrderId", orderId }
-    };
-}
-```
+See the [Event Sourcing Quickstart](https://lucabriguglia.github.io/Memoria/getting-started/quickstart-event-sourcing.html) for the full aggregate definition, the four [read modes](https://lucabriguglia.github.io/Memoria/concepts/read-modes.html), [multiple aggregates per stream](https://lucabriguglia.github.io/Memoria/guides/multiple-aggregates-per-stream.html), and in-memory replay.
 
 📘 _[Full documentation](https://lucabriguglia.github.io/Memoria/)_
 

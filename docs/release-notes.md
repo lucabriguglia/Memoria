@@ -1,3 +1,9 @@
+---
+redirect_from:
+  - /Release-Notes.html
+  - /Release-Notes/
+---
+
 # Release Notes
 
 ## Memoria 1.3.1

@@ -262,3 +262,6 @@ __pycache__/
 
 # Claude Code
 .claude/
+
+# Local planning docs (not shipped)
+plans/

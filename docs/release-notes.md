@@ -6,6 +6,10 @@ redirect_from:
 
 # Release Notes
 
+## Memoria 1.3.2
+_**Released 16/05/2026**_~~~~
+- Replace Scrutor with a custom scanning mechanism.
+
 ## Memoria 1.3.1
 _**Released 13/05/2026**_
 - `eventPropertyFilter` now works correctly for non-string property values (numbers, booleans, null), not just strings, across the Entity Framework Core, Npgsql, and Cosmos DB store providers

@@ -1,9 +1,17 @@
-# Domain
+---
+redirect_from:
+  - /Domain.html
+  - /Domain/
+---
 
-- [Stream Id](#stream-id)
-- [Domain Events](#domain-events)
-- [Aggregate Id](#aggregate-id)
-- [Aggregate](#aggregate)
+# Aggregates and Streams
+
+Memoria models state as a stream of immutable domain events. An **aggregate** is a consistency boundary that derives its state by applying the events in a **stream** it belongs to. Each piece below is a separately-addressable identity in code — pick the right one and the framework does the rest.
+
+- [Stream Id](#stream-id) — identifies the event stream
+- [Domain Events](#domain-events) — the facts in the stream
+- [Aggregate Id](#aggregate-id) — identifies an aggregate within a stream
+- [Aggregate](#aggregate) — the reconstructed state
 
 <a name="stream-id"></a>
 ## Stream Id

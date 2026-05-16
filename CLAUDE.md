@@ -28,7 +28,7 @@ The mediator/CQRS core. `IDispatcher` is the central entry point for all operati
 - **Notifications**: `INotification` with `INotificationHandler<>` — fan-out to multiple handlers
 - **Results**: `Result` and `Result<T>` are discriminated unions (via `OneOf` library) of `Success`/`Failure` — used as return types throughout the framework instead of exceptions
 
-DI registration uses `services.AddMemoria(typeof(Program))` which auto-discovers handlers via Scrutor assembly scanning.
+DI registration uses `services.AddMemoria(typeof(Program))` which auto-discovers handlers by scanning the assemblies of the supplied types for closed implementations of `ICommandHandler<>`, `ICommandHandler<,>`, `IQueryHandler<,>`, and `INotificationHandler<>`.
 
 ### Event Sourcing (`src/Memoria.EventSourcing`)
 Built on top of core. Key concepts:

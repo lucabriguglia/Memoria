@@ -12,7 +12,6 @@
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.7" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
       <PackageReference Include="OneOf" Version="3.0.271" />
-      <PackageReference Include="Scrutor" Version="7.0.0" />
     </ItemGroup>
 
 </Project>

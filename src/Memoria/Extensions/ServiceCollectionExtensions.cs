@@ -13,11 +13,19 @@ namespace Memoria.Extensions;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
+    private static readonly Type[] HandlerOpenGenerics =
+    [
+        typeof(ICommandHandler<>),
+        typeof(ICommandHandler<,>),
+        typeof(IQueryHandler<,>),
+        typeof(INotificationHandler<>)
+    ];
+
     /// <summary>
     /// Adds Memoria services to the dependency injection container.
     /// </summary>
     /// <param name="services">The IServiceCollection to add services to.</param>
-    /// <param name="types">The types to scan for handlers.</param>
+    /// <param name="types">The types whose assemblies are scanned for handlers.</param>
     public static void AddMemoria(this IServiceCollection services, params Type[] types)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -34,21 +42,35 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMessagingProvider, DefaultMessagingProvider>();
         services.AddScoped<IValidationProvider, DefaultValidationProvider>();
 
-        var typeList = types.ToList();
+        RegisterHandlers(services, types);
+    }
 
-        services.Scan(s => s
-            .FromAssembliesOf(typeList)
-            .AddClasses(classes => classes.AssignableTo(typeof(ICommandHandler<>)))
-                .AsImplementedInterfaces()
-                .WithScopedLifetime()
-            .AddClasses(classes => classes.AssignableTo(typeof(ICommandHandler<,>)))
-                .AsImplementedInterfaces()
-                .WithScopedLifetime()
-            .AddClasses(classes => classes.AssignableTo(typeof(IQueryHandler<,>)))
-            .AsImplementedInterfaces()
-            .WithScopedLifetime()
-            .AddClasses(classes => classes.AssignableTo(typeof(INotificationHandler<>)))
-                .AsImplementedInterfaces()
-                .WithScopedLifetime());
+    private static void RegisterHandlers(IServiceCollection services, Type[] types)
+    {
+        var assemblies = types.Select(t => t.Assembly).Distinct();
+
+        foreach (var assembly in assemblies)
+        {
+            foreach (var type in assembly.GetTypes())
+            {
+                if (!type.IsClass || type.IsAbstract || type.IsGenericTypeDefinition)
+                {
+                    continue;
+                }
+
+                foreach (var interfaceType in type.GetInterfaces())
+                {
+                    if (!interfaceType.IsGenericType)
+                    {
+                        continue;
+                    }
+
+                    if (HandlerOpenGenerics.Contains(interfaceType.GetGenericTypeDefinition()))
+                    {
+                        services.AddScoped(interfaceType, type);
+                    }
+                }
+            }
+        }
     }
 }

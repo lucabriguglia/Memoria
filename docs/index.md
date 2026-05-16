@@ -17,10 +17,10 @@ Memoria is a .NET framework that can be used as a simple mediator or as an Event
 
 ### Getting started
 
-- [Installation](Installation.md)
-- [Commands](Commands.md)
-- [Queries](Queries.md)
-- [Notifications](Notifications.md)
+- [Install](getting-started/install.md)
+- [Quickstart: Mediator](getting-started/quickstart-mediator.md)
+- [Quickstart: Event Sourcing](getting-started/quickstart-event-sourcing.md)
+- [Commands](Commands.md) · [Queries](Queries.md) · [Notifications](Notifications.md) — full feature reference
 
 ### Reference
 

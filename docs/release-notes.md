@@ -7,7 +7,7 @@ redirect_from:
 # Release Notes
 
 ## Memoria 1.3.2
-_**Released 16/05/2026**_~~~~
+_**Released 16/05/2026**_
 - Replace Scrutor with a custom scanning mechanism.
 
 ## Memoria 1.3.1

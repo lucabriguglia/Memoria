@@ -2,6 +2,7 @@
 using System.Linq.Expressions;
 using Memoria.Messaging;
 using Memoria.Notifications;
+using Memoria.Pipeline;
 using Memoria.Results;
 using Memoria.Validation;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,7 +59,7 @@ public class CommandSender(IServiceProvider serviceProvider, IValidationService 
             throw new InvalidOperationException($"Command handler for {typeof(TCommand).Name} not found.");
         }
 
-        return await commandHandler.Handle(command, cancellationToken);
+        return await InvokeWithPipeline(command, () => commandHandler.Handle(command, cancellationToken), cancellationToken);
     }
 
     /// <summary>
@@ -84,7 +85,21 @@ public class CommandSender(IServiceProvider serviceProvider, IValidationService 
             }
         }
 
-        return await commandHandler();
+        return await InvokeWithPipeline(command, commandHandler, cancellationToken);
+    }
+
+    private async Task<Result> InvokeWithPipeline<TCommand>(TCommand command, Func<Task<Result>> terminal, CancellationToken cancellationToken)
+        where TCommand : ICommand
+    {
+        RequestHandlerDelegate pipeline = () => terminal();
+        var behaviors = serviceProvider.GetServices<IPipelineBehavior<TCommand>>().Reverse().ToArray();
+        foreach (var behavior in behaviors)
+        {
+            var next = pipeline;
+            var current = behavior;
+            pipeline = () => current.Handle(command, next, cancellationToken);
+        }
+        return await pipeline();
     }
 
     /// <summary>

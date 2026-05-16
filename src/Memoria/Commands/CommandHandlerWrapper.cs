@@ -1,4 +1,5 @@
-﻿using Memoria.Results;
+using Memoria.Pipeline;
+using Memoria.Results;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Memoria.Commands;
@@ -13,7 +14,18 @@ internal class CommandHandlerWrapper<TCommand, TResponse> : CommandHandlerWrappe
             throw new InvalidOperationException($"Command handler for {typeof(ICommand<TResponse>).Name} not found.");
         }
 
-        return await handler.Handle((TCommand)command, cancellationToken);
+        var typedCommand = (TCommand)command;
+        RequestHandlerDelegate<TResponse> pipeline = () => handler.Handle(typedCommand, cancellationToken);
+
+        var behaviors = serviceProvider.GetServices<IPipelineBehavior<TCommand, TResponse>>().Reverse().ToArray();
+        foreach (var behavior in behaviors)
+        {
+            var next = pipeline;
+            var current = behavior;
+            pipeline = () => current.Handle(typedCommand, next, cancellationToken);
+        }
+
+        return await pipeline();
     }
 }
 

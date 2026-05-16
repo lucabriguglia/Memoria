@@ -24,6 +24,7 @@ Memoria is a .NET framework that can be used as a simple mediator or as an Event
 ### Guides
 
 - [Validate commands](guides/validate-commands.md)
+- [Add pipeline behaviors](guides/pipeline-behaviors.md)
 - [Use a custom command handler](guides/custom-command-handlers.md)
 - [Run a sequence of commands](guides/command-sequences.md)
 - [Publish to Service Bus](guides/publish-to-service-bus.md) · [Publish to RabbitMQ](guides/publish-to-rabbitmq.md)

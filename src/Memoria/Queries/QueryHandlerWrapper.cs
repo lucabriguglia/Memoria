@@ -1,4 +1,5 @@
-﻿using Memoria.Results;
+using Memoria.Pipeline;
+using Memoria.Results;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Memoria.Queries;
@@ -14,7 +15,18 @@ internal class QueryHandlerWrapper<TQuery, TResult> : QueryHandlerWrapperBase<TR
             throw new InvalidOperationException($"Query handler for {typeof(IQuery<TResult>).Name} not found.");
         }
 
-        return await handler.Handle((TQuery)query, cancellationToken);
+        var typedQuery = (TQuery)query;
+        RequestHandlerDelegate<TResult> pipeline = () => handler.Handle(typedQuery, cancellationToken);
+
+        var behaviors = serviceProvider.GetServices<IPipelineBehavior<TQuery, TResult>>().Reverse().ToArray();
+        foreach (var behavior in behaviors)
+        {
+            var next = pipeline;
+            var current = behavior;
+            pipeline = () => current.Handle(typedQuery, next, cancellationToken);
+        }
+
+        return await pipeline();
     }
 }
 

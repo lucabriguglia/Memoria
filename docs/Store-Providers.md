@@ -1,7 +1,7 @@
 # Store Providers
 
-- [Entity Framework Core](Entity-Framework-Core)
-  - [Extensions](Entity-Framework-Core-Extensions)
-  - [Scenarios](Entity-Framework-Core-Scenarios)
-  - [PostgreSQL](Entity-Framework-Core-Npgsql)
-- [Cosmos DB](Cosmos)
+- [Entity Framework Core](reference/configuration/ef-core.md)
+  - [Extensions](reference/ef-core-extensions.md)
+  - [Scenarios](Entity-Framework-Core-Scenarios.md)
+  - [PostgreSQL](Entity-Framework-Core-Npgsql.md)
+- [Cosmos DB](reference/configuration/cosmos.md)

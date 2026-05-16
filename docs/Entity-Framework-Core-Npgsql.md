@@ -81,6 +81,5 @@ Special characters in the property name or value are JSON-encoded before being p
 
 ## Related
 
-- [Configuration](Configuration.md)
-- [Entity Framework Core](Entity-Framework-Core.md)
-- [Extensions](Entity-Framework-Core-Extensions.md)
+- [Configuration: Entity Framework Core](reference/configuration/ef-core.md)
+- [Extensions](reference/ef-core-extensions.md)

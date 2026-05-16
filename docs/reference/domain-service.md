@@ -1,3 +1,9 @@
+---
+redirect_from:
+  - /Domain-Service.html
+  - /Domain-Service/
+---
+
 # Domain Service
 
 The `IDomainService` interface provides a high-level API for managing aggregates and domain events in an event-sourced system. It abstracts the complexities of event storage, retrieval, and aggregate reconstruction, allowing developers to focus on business logic.

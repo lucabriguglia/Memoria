@@ -1,3 +1,9 @@
+---
+redirect_from:
+  - /Entity-Framework-Core-Extensions.html
+  - /Entity-Framework-Core-Extensions/
+---
+
 # Entity Framework Core Extensions
 
 The Entity Framework Core store provider offers a variety of built-in extension methods of the DbContext to facilitate interaction with aggregates and events. Since the store provider is based purely on the DbContext, it's extremily easy to create your own extensions to create any kind of reporting. Below is a categorized list of the built-in methods:

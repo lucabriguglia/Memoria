@@ -1,9 +1,9 @@
 # Event Sourcing
 
-- [Domain](Domain)
-- [Domain Service](Domain-Service)
-- [Store Providers](Store-Providers)
-  - [Cosmos DB](Cosmos)
-  - [Entity Framework Core](Entity-Framework-Core)
-    - [Extensions](Entity-Framework-Core-Extensions)
-    - [Scenarios](Entity-Framework-Core-Scenarios)
+- [Domain](Domain.md)
+- [Domain Service](reference/domain-service.md)
+- [Store Providers](Store-Providers.md)
+  - [Cosmos DB](reference/configuration/cosmos.md)
+  - [Entity Framework Core](reference/configuration/ef-core.md)
+    - [Extensions](reference/ef-core-extensions.md)
+    - [Scenarios](Entity-Framework-Core-Scenarios.md)

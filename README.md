@@ -41,6 +41,7 @@ If you're using this repository for your learning, samples, workshop, or your pr
 ## 🗺️ Roadmap
 
 ### ✅ Recently Completed
+- New Dynamic Consistency Boundary (DCB) packages: a query/tag-based event store that enforces consistency per decision rather than per aggregate, with an Entity Framework Core adapter and a PostgreSQL sibling that uses `pg_advisory_xact_lock` for deadlock-free concurrent writers
 - New PostgreSQL companion package for the Entity Framework Core store provider that makes `eventPropertyFilter` work correctly against `jsonb` columns (uses the `@>` JSON-containment operator and is GIN-indexable)
 - New `IEventDataFilter` extension point in the Entity Framework Core store provider for plugging in provider-specific JSON filter strategies
 - New package for in-memory Service Bus for easier testing in projects using Memoria
@@ -61,8 +62,8 @@ If you're using this repository for your learning, samples, workshop, or your pr
 
 ## 📦 Nuget Packages
 
-| Package                                                                                                                                             | Latest Stable                                                                                                                                                  |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Package                                                                                                                                                 | Latest Stable                                                                                                                                                      |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [Memoria](https://www.nuget.org/packages/Memoria)                                                                                                   | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.2-blue.svg)](https://www.nuget.org/packages/Memoria)                                                  |
 | [Memoria.EventSourcing](https://www.nuget.org/packages/Memoria.EventSourcing)                                                                       | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.2-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing)                                    |
 | [Memoria.EventSourcing.Store.Cosmos](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos)                                             | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.2-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos)                       |
@@ -70,6 +71,9 @@ If you're using this repository for your learning, samples, workshop, or your pr
 | [Memoria.EventSourcing.Store.EntityFrameworkCore](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore)                   | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.2-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore)          |
 | [Memoria.EventSourcing.Store.EntityFrameworkCore.Identity](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity) | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.2-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore.Identity) |
 | [Memoria.EventSourcing.Store.EntityFrameworkCore.Npgsql](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore.Npgsql)     | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.2-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore.Npgsql)   |
+| [Memoria.EventSourcing.Dcb](https://www.nuget.org/packages/Memoria.EventSourcing.Dcb)                                                               | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.2-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Dcb)                                |
+| [Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore](https://www.nuget.org/packages/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore)           | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.2-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore)      |
+| [Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Npgsql](https://www.nuget.org/packages/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Npgsql) | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.2-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Npgsql) |
 | [Memoria.Messaging.RabbitMq](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq)                                                             | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.2-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq)                               |
 | [Memoria.Messaging.RabbitMq.InMemory](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq.InMemory)                                           | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.2-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.RabbitMq.InMemory)                      |
 | [Memoria.Messaging.ServiceBus](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus)                                                         | [![Nuget Package](https://img.shields.io/badge/nuget-1.3.2-blue.svg)](https://www.nuget.org/packages/Memoria.Messaging.ServiceBus)                             |
@@ -110,6 +114,30 @@ await domainService.SaveAggregate(streamId, aggregateId, order, expectedEventSeq
 ```
 
 See the [Event Sourcing Quickstart](https://lucabriguglia.github.io/Memoria/getting-started/quickstart-event-sourcing.html) for the full aggregate definition, the four [read modes](https://lucabriguglia.github.io/Memoria/concepts/read-modes.html), [multiple aggregates per stream](https://lucabriguglia.github.io/Memoria/guides/multiple-aggregates-per-stream.html), and in-memory replay.
+
+### Dynamic Consistency Boundary (DCB)
+
+An alternative to aggregate-based event sourcing: consistency is enforced **per decision** rather than per stream. The caller defines a query over events tagged with arbitrary key/value pairs, folds the slice into decision state, and appends with a token that captures the read position. The store rejects the append if any matching event arrived in between.
+
+```C#
+[EventType("SeatReserved")]
+public record SeatReserved(string Seat) : IEvent;
+
+var query = DcbQuery.Of(new QueryItem(
+    [typeof(SeatReserved)],
+    TagSet.Of(new("seat", "A12"))));
+
+var result = await store.Decide(
+    query: query,
+    initialState: false,
+    fold: (taken, _) => true,
+    decide: taken => taken
+        ? Result<IReadOnlyList<EventToAppend>>.Fail(new Failure(Title: "Seat taken"))
+        : Result<IReadOnlyList<EventToAppend>>.Ok(
+            [EventToAppend.Of(new SeatReserved("A12"), new Tag("seat", "A12"))]));
+```
+
+`Memoria.EventSourcing.Dcb` ships an in-memory store; the Entity Framework Core adapter persists events and tags as relational rows; the PostgreSQL sibling adds `pg_advisory_xact_lock`-based concurrency so concurrent writers competing for the same tag set serialize without deadlocks.
 
 📘 _[Full documentation](https://lucabriguglia.github.io/Memoria/)_
 

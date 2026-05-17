@@ -84,6 +84,7 @@
   </Folder>
   <Folder Name="/examples/">
     <Project Path="examples/Memoria.Examples.EventSourcing.EntityFrameworkCore/Memoria.Examples.EventSourcing.EntityFrameworkCore.csproj" />
+    <Project Path="examples/Memoria.Examples.EventSourcing.Dcb.EntityFrameworkCore/Memoria.Examples.EventSourcing.Dcb.EntityFrameworkCore.csproj" />
     <Project Path="examples/Memoria.Examples.EventSourcing.Cosmos/Memoria.Examples.EventSourcing.Cosmos.csproj" />
     <Project Path="examples/Memoria.Examples.Messaging.ServiceBus/Memoria.Examples.Messaging.ServiceBus.csproj" />
     <Project Path="examples/Memoria.Examples.Messaging.RabbitMq/Memoria.Examples.Messaging.RabbitMq.csproj" />

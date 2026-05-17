@@ -54,6 +54,7 @@
     <Project Path="src/Memoria.EventSourcing.Store.Cosmos/Memoria.EventSourcing.Store.Cosmos.csproj" />
     <Project Path="src/Memoria.EventSourcing.Store.Cosmos.InMemory/Memoria.EventSourcing.Store.Cosmos.InMemory.csproj" />
     <Project Path="src/Memoria.EventSourcing.Dcb/Memoria.EventSourcing.Dcb.csproj" />
+    <Project Path="src/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.csproj" />
     <Project Path="src/Memoria.Messaging.RabbitMq/Memoria.Messaging.RabbitMq.csproj" />
     <Project Path="src/Memoria.Messaging.RabbitMq.InMemory/Memoria.Messaging.RabbitMq.InMemory.csproj" />
     <Project Path="src/Memoria.Messaging.ServiceBus/Memoria.Messaging.ServiceBus.csproj" />
@@ -69,6 +70,7 @@
     <Project Path="tests/Memoria.EventSourcing.Store.Cosmos.Tests/Memoria.EventSourcing.Store.Cosmos.Tests.csproj" />
     <Project Path="tests/Memoria.EventSourcing.Store.Cosmos.InMemory.Tests/Memoria.EventSourcing.Store.Cosmos.InMemory.Tests.csproj" />
     <Project Path="tests/Memoria.EventSourcing.Dcb.Tests/Memoria.EventSourcing.Dcb.Tests.csproj" />
+    <Project Path="tests/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Tests/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/Memoria.EventSourcing.Store.Tests/Memoria.EventSourcing.Store.Tests.csproj" />
     <Project Path="tests/Memoria.Validation.FluentValidation.Tests/Memoria.Validation.FluentValidation.Tests.csproj" />
     <Project Path="tests/Memoria.Messaging.RabbitMq.Tests/Memoria.Messaging.RabbitMq.Tests.csproj" />

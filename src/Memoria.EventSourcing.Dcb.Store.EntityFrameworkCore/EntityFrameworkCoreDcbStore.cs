@@ -13,8 +13,14 @@ namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore;
 /// query's tag set. The store opens a transaction when one is not already in scope;
 /// callers can wrap multiple operations in their own outer transaction if needed.
 /// </remarks>
-public sealed class EntityFrameworkCoreDcbStore(IDcbDbContext dbContext) : IDcbStore
+public class EntityFrameworkCoreDcbStore(IDcbDbContext dbContext) : IDcbStore
 {
+    /// <summary>
+    /// Exposes the DbContext to derived stores (e.g. for opening transactions).
+    /// </summary>
+    protected IDcbDbContext DbContext => dbContext;
+
+
     public async Task<Result<IReadOnlyList<StoredEvent>>> Query(DcbQuery query, CancellationToken cancellationToken = default)
     {
         if (query.Items.Count == 0)
@@ -35,13 +41,18 @@ public sealed class EntityFrameworkCoreDcbStore(IDcbDbContext dbContext) : IDcbS
         return Result<IReadOnlyList<StoredEvent>>.Ok(stored);
     }
 
-    public Task<Result<AppendResult>> Append(IReadOnlyList<EventToAppend> events, CancellationToken cancellationToken = default) =>
+    public virtual Task<Result<AppendResult>> Append(IReadOnlyList<EventToAppend> events, CancellationToken cancellationToken = default) =>
         AppendCore(events, condition: null, cancellationToken);
 
-    public Task<Result<AppendResult>> Append(IReadOnlyList<EventToAppend> events, AppendCondition condition, CancellationToken cancellationToken = default) =>
+    public virtual Task<Result<AppendResult>> Append(IReadOnlyList<EventToAppend> events, AppendCondition condition, CancellationToken cancellationToken = default) =>
         AppendCore(events, condition, cancellationToken);
 
-    private async Task<Result<AppendResult>> AppendCore(IReadOnlyList<EventToAppend> events, AppendCondition? condition, CancellationToken cancellationToken)
+    /// <summary>
+    /// Runs the conflict check (if a condition is supplied) and inserts the events. Derived
+    /// classes can wrap this in a transaction with provider-specific locking — see the Npgsql
+    /// store for advisory-lock semantics.
+    /// </summary>
+    protected async Task<Result<AppendResult>> AppendCore(IReadOnlyList<EventToAppend> events, AppendCondition? condition, CancellationToken cancellationToken)
     {
         if (events.Count == 0)
         {

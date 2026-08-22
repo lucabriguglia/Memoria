@@ -452,6 +452,84 @@ public class CosmosDomainService : IDomainService
     }
 
     /// <summary>
+    /// Retrieves a persisted projection snapshot for the specified projection identifier.
+    /// </summary>
+    /// <typeparam name="T">The type of projection to retrieve.</typeparam>
+    /// <param name="streamId">The stream identifier.</param>
+    /// <param name="projectionId">The projection identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A result containing the projection, a null value when no snapshot exists, or failure information.</returns>
+    public async Task<Result<T?>> GetProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        try
+        {
+            var response = await _container.ReadItemAsync<AggregateDocument>(projectionId.ToStoreId(),
+                new PartitionKey(streamId.Id), cancellationToken: cancellationToken);
+            response.AddActivityEvent(streamId, operation: "Get Projection");
+            return response.Resource.ToProjection<T>();
+        }
+        catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return default(T);
+        }
+        catch (Exception ex)
+        {
+            ex.AddException(streamId, operation: "Get Projection");
+            return ErrorHandling.DefaultFailure;
+        }
+    }
+
+    /// <summary>
+    /// Saves a projection snapshot for the specified projection identifier.
+    /// </summary>
+    /// <typeparam name="T">The type of projection to save.</typeparam>
+    /// <param name="streamId">The stream identifier.</param>
+    /// <param name="projectionId">The projection identifier.</param>
+    /// <param name="projection">The projection instance to save.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A result indicating success or failure.</returns>
+    public async Task<Result> SaveProjection<T>(IStreamId streamId, IProjectionId<T> projectionId, T projection,
+        CancellationToken cancellationToken = default) where T : IProjection
+    {
+        var timeStamp = _timeProvider.GetUtcNow();
+        var currentUserNameIdentifier = _httpContextAccessor.GetCurrentUserNameIdentifier();
+
+        try
+        {
+            var projectionDocument = projection.ToProjectionDocument(streamId, projectionId);
+
+            try
+            {
+                var existing = await _container.ReadItemAsync<AggregateDocument>(projectionId.ToStoreId(),
+                    new PartitionKey(streamId.Id), cancellationToken: cancellationToken);
+                projectionDocument.CreatedDate = existing.Resource.CreatedDate;
+                projectionDocument.CreatedBy = existing.Resource.CreatedBy;
+            }
+            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                projectionDocument.CreatedDate = timeStamp;
+                projectionDocument.CreatedBy = currentUserNameIdentifier;
+            }
+
+            projectionDocument.UpdatedDate = timeStamp;
+            projectionDocument.UpdatedBy = currentUserNameIdentifier;
+
+            var response = await _container.UpsertItemAsync(projectionDocument, new PartitionKey(streamId.Id),
+                cancellationToken: cancellationToken);
+            response.AddActivityEvent(streamId, operation: "Save Projection");
+            return response.StatusCode is System.Net.HttpStatusCode.OK or System.Net.HttpStatusCode.Created
+                ? Result.Ok()
+                : ErrorHandling.DefaultFailure;
+        }
+        catch (Exception ex)
+        {
+            ex.AddException(streamId, operation: "Save Projection");
+            return ErrorHandling.DefaultFailure;
+        }
+    }
+
+    /// <summary>
     /// Gets the latest event sequence number for a stream with optional event type filtering.
     /// </summary>
     /// <param name="streamId">The stream identifier.</param>

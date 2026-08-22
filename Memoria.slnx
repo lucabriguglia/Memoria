@@ -12,6 +12,7 @@
     <File Path="docs/concepts/aggregates-and-streams.md" />
     <File Path="docs/concepts/glossary.md" />
     <File Path="docs/concepts/overview.md" />
+    <File Path="docs/concepts/projections.md" />
     <File Path="docs/concepts/providers.md" />
     <File Path="docs/concepts/read-modes.md" />
     <File Path="docs/concepts/result-pattern.md" />
@@ -70,6 +71,7 @@
     <Project Path="tests/Memoria.EventSourcing.Store.Tests/Memoria.EventSourcing.Store.Tests.csproj" />
     <Project Path="tests/Memoria.Validation.FluentValidation.Tests/Memoria.Validation.FluentValidation.Tests.csproj" />
     <Project Path="tests/Memoria.Messaging.RabbitMq.Tests/Memoria.Messaging.RabbitMq.Tests.csproj" />
+    <Project Path="tests/Memoria.EventSourcing.Tests/Memoria.EventSourcing.Tests.csproj" />
     <Project Path="tests/Memoria.Messaging.RabbitMq.InMemory.Tests/Memoria.Messaging.RabbitMq.InMemory.Tests.csproj" />
     <Project Path="tests/Memoria.Messaging.ServiceBus.Tests/Memoria.Messaging.ServiceBus.Tests.csproj" />
     <Project Path="tests/Memoria.Messaging.ServiceBus.InMemory.Tests/Memoria.Messaging.ServiceBus.InMemory.Tests.csproj" />

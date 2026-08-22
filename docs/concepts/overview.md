@@ -33,6 +33,7 @@ On top of the mediator, Memoria adds aggregates, streams, and an `IDomainService
 
 - **Streams** group related events. See [Aggregates and Streams](aggregates-and-streams.md).
 - **Aggregates** derive state from the events in a stream.
+- **Projections** are read models built from events and persisted as snapshots. See [Projections](projections.md).
 - **Snapshots** cache the latest aggregate state so reads don't replay every event — controlled by [read modes](read-modes.md).
 - **Multiple aggregates per stream** is supported. Each aggregate filters the stream by event type and (optionally) by event properties.
 
@@ -43,7 +44,7 @@ The actual storage is pluggable. See [Providers](providers.md) for the matrix.
 - **Just need to organize commands and queries?** Mediator only. Add validation, messaging, or caching as needed.
 - **Need an immutable audit log of business decisions?** Event sourcing.
 - **Need to reconstruct historical state ("what did the aggregate look like on day X")?** Event sourcing — see `GetInMemoryAggregate` in the [Domain Service](../reference/domain-service.md).
-- **Need CQRS with separate read models?** Either — emit events through messaging and project into your read store.
+- **Need CQRS with separate read models?** Either — emit events through messaging and project into your read store, or build [projections](projections.md) from events and persist them as snapshots.
 
 ## Related
 

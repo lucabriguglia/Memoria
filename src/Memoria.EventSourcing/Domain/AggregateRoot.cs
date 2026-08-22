@@ -1,36 +1,14 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 
 namespace Memoria.EventSourcing.Domain;
 
 /// <summary>
-/// Abstract base class for aggregates in event sourcing.
+/// Abstract base class for aggregates (write models) in event sourcing. In addition to the shared
+/// <see cref="EventSourcedModel"/> behaviour, an aggregate stages new domain events as uncommitted
+/// events via <see cref="Add"/> until they are persisted.
 /// </summary>
-public abstract class AggregateRoot : IAggregateRoot
+public abstract class AggregateRoot : EventSourcedModel, IAggregateRoot
 {
-    /// <summary>
-    /// Gets or sets the stream ID.
-    /// </summary>
-    [JsonIgnore]
-    public string StreamId { get; set; } = null!;
-
-    /// <summary>
-    /// Gets or sets the aggregate ID.
-    /// </summary>
-    [JsonIgnore]
-    public string AggregateId { get; set; } = null!;
-
-    /// <summary>
-    /// Gets or sets the version.
-    /// </summary>
-    [JsonIgnore]
-    public int Version { get; set; }
-
-    /// <summary>
-    /// Gets or sets the latest event sequence.
-    /// </summary>
-    [JsonIgnore]
-    public int LatestEventSequence { get; set; }
-
     /// <summary>
     /// Private collection of uncommitted events.
     /// </summary>
@@ -55,49 +33,5 @@ public abstract class AggregateRoot : IAggregateRoot
         {
             Version++;
         }
-    }
-
-    /// <summary>
-    /// Applies a collection of domain events.
-    /// </summary>
-    /// <param name="events">The domain events.</param>
-    public void Apply(IEnumerable<IEvent> events)
-    {
-        foreach (var @event in events)
-        {
-            if (Apply(@event))
-            {
-                Version++;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Gets the event type filter.
-    /// </summary>
-    [JsonIgnore]
-    public abstract Type[]? EventTypeFilter { get; }
-
-    /// <summary>
-    /// Applies an event.
-    /// </summary>
-    /// <typeparam name="T">The event type.</typeparam>
-    /// <param name="event"></param>
-    /// <returns>True if applied.</returns>
-    protected abstract bool Apply<T>(T @event) where T : IEvent;
-
-    /// <summary>
-    /// Checks if the event type is handled.
-    /// </summary>
-    /// <param name="eventType">The event type.</param>
-    /// <returns>True if handled.</returns>
-    public bool IsEventHandled(Type eventType)
-    {
-        if (EventTypeFilter == null || EventTypeFilter.Length == 0)
-        {
-            return true;
-        }
-
-        return EventTypeFilter.Contains(eventType);
     }
 }

@@ -16,6 +16,11 @@ public static class TypeBindings
     public static Dictionary<string, Type> AggregateTypeBindings { get; set; } = new();
 
     /// <summary>
+    /// Gets or sets the projection type bindings.
+    /// </summary>
+    public static Dictionary<string, Type> ProjectionTypeBindings { get; set; } = new();
+
+    /// <summary>
     /// Gets the type binding key.
     /// </summary>
     /// <param name="name">The name.</param>

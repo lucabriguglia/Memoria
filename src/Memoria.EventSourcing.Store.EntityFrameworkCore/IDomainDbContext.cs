@@ -704,4 +704,12 @@ public interface IDomainDbContext : IDisposable, IAsyncDisposable
     /// </code>
     /// </example>
     void DetachAggregate<T>(IAggregateId<T> aggregateId, T aggregate) where T : IAggregateRoot;
+
+    /// <summary>
+    /// Detaches a projection snapshot entity from the change tracker so the context can be reused.
+    /// </summary>
+    /// <typeparam name="T">The projection type.</typeparam>
+    /// <param name="projectionId">The projection identifier whose snapshot should be detached.</param>
+    /// <param name="projection">The projection instance associated with the snapshot.</param>
+    void DetachProjection<T>(IProjectionId<T> projectionId, T projection) where T : IProjection;
 }

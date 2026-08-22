@@ -75,6 +75,24 @@ public static class DiagnosticsExtensions
     }
 
     /// <summary>
+    /// Adds an activity event for a CosmosDB item response with stream information (used for projection snapshots).
+    /// </summary>
+    /// <param name="itemResponse">The item response from CosmosDB.</param>
+    /// <param name="streamId">The stream identifier.</param>
+    /// <param name="operation">The operation being performed.</param>
+    public static void AddActivityEvent(this ItemResponse<AggregateDocument> itemResponse, IStreamId streamId, string operation)
+    {
+        Activity.Current?.AddEvent(new ActivityEvent("Cosmos Read Item", default, new ActivityTagsCollection
+        {
+            { "operation", operation },
+            { "streamId", streamId.Id },
+            { "cosmos.activityId", itemResponse.ActivityId },
+            { "cosmos.statusCode", itemResponse.StatusCode },
+            { "cosmos.requestCharge", itemResponse.RequestCharge }
+        }));
+    }
+
+    /// <summary>
     /// Adds an activity event for a CosmosDB feed response with stream information.
     /// </summary>
     /// <param name="feedResponse">The feed response from CosmosDB.</param>

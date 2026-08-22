@@ -260,6 +260,57 @@ public interface IDomainService : IDisposable
         DateTimeOffset upToDate, CancellationToken cancellationToken = default) where T : IAggregateRoot, new();
 
     /// <summary>
+    /// Retrieves a persisted projection (read-model) snapshot for the specified projection identifier.
+    /// </summary>
+    /// <typeparam name="T">The type of the projection to retrieve.</typeparam>
+    /// <param name="streamId">The unique identifier of the stream the projection belongs to.</param>
+    /// <param name="projectionId">The unique identifier of the projection to retrieve.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>
+    /// A task that represents the asynchronous operation. The task result contains the projection
+    /// wrapped in a <see cref="Result{TValue}"/>, or a null value when no snapshot has been saved.
+    /// </returns>
+    /// <remarks>
+    /// A projection is persisted and read like an aggregate snapshot; it is stored in the same
+    /// underlying table/container as aggregates for the time being.
+    /// </remarks>
+    /// <example>
+    /// var result = await domainService.GetProjection&lt;T&gt;(streamId, projectionId);
+    /// if (!result.IsSuccess)
+    /// {
+    ///     return result.Failure;
+    /// }
+    /// var projection = result.Value;
+    /// </example>
+    Task<Result<T?>> GetProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new();
+
+    /// <summary>
+    /// Saves a projection (read-model) snapshot for the specified projection identifier.
+    /// </summary>
+    /// <typeparam name="T">The type of the projection to save.</typeparam>
+    /// <param name="streamId">The unique identifier of the stream the projection belongs to.</param>
+    /// <param name="projectionId">The unique identifier of the projection to save.</param>
+    /// <param name="projection">The projection instance whose state is persisted.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous save operation. The task result contains a
+    /// <see cref="Result"/> indicating the outcome of the operation.</returns>
+    /// <remarks>
+    /// A projection produces no events, so saving it upserts only the snapshot (no event stream is
+    /// written). The snapshot is stored in the same underlying table/container as aggregates for the
+    /// time being.
+    /// </remarks>
+    /// <example>
+    /// var result = await domainService.SaveProjection&lt;T&gt;(streamId, projectionId, projection);
+    /// if (!result.IsSuccess)
+    /// {
+    ///     return result.Failure;
+    /// }
+    /// </example>
+    Task<Result> SaveProjection<T>(IStreamId streamId, IProjectionId<T> projectionId, T projection,
+        CancellationToken cancellationToken = default) where T : IProjection;
+
+    /// <summary>
     /// Retrieves the latest event sequence number for a specific stream.
     /// </summary>
     /// <param name="streamId">The unique identifier of the stream for which the latest event sequence is being retrieved.</param>

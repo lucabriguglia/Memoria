@@ -34,6 +34,14 @@ An aggregate reconstructed entirely from events, with no snapshot involved. Usef
 
 A fan-out message. Multiple `INotificationHandler<T>` handlers can be registered for the same notification; the dispatcher invokes them all and returns the list of results.
 
+## Projection
+
+A read model: a query-optimised view built by applying domain events. Inherits from `Projection` and, like an aggregate, declares an `EventTypeFilter` and `Apply` — but produces no events (no `Add`, no uncommitted events). Persisted and retrieved as a snapshot via `SaveProjection` / `GetProjection`. See [Projections](projections.md).
+
+## Projection Id
+
+A unique identifier for a projection snapshot, serving as its persistence key. Implements `IProjectionId<TProjection>`. The projection type is given a stable, versioned logical name with `[ProjectionType("Name")]`.
+
 ## Read Mode
 
 Controls how `IDomainService.GetAggregate` reconstructs an aggregate. Four variants trade off freshness against I/O — see [Read Modes](read-modes.md).

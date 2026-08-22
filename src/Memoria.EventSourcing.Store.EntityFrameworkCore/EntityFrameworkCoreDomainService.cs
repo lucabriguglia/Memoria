@@ -203,6 +203,35 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext, 
     }
 
     /// <summary>
+    /// Retrieves a persisted projection snapshot for the specified projection identifier.
+    /// </summary>
+    /// <typeparam name="T">The type of projection to retrieve.</typeparam>
+    /// <param name="streamId">The stream identifier.</param>
+    /// <param name="projectionId">The projection identifier.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A result containing the projection, or a null value when no snapshot exists.</returns>
+    public async Task<Result<T?>> GetProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        return await domainDbContext.GetProjection(streamId, projectionId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Saves a projection snapshot for the specified projection identifier.
+    /// </summary>
+    /// <typeparam name="T">The type of projection to save.</typeparam>
+    /// <param name="streamId">The stream identifier.</param>
+    /// <param name="projectionId">The projection identifier.</param>
+    /// <param name="projection">The projection instance to save.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A result indicating the success or failure of the operation.</returns>
+    public async Task<Result> SaveProjection<T>(IStreamId streamId, IProjectionId<T> projectionId, T projection,
+        CancellationToken cancellationToken = default) where T : IProjection
+    {
+        return await domainDbContext.SaveProjection(streamId, projectionId, projection, cancellationToken);
+    }
+
+    /// <summary>
     /// Gets the latest event sequence number from the specified stream with optional event type filtering.
     /// </summary>
     /// <param name="streamId">The stream identifier.</param>

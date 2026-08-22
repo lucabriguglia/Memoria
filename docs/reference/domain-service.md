@@ -17,6 +17,8 @@ Every store provider has its own implementation of the `IDomainService` interfac
 - [Update Aggregate](#update-aggregate)
 - [Get Aggregate](#get-aggregate)
 - [Get In-Memory Aggregate](#get-in-memory-aggregate)
+- [Save Projection](#save-projection)
+- [Get Projection](#get-projection)
 - [Get Events](#get-domain-events)
 - [Get Events From Sequence](#get-domain-events-from-sequence)
 - [Get Events Up To Sequence](#get-domain-events-up-to-sequence)
@@ -130,6 +132,32 @@ var aggregateResult = await domainService.GetInMemoryAggregate(streamId, aggrega
 or
 ```C#
 var aggregateResult = await domainService.GetInMemoryAggregate(streamId, aggregateId, upToDate);
+```
+
+<a name="save-projection"></a>
+### Save Projection
+Saves a [projection](../concepts/projections.md) (read model) as a snapshot. Unlike an aggregate, a projection produces no events, so saving it upserts only the snapshot — no event stream is written. Projection snapshots are stored in the same table/container as aggregates for the time being.
+
+Build the projection by applying the events you care about, then save it.
+```C#
+var streamId = new CustomerStreamId(customerId);
+var projectionId = new OrderSummaryProjectionId(customerId);
+
+var eventsResult = await domainService.GetEvents(streamId);
+
+var projection = new OrderSummaryProjection();
+projection.Apply(eventsResult.Value);
+
+var saveProjectionResult = await domainService.SaveProjection(streamId, projectionId, projection);
+```
+
+<a name="get-projection"></a>
+### Get Projection
+Retrieves a previously saved projection snapshot. Returns `null` when no snapshot has been saved for the projection id.
+```C#
+var streamId = new CustomerStreamId(customerId);
+var projectionId = new OrderSummaryProjectionId(customerId);
+var projectionResult = await domainService.GetProjection(streamId, projectionId);
 ```
 
 <a name="get-domain-events"></a>

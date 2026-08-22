@@ -93,6 +93,18 @@ public class DefaultDomainService : IDomainService
         throw new NotImplementedException(NotImplementedMessage);
     }
 
+    public Task<Result<T?>> GetProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        throw new NotImplementedException(NotImplementedMessage);
+    }
+
+    public Task<Result> SaveProjection<T>(IStreamId streamId, IProjectionId<T> projectionId, T projection,
+        CancellationToken cancellationToken = default) where T : IProjection
+    {
+        throw new NotImplementedException(NotImplementedMessage);
+    }
+
     public Task<Result<int>> GetLatestEventSequence(IStreamId streamId, Type[]? eventTypeFilter = null,
         IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)

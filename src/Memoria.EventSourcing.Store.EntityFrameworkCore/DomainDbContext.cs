@@ -320,4 +320,26 @@ public abstract class DomainDbContext(
             }
         }
     }
+
+    /// <summary>
+    /// Detaches a projection snapshot entity from the change tracker so the context can be reused.
+    /// </summary>
+    /// <typeparam name="T">The projection type.</typeparam>
+    /// <param name="projectionId">The projection identifier whose snapshot should be detached.</param>
+    /// <param name="projection">The projection instance associated with the snapshot.</param>
+    public void DetachProjection<T>(IProjectionId<T> projectionId, T projection) where T : IProjection
+    {
+        foreach (var entityEntry in ChangeTracker.Entries())
+        {
+            if (entityEntry.Entity is not AggregateEntity aggregateEntity)
+            {
+                continue;
+            }
+
+            if (aggregateEntity.Id == projectionId.ToStoreId())
+            {
+                entityEntry.State = EntityState.Detached;
+            }
+        }
+    }
 }

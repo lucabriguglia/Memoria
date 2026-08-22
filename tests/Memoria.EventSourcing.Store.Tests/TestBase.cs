@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Store.Tests.Models.Aggregates;
 using Memoria.EventSourcing.Store.Tests.Models.Events;
+using Memoria.EventSourcing.Store.Tests.Models.Projections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
@@ -43,6 +44,11 @@ public abstract class TestBase : IDisposable
             { "TestAggregate1:1", typeof(TestAggregate1) },
             { "TestAggregate2:1", typeof(TestAggregate2) },
             { "TestAggregateWithNoTypeFilter:1", typeof(TestAggregateWithNoTypeFilter) }
+        };
+
+        TypeBindings.ProjectionTypeBindings = new Dictionary<string, Type>
+        {
+            { "TestProjection:1", typeof(TestProjection) }
         };
     }
 

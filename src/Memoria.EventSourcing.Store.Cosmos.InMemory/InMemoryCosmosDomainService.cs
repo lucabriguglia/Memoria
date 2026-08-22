@@ -318,6 +318,49 @@ public class InMemoryCosmosDomainService(
         return aggregate;
     }
 
+    public Task<Result<T?>> GetProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        var key = CreateProjectionKey(streamId, projectionId);
+        if (storage.AggregateDocuments.TryGetValue(key, out var projectionDocument))
+        {
+            return Task.FromResult<Result<T?>>(projectionDocument.ToProjection<T>());
+        }
+
+        return Task.FromResult<Result<T?>>(default(T));
+    }
+
+    public Task<Result> SaveProjection<T>(IStreamId streamId, IProjectionId<T> projectionId, T projection,
+        CancellationToken cancellationToken = default) where T : IProjection
+    {
+        var timeStamp = timeProvider.GetUtcNow();
+        var currentUserNameIdentifier = httpContextAccessor.GetCurrentUserNameIdentifier();
+
+        var key = CreateProjectionKey(streamId, projectionId);
+        var projectionDocument = projection.ToProjectionDocument(streamId, projectionId);
+
+        if (storage.AggregateDocuments.TryGetValue(key, out var existing))
+        {
+            projectionDocument.CreatedDate = existing.CreatedDate;
+            projectionDocument.CreatedBy = existing.CreatedBy;
+        }
+        else
+        {
+            projectionDocument.CreatedDate = timeStamp;
+            projectionDocument.CreatedBy = currentUserNameIdentifier;
+        }
+
+        projectionDocument.UpdatedDate = timeStamp;
+        projectionDocument.UpdatedBy = currentUserNameIdentifier;
+
+        storage.AggregateDocuments.AddOrUpdate(key, projectionDocument, (_, _) => projectionDocument);
+
+        return Task.FromResult(Result.Ok());
+    }
+
+    private static string CreateProjectionKey<T>(IStreamId streamId, IProjectionId<T> projectionId)
+        where T : IProjection => $"{streamId.Id}#{projectionId.ToStoreId()}";
+
     public async Task<Result<int>> GetLatestEventSequence(IStreamId streamId, Type[]? eventTypeFilter = null,
         IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default)

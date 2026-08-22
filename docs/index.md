@@ -16,6 +16,7 @@ Memoria is a .NET framework that can be used as a simple mediator or as an Event
 
 - [Overview](concepts/overview.md) — mediator vs. event sourcing
 - [Aggregates and Streams](concepts/aggregates-and-streams.md)
+- [Projections](concepts/projections.md)
 - [Read Modes](concepts/read-modes.md)
 - [Providers](concepts/providers.md)
 - [Result Pattern](concepts/result-pattern.md)

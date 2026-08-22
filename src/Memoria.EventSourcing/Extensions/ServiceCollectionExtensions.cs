@@ -20,6 +20,7 @@ public static class ServiceCollectionExtensions
     {
         var eventTypeBindings = new Dictionary<string, Type>();
         var aggregateTypeBindings = new Dictionary<string, Type>();
+        var projectionTypeBindings = new Dictionary<string, Type>();
 
         foreach (var type in types)
         {
@@ -31,6 +32,10 @@ public static class ServiceCollectionExtensions
 
             var aggregates = assembly.GetTypes()
                 .Where(t => t.GetTypeInfo().IsClass && !t.GetTypeInfo().IsAbstract && typeof(IAggregateRoot).IsAssignableFrom(t))
+                .ToList();
+
+            var projections = assembly.GetTypes()
+                .Where(t => t.GetTypeInfo().IsClass && !t.GetTypeInfo().IsAbstract && typeof(IProjection).IsAssignableFrom(t))
                 .ToList();
 
             foreach (var @event in events)
@@ -52,10 +57,21 @@ public static class ServiceCollectionExtensions
                 }
                 aggregateTypeBindings.Add(TypeBindings.GetTypeBindingKey(aggregateType.Name, aggregateType.Version), aggregate);
             }
+
+            foreach (var projection in projections)
+            {
+                var projectionType = projection.GetCustomAttribute<ProjectionType>();
+                if (projectionType is null)
+                {
+                    continue;
+                }
+                projectionTypeBindings.Add(TypeBindings.GetTypeBindingKey(projectionType.Name, projectionType.Version), projection);
+            }
         }
 
         TypeBindings.EventTypeBindings = eventTypeBindings;
         TypeBindings.AggregateTypeBindings = aggregateTypeBindings;
+        TypeBindings.ProjectionTypeBindings = projectionTypeBindings;
 
         services.AddScoped<IDomainService, DefaultDomainService>();
     }

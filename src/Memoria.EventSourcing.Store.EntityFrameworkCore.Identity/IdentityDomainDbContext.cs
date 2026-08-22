@@ -50,4 +50,20 @@ public abstract class IdentityDomainDbContext(
             }
         }
     }
+
+    public void DetachProjection<T>(IProjectionId<T> projectionId, T projection) where T : IProjection
+    {
+        foreach (var entityEntry in ChangeTracker.Entries())
+        {
+            if (entityEntry.Entity is not AggregateEntity aggregateEntity)
+            {
+                continue;
+            }
+
+            if (aggregateEntity.Id == projectionId.ToStoreId())
+            {
+                entityEntry.State = EntityState.Detached;
+            }
+        }
+    }
 }

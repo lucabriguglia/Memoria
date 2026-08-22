@@ -136,7 +136,7 @@ var aggregateResult = await domainService.GetInMemoryAggregate(streamId, aggrega
 
 <a name="save-projection"></a>
 ### Save Projection
-Saves a [projection](../concepts/projections.md) (read model) as a snapshot. Unlike an aggregate, a projection produces no events, so saving it upserts only the snapshot — no event stream is written. Projection snapshots are stored in the same table/container as aggregates for the time being.
+Saves a [projection](../concepts/projections.md) (read model) as a snapshot. Unlike an aggregate, a projection produces no events, so saving it upserts only the snapshot — no event stream is written. Each store uses a dedicated projection type: EF Core persists a `ProjectionEntity` in its own `DomainProjections` table, while Cosmos persists a `ProjectionDocument` in the same container as aggregates (discriminated by `documentType`).
 
 Build the projection by applying the events you care about, then save it.
 ```C#

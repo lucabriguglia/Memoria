@@ -11,6 +11,7 @@ namespace Memoria.EventSourcing.Store.Cosmos.InMemory;
 public class InMemoryCosmosStorage
 {
     public ConcurrentDictionary<string, AggregateDocument> AggregateDocuments { get; } = new();
+    public ConcurrentDictionary<string, ProjectionDocument> ProjectionDocuments { get; } = new();
     public ConcurrentDictionary<string, EventDocument> EventDocuments { get; } = new();
     public ConcurrentDictionary<string, ConcurrentBag<AggregateEventDocument>> AggregateEventDocuments { get; } = new();
     public ConcurrentDictionary<string, int> StreamSequences { get; } = new();
@@ -37,6 +38,7 @@ public class InMemoryCosmosStorage
     public void Clear()
     {
         AggregateDocuments.Clear();
+        ProjectionDocuments.Clear();
         EventDocuments.Clear();
         AggregateEventDocuments.Clear();
         StreamSequences.Clear();

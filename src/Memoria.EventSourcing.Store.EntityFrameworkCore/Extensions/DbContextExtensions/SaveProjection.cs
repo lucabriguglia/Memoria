@@ -33,15 +33,15 @@ public static partial class IDomainDbContextExtensions
         {
             var projectionEntity = projection.ToProjectionEntity(streamId, projectionId);
 
-            var exists = await domainDbContext.Aggregates.AsNoTracking()
+            var exists = await domainDbContext.Projections.AsNoTracking()
                 .AnyAsync(entity => entity.Id == projectionEntity.Id, cancellationToken);
             if (exists)
             {
-                domainDbContext.Aggregates.Update(projectionEntity);
+                domainDbContext.Projections.Update(projectionEntity);
             }
             else
             {
-                domainDbContext.Aggregates.Add(projectionEntity);
+                domainDbContext.Projections.Add(projectionEntity);
             }
 
             await domainDbContext.SaveChangesAsync(cancellationToken);

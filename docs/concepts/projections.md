@@ -93,11 +93,14 @@ See the [Domain Service](../reference/domain-service.md#save-projection) referen
 <a name="how-projections-are-stored"></a>
 ## How projections are stored
 
-A projection is persisted and read exactly like an [aggregate snapshot](../concepts/glossary.md#snapshot): its state is serialized into a snapshot record. Because a projection produces no events, saving one upserts only the snapshot — no events are written to the stream.
+A projection is persisted and read like an [aggregate snapshot](../concepts/glossary.md#snapshot): its state is serialized into a snapshot record. Because a projection produces no events, saving one upserts only the snapshot — no events are written to the stream. Each store uses a **dedicated projection type**, separate from aggregate storage:
+
+- **Entity Framework Core** persists projections through a `ProjectionEntity` mapped to its own `DomainProjections` table (distinct from the `DomainAggregates` table).
+- **Cosmos DB** persists projections as a `ProjectionDocument` (`documentType: "Projection"`) in the **same container** as aggregates — Cosmos containers are schemaless and discriminate by document type.
 
 A few things to keep in mind for this release:
 
-- **Same table/container as aggregates.** Projection snapshots currently share the aggregate snapshot storage. They are keyed by `{projectionId}:{version}`, so keep aggregate and projection ids distinct within a stream.
+- **Keyed by `{projectionId}:{version}`.** The projection's `[ProjectionType]` version is part of the snapshot key, so bumping the version starts a fresh snapshot rather than overwriting the previous one.
 - **No optimistic concurrency.** Unlike `SaveAggregate` (which takes an `expectedEventSequence`), `SaveProjection` is a plain upsert. Coordinate writers yourself if more than one process rebuilds the same projection.
 
 ## Related

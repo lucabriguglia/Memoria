@@ -80,7 +80,7 @@ public static class DiagnosticsExtensions
     /// <param name="itemResponse">The item response from CosmosDB.</param>
     /// <param name="streamId">The stream identifier.</param>
     /// <param name="operation">The operation being performed.</param>
-    public static void AddActivityEvent(this ItemResponse<AggregateDocument> itemResponse, IStreamId streamId, string operation)
+    public static void AddActivityEvent(this ItemResponse<ProjectionDocument> itemResponse, IStreamId streamId, string operation)
     {
         Activity.Current?.AddEvent(new ActivityEvent("Cosmos Read Item", default, new ActivityTagsCollection
         {

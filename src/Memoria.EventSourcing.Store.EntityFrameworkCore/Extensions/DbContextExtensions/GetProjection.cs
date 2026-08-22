@@ -28,7 +28,7 @@ public static partial class IDomainDbContextExtensions
     public static async Task<Result<T?>> GetProjection<T>(this IDomainDbContext domainDbContext, IStreamId streamId,
         IProjectionId<T> projectionId, CancellationToken cancellationToken = default) where T : IProjection, new()
     {
-        var projectionEntity = await domainDbContext.Aggregates.AsNoTracking()
+        var projectionEntity = await domainDbContext.Projections.AsNoTracking()
             .FirstOrDefaultAsync(entity => entity.Id == projectionId.ToStoreId(), cancellationToken);
         if (projectionEntity is null)
         {

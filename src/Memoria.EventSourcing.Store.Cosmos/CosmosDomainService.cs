@@ -464,7 +464,7 @@ public class CosmosDomainService : IDomainService
     {
         try
         {
-            var response = await _container.ReadItemAsync<AggregateDocument>(projectionId.ToStoreId(),
+            var response = await _container.ReadItemAsync<ProjectionDocument>(projectionId.ToStoreId(),
                 new PartitionKey(streamId.Id), cancellationToken: cancellationToken);
             response.AddActivityEvent(streamId, operation: "Get Projection");
             return response.Resource.ToProjection<T>();
@@ -501,7 +501,7 @@ public class CosmosDomainService : IDomainService
 
             try
             {
-                var existing = await _container.ReadItemAsync<AggregateDocument>(projectionId.ToStoreId(),
+                var existing = await _container.ReadItemAsync<ProjectionDocument>(projectionId.ToStoreId(),
                     new PartitionKey(streamId.Id), cancellationToken: cancellationToken);
                 projectionDocument.CreatedDate = existing.Resource.CreatedDate;
                 projectionDocument.CreatedBy = existing.Resource.CreatedBy;

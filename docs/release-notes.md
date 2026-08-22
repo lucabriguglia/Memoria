@@ -9,7 +9,7 @@ redirect_from:
 ## Memoria 1.4.0
 _**Released 22/08/2026**_
 - New `Projection` read-model base class for building query-optimised read models from events, and a shared `EventSourcedModel` base class (with matching `IEventSourcedModel`/`IProjection` interfaces) that `AggregateRoot` and `Projection` both inherit for identity, versioning, and event application
-- New `SaveProjection` and `GetProjection` methods on `IDomainService` that persist and retrieve projection snapshots, supported by the Entity Framework Core, Npgsql, and Cosmos DB store providers (and their in-memory variants). Projection snapshots are stored in the same table/container as aggregates for now
+- New `SaveProjection` and `GetProjection` methods on `IDomainService` that persist and retrieve projection snapshots, supported by the Entity Framework Core, Npgsql, and Cosmos DB store providers (and their in-memory variants). Each store uses a dedicated projection type: EF Core persists a `ProjectionEntity` in its own `DomainProjections` table, while Cosmos persists a `ProjectionDocument` in the same container as aggregates (discriminated by `documentType`)
 - New `[ProjectionType]` attribute and `IProjectionId<T>` identifier for projections; projection types are auto-registered during `AddMemoriaEventSourcing` assembly scanning
 
 ## Memoria 1.3.2

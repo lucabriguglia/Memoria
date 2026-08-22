@@ -322,7 +322,7 @@ public class InMemoryCosmosDomainService(
         CancellationToken cancellationToken = default) where T : IProjection, new()
     {
         var key = CreateProjectionKey(streamId, projectionId);
-        if (storage.AggregateDocuments.TryGetValue(key, out var projectionDocument))
+        if (storage.ProjectionDocuments.TryGetValue(key, out var projectionDocument))
         {
             return Task.FromResult<Result<T?>>(projectionDocument.ToProjection<T>());
         }
@@ -339,7 +339,7 @@ public class InMemoryCosmosDomainService(
         var key = CreateProjectionKey(streamId, projectionId);
         var projectionDocument = projection.ToProjectionDocument(streamId, projectionId);
 
-        if (storage.AggregateDocuments.TryGetValue(key, out var existing))
+        if (storage.ProjectionDocuments.TryGetValue(key, out var existing))
         {
             projectionDocument.CreatedDate = existing.CreatedDate;
             projectionDocument.CreatedBy = existing.CreatedBy;
@@ -353,7 +353,7 @@ public class InMemoryCosmosDomainService(
         projectionDocument.UpdatedDate = timeStamp;
         projectionDocument.UpdatedBy = currentUserNameIdentifier;
 
-        storage.AggregateDocuments.AddOrUpdate(key, projectionDocument, (_, _) => projectionDocument);
+        storage.ProjectionDocuments.AddOrUpdate(key, projectionDocument, (_, _) => projectionDocument);
 
         return Task.FromResult(Result.Ok());
     }

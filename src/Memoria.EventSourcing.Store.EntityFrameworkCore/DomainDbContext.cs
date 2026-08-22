@@ -185,6 +185,7 @@ public abstract class DomainDbContext(
         modelBuilder.ApplyConfiguration(new AggregateEntityConfiguration());
         modelBuilder.ApplyConfiguration(new EventEntityConfiguration());
         modelBuilder.ApplyConfiguration(new AggregateEventEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new ProjectionEntityConfiguration());
     }
 
     /// <summary>
@@ -219,6 +220,15 @@ public abstract class DomainDbContext(
     /// facilitating efficient navigation between aggregates and events in the event sourcing system.
     /// </value>
     public DbSet<AggregateEventEntity> AggregateEvents { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the database set for projection entities that store serialized projection (read model) snapshots.
+    /// Provides access to projection persistence operations, kept in a dedicated table separate from aggregate snapshots.
+    /// </summary>
+    /// <value>
+    /// A <see cref="DbSet{ProjectionEntity}"/> that enables CRUD operations on projection snapshots.
+    /// </value>
+    public DbSet<ProjectionEntity> Projections { get; set; } = null!;
 
     /// <summary>
     /// Detaches the specified aggregate entity from the Entity Framework change tracker to prevent
@@ -331,12 +341,12 @@ public abstract class DomainDbContext(
     {
         foreach (var entityEntry in ChangeTracker.Entries())
         {
-            if (entityEntry.Entity is not AggregateEntity aggregateEntity)
+            if (entityEntry.Entity is not ProjectionEntity projectionEntity)
             {
                 continue;
             }
 
-            if (aggregateEntity.Id == projectionId.ToStoreId())
+            if (projectionEntity.Id == projectionId.ToStoreId())
             {
                 entityEntry.State = EntityState.Detached;
             }

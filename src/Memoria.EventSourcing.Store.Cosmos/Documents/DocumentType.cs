@@ -23,4 +23,10 @@ public static class DocumentType
     /// This constant is used to mark documents that represent events associated with specific aggregates.
     /// </summary>
     public static string AggregateEvent => "AggregateEvent";
+
+    /// <summary>
+    /// Gets the document type identifier for projection documents.
+    /// This constant is used to mark documents that represent projection (read model) snapshots.
+    /// </summary>
+    public static string Projection => "Projection";
 }

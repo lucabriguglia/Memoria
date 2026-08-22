@@ -433,6 +433,16 @@ public interface IDomainDbContext : IDisposable, IAsyncDisposable
     DbSet<AggregateEventEntity> AggregateEvents { get; set; }
 
     /// <summary>
+    /// Gets or sets the DbSet for projection entities that store serialized projection (read model) snapshots.
+    /// Projection snapshots are persisted independently of aggregate snapshots in their own table.
+    /// </summary>
+    /// <value>
+    /// A <see cref="DbSet{TEntity}"/> of <see cref="ProjectionEntity"/> objects representing
+    /// the projection snapshots stored in the database.
+    /// </value>
+    DbSet<ProjectionEntity> Projections { get; set; }
+
+    /// <summary>
     /// Asynchronously saves all changes made in the context to the database with support for cancellation.
     /// This method coordinates the persistence of all tracked entities including aggregates, events,
     /// and their relationships while maintaining data consistency and integrity constraints.

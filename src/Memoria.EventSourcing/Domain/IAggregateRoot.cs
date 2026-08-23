@@ -10,6 +10,15 @@ namespace Memoria.EventSourcing.Domain;
 public interface IAggregateRoot : IEventSourcedModel
 {
     /// <summary>
+    /// Gets or sets the unique identifier for this aggregate instance.
+    /// </summary>
+    /// <value>
+    /// A string that uniquely identifies this specific aggregate within its type.
+    /// This serves as the primary key for the aggregate and should remain constant throughout its lifetime.
+    /// </value>
+    string AggregateId { get; set; }
+
+    /// <summary>
     /// Gets the collection of domain events that have been generated but not yet persisted to the event store.
     /// </summary>
     /// <value>

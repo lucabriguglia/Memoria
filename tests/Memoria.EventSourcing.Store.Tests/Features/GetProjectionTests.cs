@@ -34,7 +34,7 @@ public abstract class GetProjectionTests(IDomainServiceFactory domainServiceFact
             getResult.IsSuccess.Should().BeTrue();
             getResult.Value.Should().NotBeNull();
             getResult.Value!.StreamId.Should().Be(streamId.Id);
-            getResult.Value.AggregateId.Should().Be(projectionId.ToStoreId());
+            getResult.Value.ProjectionId.Should().Be(projectionId.ToStoreId());
             getResult.Value.Version.Should().Be(2);
             getResult.Value.EventsApplied.Should().Be(2);
             getResult.Value.Name.Should().Be("Updated Name");

@@ -10,6 +10,12 @@ namespace Memoria.EventSourcing.Domain;
 public abstract class AggregateRoot : EventSourcedModel, IAggregateRoot
 {
     /// <summary>
+    /// Gets or sets the aggregate ID.
+    /// </summary>
+    [JsonIgnore]
+    public string AggregateId { get; set; } = null!;
+
+    /// <summary>
     /// Private collection of uncommitted events.
     /// </summary>
     [JsonIgnore]

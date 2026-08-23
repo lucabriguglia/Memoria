@@ -17,12 +17,6 @@ public abstract class EventSourcedModel : IEventSourcedModel
     public string StreamId { get; set; } = null!;
 
     /// <summary>
-    /// Gets or sets the aggregate ID.
-    /// </summary>
-    [JsonIgnore]
-    public string AggregateId { get; set; } = null!;
-
-    /// <summary>
     /// Gets or sets the version.
     /// </summary>
     [JsonIgnore]

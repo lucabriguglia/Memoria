@@ -32,9 +32,9 @@ DI registration uses `services.AddMemoria(typeof(Program))` which auto-discovers
 
 ### Event Sourcing (`src/Memoria.EventSourcing`)
 Built on top of core. Key concepts:
-- **EventSourcedModel**: Abstract base shared by write and read models. Holds identity (`StreamId`/`AggregateId`), `Version`, `EventTypeFilter`, `IsEventHandled`, and the abstract `Apply<T>(event)` / `Apply(events)` for state transitions
-- **AggregateRoot** (write model): `EventSourcedModel` plus `Add(event)` to stage events and `UncommittedEvents`
-- **Projection** (read model): `EventSourcedModel` only — no `Add`/`UncommittedEvents`. Built by applying events, then persisted as a snapshot. Identified by `IProjectionId<T>` + `[ProjectionType]`
+- **EventSourcedModel**: Abstract base shared by write and read models. Holds the identity common to both (`StreamId`), plus `Version`, `EventTypeFilter`, `IsEventHandled`, and the abstract `Apply<T>(event)` / `Apply(events)` for state transitions. Instance identity is not shared: `AggregateId` lives on `AggregateRoot`/`IAggregateRoot`, `ProjectionId` on `Projection`/`IProjection`
+- **AggregateRoot** (write model): `EventSourcedModel` plus `AggregateId`, `Add(event)` to stage events, and `UncommittedEvents`
+- **Projection** (read model): `EventSourcedModel` plus `ProjectionId` — no `Add`/`UncommittedEvents`. Built by applying events, then persisted as a snapshot. Identified by `IProjectionId<T>` + `[ProjectionType]`
 - **IDomainService**: Primary service for saving/retrieving aggregates with four read modes (`SnapshotOnly`, `SnapshotWithNewEvents`, `SnapshotOrCreate`, `SnapshotWithNewEventsOrCreate`). Also `SaveProjection`/`GetProjection` — each store uses a **dedicated projection type** keyed by `{projectionId}:{version}` with no optimistic-concurrency check: EF Core persists a `ProjectionEntity` in its own `DomainProjections` table; Cosmos persists a `ProjectionDocument` (`documentType: "Projection"`) in the same container as aggregates
 - **IStreamId** / **IAggregateId**: Multiple aggregates can share a single stream
 - **TypeBindings** / **InstanceFactory**: Map event/aggregate/projection types to CLR types for deserialization (populated by `AddMemoriaEventSourcing` assembly scanning)

@@ -38,7 +38,7 @@ public static class ProjectionExtensions
         }
 
         projection.StreamId = streamId.Id;
-        projection.AggregateId = projectionId.ToStoreId();
+        projection.ProjectionId = projectionId.ToStoreId();
 
         return new ProjectionDocument
         {
@@ -68,7 +68,7 @@ public static class ProjectionExtensions
 
         var projection = (T)JsonConvert.DeserializeObject(projectionDocument.Data, projectionType!, JsonSerializerSettings)!;
         projection.StreamId = projectionDocument.StreamId;
-        projection.AggregateId = projectionDocument.Id;
+        projection.ProjectionId = projectionDocument.Id;
         projection.Version = projectionDocument.Version;
         projection.LatestEventSequence = projectionDocument.LatestEventSequence;
         return projection;

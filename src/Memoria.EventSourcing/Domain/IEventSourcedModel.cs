@@ -18,15 +18,6 @@ public interface IEventSourcedModel
     string StreamId { get; set; }
 
     /// <summary>
-    /// Gets or sets the unique identifier for this model instance.
-    /// </summary>
-    /// <value>
-    /// A string that uniquely identifies this specific instance within its type.
-    /// This serves as the primary key for the model and should remain constant throughout its lifetime.
-    /// </value>
-    string AggregateId { get; set; }
-
-    /// <summary>
     /// Gets or sets the current version of the model based on the number of events applied.
     /// </summary>
     /// <value>

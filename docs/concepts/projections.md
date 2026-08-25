@@ -88,6 +88,12 @@ var projectionResult = await domainService.GetProjection(streamId, projectionId)
 
 `GetProjection` returns `null` when no snapshot has been saved for the projection id.
 
+For ad-hoc reads where you don't want to leave a snapshot behind, `GetInMemoryProjection` folds matching events straight into a fresh projection instance without persisting anything. Overloads let you reconstruct the full stream, up to a sequence, or up to a date — the projection equivalent of `GetInMemoryAggregate`.
+
+```C#
+var projectionResult = await domainService.GetInMemoryProjection(streamId, projectionId);
+```
+
 See the [Domain Service](../reference/domain-service.md#save-projection) reference for the full method signatures.
 
 <a name="how-projections-are-stored"></a>

@@ -24,7 +24,7 @@ If you're using this repository for your learning, samples, workshop, or your pr
 - Option to store the aggregate snapshot alongside events for fast reads and write model strongly consistent
 - Projections (read models) persisted and retrieved as snapshots via `SaveProjection` and `GetProjection`
 - Four different read modes that allow multiple write/read patterns based on specific needs.
-- In memory aggregate reconstruction up to a specific event sequence or date if provided _**(soon up to aggregate version)**_
+- In memory aggregate and projection reconstruction up to a specific event sequence or date if provided _**(soon up to aggregate version)**_
 - Events applied to the aggregate filtered by event type
 - Events applied to the aggregate filtered by event property (key/value pairs declared on the aggregate id)
 - Retrieval of all events applied to an aggregate

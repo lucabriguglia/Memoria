@@ -19,6 +19,7 @@ Every store provider has its own implementation of the `IDomainService` interfac
 - [Get In-Memory Aggregate](#get-in-memory-aggregate)
 - [Save Projection](#save-projection)
 - [Get Projection](#get-projection)
+- [Get In-Memory Projection](#get-in-memory-projection)
 - [Get Events](#get-domain-events)
 - [Get Events From Sequence](#get-domain-events-from-sequence)
 - [Get Events Up To Sequence](#get-domain-events-up-to-sequence)
@@ -158,6 +159,23 @@ Retrieves a previously saved projection snapshot. Returns `null` when no snapsho
 var streamId = new CustomerStreamId(customerId);
 var projectionId = new OrderSummaryProjectionId(customerId);
 var projectionResult = await domainService.GetProjection(streamId, projectionId);
+```
+
+<a name="get-in-memory-projection"></a>
+### Get In-Memory Projection
+Reconstructs a projection entirely from events without persisting a snapshot. The projection equivalent of [Get In-Memory Aggregate](#get-in-memory-aggregate) — useful for one-off reads, backfilling a report, or building an ad-hoc view where you don't want to leave a snapshot behind. When no matching events are stored, a projection with `Version = 0` is returned.
+```C#
+var streamId = new CustomerStreamId(customerId);
+var projectionId = new OrderSummaryProjectionId(customerId);
+var projectionResult = await domainService.GetInMemoryProjection(streamId, projectionId);
+```
+Optionally, you can specify a sequence number or a date to reconstruct the projection up to a specific point in time.
+```C#
+var projectionResult = await domainService.GetInMemoryProjection(streamId, projectionId, upToSequence);
+```
+or
+```C#
+var projectionResult = await domainService.GetInMemoryProjection(streamId, projectionId, upToDate);
 ```
 
 <a name="get-domain-events"></a>

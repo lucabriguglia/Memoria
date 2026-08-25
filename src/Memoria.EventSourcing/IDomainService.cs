@@ -260,6 +260,68 @@ public interface IDomainService : IDisposable
         DateTimeOffset upToDate, CancellationToken cancellationToken = default) where T : IAggregateRoot, new();
 
     /// <summary>
+    /// Retrieves an in-memory projection of the specified type by folding all matching events from
+    /// the stream. The rebuilt projection is not persisted as a snapshot.
+    /// </summary>
+    /// <typeparam name="T">The type of the projection to retrieve.</typeparam>
+    /// <param name="streamId">The unique identifier of the stream the projection belongs to.</param>
+    /// <param name="projectionId">The unique identifier of the projection to retrieve.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the projection wrapped in a <see cref="Result{TValue}"/>. When no matching events are stored, a projection with <c>Version = 0</c> is returned.</returns>
+    /// <example>
+    /// var result = await domainService.GetInMemoryProjection&lt;T&gt;(streamId, projectionId);
+    /// if (!result.IsSuccess)
+    /// {
+    ///     return result.Failure;
+    /// }
+    /// var projection = result.Value;
+    /// </example>
+    Task<Result<T>> GetInMemoryProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new();
+
+    /// <summary>
+    /// Retrieves an in-memory projection of the specified type by folding matching events from the
+    /// stream up to a specified sequence. The rebuilt projection is not persisted as a snapshot.
+    /// </summary>
+    /// <typeparam name="T">The type of the projection to retrieve.</typeparam>
+    /// <param name="streamId">The unique identifier of the stream the projection belongs to.</param>
+    /// <param name="projectionId">The unique identifier of the projection to retrieve.</param>
+    /// <param name="upToSequence">The sequence number up to which the projection should be built.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the projection wrapped in a <see cref="Result{TValue}"/>.</returns>
+    /// <example>
+    /// var result = await domainService.GetInMemoryProjection&lt;T&gt;(streamId, projectionId, upToSequence);
+    /// if (!result.IsSuccess)
+    /// {
+    ///     return result.Failure;
+    /// }
+    /// var projection = result.Value;
+    /// </example>
+    Task<Result<T>> GetInMemoryProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        int upToSequence, CancellationToken cancellationToken = default) where T : IProjection, new();
+
+    /// <summary>
+    /// Retrieves an in-memory projection of the specified type by folding matching events from the
+    /// stream up to a specified date. The rebuilt projection is not persisted as a snapshot.
+    /// </summary>
+    /// <typeparam name="T">The type of the projection to retrieve.</typeparam>
+    /// <param name="streamId">The unique identifier of the stream the projection belongs to.</param>
+    /// <param name="projectionId">The unique identifier of the projection to retrieve.</param>
+    /// <param name="upToDate">The date up to which the projection should be built.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the projection wrapped in a <see cref="Result{TValue}"/>.</returns>
+    /// <example>
+    /// var result = await domainService.GetInMemoryProjection&lt;T&gt;(streamId, projectionId, upToDate);
+    /// if (!result.IsSuccess)
+    /// {
+    ///     return result.Failure;
+    /// }
+    /// var projection = result.Value;
+    /// </example>
+    Task<Result<T>> GetInMemoryProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        DateTimeOffset upToDate, CancellationToken cancellationToken = default) where T : IProjection, new();
+
+    /// <summary>
     /// Retrieves a projection (read-model) for the specified projection identifier, using the
     /// selected read mode to control how the snapshot and subsequent events are combined.
     /// </summary>

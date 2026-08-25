@@ -203,6 +203,53 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext, 
     }
 
     /// <summary>
+    /// Gets an in-memory projection by folding all matching events from the stream, without
+    /// persisting a snapshot.
+    /// </summary>
+    /// <typeparam name="T">The type of projection to retrieve.</typeparam>
+    /// <param name="streamId">The stream identifier.</param>
+    /// <param name="projectionId">The projection identifier.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A result containing the in-memory projection.</returns>
+    public async Task<Result<T>> GetInMemoryProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        return await domainDbContext.GetInMemoryProjection(streamId, projectionId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Gets an in-memory projection by folding matching events from the stream up to a specific
+    /// sequence, without persisting a snapshot.
+    /// </summary>
+    /// <typeparam name="T">The type of projection to retrieve.</typeparam>
+    /// <param name="streamId">The stream identifier.</param>
+    /// <param name="projectionId">The projection identifier.</param>
+    /// <param name="upToSequence">The sequence number to read up to.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A result containing the in-memory projection up to the specified sequence.</returns>
+    public async Task<Result<T>> GetInMemoryProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        int upToSequence, CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        return await domainDbContext.GetInMemoryProjection(streamId, projectionId, upToSequence, cancellationToken);
+    }
+
+    /// <summary>
+    /// Gets an in-memory projection by folding matching events from the stream up to a specific
+    /// date, without persisting a snapshot.
+    /// </summary>
+    /// <typeparam name="T">The type of projection to retrieve.</typeparam>
+    /// <param name="streamId">The stream identifier.</param>
+    /// <param name="projectionId">The projection identifier.</param>
+    /// <param name="upToDate">The date to read up to.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A result containing the in-memory projection up to the specified date.</returns>
+    public async Task<Result<T>> GetInMemoryProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        DateTimeOffset upToDate, CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        return await domainDbContext.GetInMemoryProjection(streamId, projectionId, upToDate, cancellationToken);
+    }
+
+    /// <summary>
     /// Retrieves a projection for the specified projection identifier, using the selected read mode.
     /// </summary>
     /// <typeparam name="T">The type of projection to retrieve.</typeparam>

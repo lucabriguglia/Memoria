@@ -93,6 +93,24 @@ public class DefaultDomainService : IDomainService
         throw new NotImplementedException(NotImplementedMessage);
     }
 
+    public Task<Result<T>> GetInMemoryProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        throw new NotImplementedException(NotImplementedMessage);
+    }
+
+    public Task<Result<T>> GetInMemoryProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        int upToSequence, CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        throw new NotImplementedException(NotImplementedMessage);
+    }
+
+    public Task<Result<T>> GetInMemoryProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        DateTimeOffset upToDate, CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        throw new NotImplementedException(NotImplementedMessage);
+    }
+
     public Task<Result<T?>> GetProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
         ReadMode readMode = ReadMode.SnapshotOnly, CancellationToken cancellationToken = default)
         where T : IProjection, new()

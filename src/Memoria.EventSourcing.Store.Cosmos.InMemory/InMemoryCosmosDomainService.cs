@@ -318,6 +318,99 @@ public class InMemoryCosmosDomainService(
         return aggregate;
     }
 
+    public async Task<Result<T>> GetInMemoryProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        var projection = new T();
+
+        var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId, projection.EventTypeFilter,
+            cancellationToken: cancellationToken);
+        if (eventDocumentsResult.IsNotSuccess)
+        {
+            return eventDocumentsResult.Failure!;
+        }
+
+        var eventDocuments = eventDocumentsResult.Value!.ToList();
+        if (eventDocuments.Count == 0)
+        {
+            return projection;
+        }
+
+        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()));
+        if (projection.Version == 0)
+        {
+            return projection;
+        }
+
+        projection.StreamId = streamId.Id;
+        projection.ProjectionId = projectionId.ToStoreId();
+        projection.LatestEventSequence = eventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
+
+        return projection;
+    }
+
+    public async Task<Result<T>> GetInMemoryProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        int upToSequence, CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        var projection = new T();
+
+        var eventDocumentsResult = await _dataStore.GetEventDocumentsUpToSequence(streamId, upToSequence,
+            projection.EventTypeFilter, cancellationToken: cancellationToken);
+        if (eventDocumentsResult.IsNotSuccess)
+        {
+            return eventDocumentsResult.Failure!;
+        }
+
+        var eventDocuments = eventDocumentsResult.Value!.ToList();
+        if (eventDocuments.Count == 0)
+        {
+            return projection;
+        }
+
+        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()));
+        if (projection.Version == 0)
+        {
+            return projection;
+        }
+
+        projection.StreamId = streamId.Id;
+        projection.ProjectionId = projectionId.ToStoreId();
+        projection.LatestEventSequence = eventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
+
+        return projection;
+    }
+
+    public async Task<Result<T>> GetInMemoryProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        DateTimeOffset upToDate, CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        var projection = new T();
+
+        var eventDocumentsResult = await _dataStore.GetEventDocumentsUpToDate(streamId, upToDate,
+            projection.EventTypeFilter, cancellationToken: cancellationToken);
+        if (eventDocumentsResult.IsNotSuccess)
+        {
+            return eventDocumentsResult.Failure!;
+        }
+
+        var eventDocuments = eventDocumentsResult.Value!.ToList();
+        if (eventDocuments.Count == 0)
+        {
+            return projection;
+        }
+
+        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()));
+        if (projection.Version == 0)
+        {
+            return projection;
+        }
+
+        projection.StreamId = streamId.Id;
+        projection.ProjectionId = projectionId.ToStoreId();
+        projection.LatestEventSequence = eventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
+
+        return projection;
+    }
+
     public async Task<Result<T?>> GetProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
         ReadMode readMode = ReadMode.SnapshotOnly, CancellationToken cancellationToken = default)
         where T : IProjection, new()

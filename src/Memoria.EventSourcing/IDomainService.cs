@@ -260,19 +260,24 @@ public interface IDomainService : IDisposable
         DateTimeOffset upToDate, CancellationToken cancellationToken = default) where T : IAggregateRoot, new();
 
     /// <summary>
-    /// Retrieves a persisted projection (read-model) snapshot for the specified projection identifier.
+    /// Retrieves a projection (read-model) for the specified projection identifier, using the
+    /// selected read mode to control how the snapshot and subsequent events are combined.
     /// </summary>
     /// <typeparam name="T">The type of the projection to retrieve.</typeparam>
     /// <param name="streamId">The unique identifier of the stream the projection belongs to.</param>
     /// <param name="projectionId">The unique identifier of the projection to retrieve.</param>
+    /// <param name="readMode">The mode in which the projection should be read.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>
     /// A task that represents the asynchronous operation. The task result contains the projection
-    /// wrapped in a <see cref="Result{TValue}"/>, or a null value when no snapshot has been saved.
+    /// wrapped in a <see cref="Result{TValue}"/>, or a null value when no snapshot has been saved
+    /// and, for the <see cref="ReadMode"/> variants that reconstruct, no events could be applied.
     /// </returns>
     /// <remarks>
-    /// A projection is persisted and read like an aggregate snapshot; it is stored in the same
-    /// underlying table/container as aggregates for the time being.
+    /// Projections follow the same <see cref="ReadMode"/> semantics as aggregates. When a snapshot
+    /// does not exist and the read mode allows reconstruction (<see cref="ReadMode.SnapshotOrCreate"/>
+    /// or <see cref="ReadMode.SnapshotWithNewEventsOrCreate"/>), the projection is built by applying
+    /// events from the stream and the resulting snapshot is persisted so subsequent reads are cheap.
     /// </remarks>
     /// <example>
     /// var result = await domainService.GetProjection&lt;T&gt;(streamId, projectionId);
@@ -283,7 +288,8 @@ public interface IDomainService : IDisposable
     /// var projection = result.Value;
     /// </example>
     Task<Result<T?>> GetProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
-        CancellationToken cancellationToken = default) where T : IProjection, new();
+        ReadMode readMode = ReadMode.SnapshotOnly, CancellationToken cancellationToken = default)
+        where T : IProjection, new();
 
     /// <summary>
     /// Saves a projection (read-model) snapshot for the specified projection identifier.

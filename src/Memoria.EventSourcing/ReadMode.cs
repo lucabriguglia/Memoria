@@ -1,7 +1,7 @@
 namespace Memoria.EventSourcing;
 
 /// <summary>
-/// Represents the mode of reading aggregates.
+/// Represents the mode of reading event-sourced models (aggregates or projections).
 /// </summary>
 public enum ReadMode
 {
@@ -16,12 +16,12 @@ public enum ReadMode
     SnapshotWithNewEvents,
 
     /// <summary>
-    /// Uses the latest snapshot if available, otherwise creates a new aggregate from events.
+    /// Uses the latest snapshot if available, otherwise creates a new model from events.
     /// </summary>
     SnapshotOrCreate,
 
     /// <summary>
-    /// Uses the latest snapshot with subsequent events or creates a new aggregate if no snapshot exists.
+    /// Uses the latest snapshot with subsequent events or creates a new model if no snapshot exists.
     /// </summary>
     SnapshotWithNewEventsOrCreate
 }

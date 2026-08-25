@@ -49,6 +49,57 @@ public static partial class IDomainDbContextExtensions
         return aggregate;
     }
 
+    private static async Task<Result<T?>> UpdateProjection<T>(this IDomainDbContext domainDbContext,
+        IStreamId streamId, IProjectionId<T> projectionId, T projection,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        var currentProjectionVersion = projection.Version;
+
+        var newEventEntities = await domainDbContext.GetEventEntitiesFromSequence(streamId,
+            fromSequence: projection.LatestEventSequence + 1, projection.EventTypeFilter,
+            cancellationToken: cancellationToken);
+        if (newEventEntities.Count == 0)
+        {
+            return projection.Version > 0 ? projection : default;
+        }
+
+        var newEvents = newEventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
+        projection.Apply(newEvents);
+
+        if (projection.Version == currentProjectionVersion)
+        {
+            return projection.Version > 0 ? projection : default;
+        }
+
+        projection.LatestEventSequence =
+            newEventEntities.OrderBy(eventEntity => eventEntity.Sequence).Last().Sequence;
+
+        try
+        {
+            var projectionEntity = projection.ToProjectionEntity(streamId, projectionId);
+            var projectionIsNew = currentProjectionVersion == 0;
+            if (projectionIsNew)
+            {
+                domainDbContext.Projections.Add(projectionEntity);
+            }
+            else
+            {
+                domainDbContext.Projections.Update(projectionEntity);
+            }
+
+            await domainDbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            ex.AddException(streamId, operation: "Update Projection");
+            return ErrorHandling.DefaultFailure;
+        }
+
+        domainDbContext.DetachProjection(projectionId, projection);
+
+        return projection;
+    }
+
     private static List<EventEntity> TrackEventEntities(this IDomainDbContext domainDbContext, IStreamId streamId,
         IEvent[] events, int startingEventSequence)
     {

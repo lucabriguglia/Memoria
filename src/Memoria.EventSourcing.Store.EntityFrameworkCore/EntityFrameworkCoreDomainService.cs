@@ -203,17 +203,19 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext, 
     }
 
     /// <summary>
-    /// Retrieves a persisted projection snapshot for the specified projection identifier.
+    /// Retrieves a projection for the specified projection identifier, using the selected read mode.
     /// </summary>
     /// <typeparam name="T">The type of projection to retrieve.</typeparam>
     /// <param name="streamId">The stream identifier.</param>
     /// <param name="projectionId">The projection identifier.</param>
+    /// <param name="readMode">The mode in which the projection should be read.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A result containing the projection, or a null value when no snapshot exists.</returns>
+    /// <returns>A result containing the projection, or a null value when no snapshot exists (or, for reconstruction modes, no events could be applied).</returns>
     public async Task<Result<T?>> GetProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
-        CancellationToken cancellationToken = default) where T : IProjection, new()
+        ReadMode readMode = ReadMode.SnapshotOnly, CancellationToken cancellationToken = default)
+        where T : IProjection, new()
     {
-        return await domainDbContext.GetProjection(streamId, projectionId, cancellationToken);
+        return await domainDbContext.GetProjection(streamId, projectionId, readMode, cancellationToken);
     }
 
     /// <summary>

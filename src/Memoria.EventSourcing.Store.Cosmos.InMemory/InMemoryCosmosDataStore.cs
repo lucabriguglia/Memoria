@@ -267,6 +267,67 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         return aggregate;
     }
 
+    public Task<Result<ProjectionDocument?>> GetProjectionDocument<T>(IStreamId streamId,
+        IProjectionId<T> projectionId, CancellationToken cancellationToken = default)
+        where T : IProjection, new()
+    {
+        var key = CreateProjectionKey(streamId, projectionId);
+        var document = storage.ProjectionDocuments.TryGetValue(key, out var projectionDocument)
+            ? projectionDocument
+            : null;
+        return Task.FromResult(Result<ProjectionDocument?>.Ok(document));
+    }
+
+    public async Task<Result<T?>> UpdateProjectionDocument<T>(IStreamId streamId,
+        IProjectionId<T> projectionId, ProjectionDocument? projectionDocument,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        var projection = projectionDocument is null ? new T() : projectionDocument.ToProjection<T>();
+
+        var currentProjectionVersion = projection.Version;
+
+        var newEventDocumentsResult = await GetEventDocumentsFromSequence(streamId,
+            fromSequence: projection.LatestEventSequence + 1, projection.EventTypeFilter,
+            cancellationToken: cancellationToken);
+        if (newEventDocumentsResult.IsNotSuccess)
+        {
+            return newEventDocumentsResult.Failure!;
+        }
+
+        var newEventDocuments = newEventDocumentsResult.Value!;
+        if (newEventDocuments.Count == 0)
+        {
+            return projection.Version > 0 ? projection : default;
+        }
+
+        var newEvents = newEventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        projection.Apply(newEvents);
+        if (projection.Version == currentProjectionVersion)
+        {
+            return projection.Version > 0 ? projection : default;
+        }
+
+        projection.LatestEventSequence =
+            newEventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
+
+        var timeStamp = timeProvider.GetUtcNow();
+        var currentUserNameIdentifier = httpContextAccessor.GetCurrentUserNameIdentifier();
+
+        var projectionDocumentToUpsert = projection.ToProjectionDocument(streamId, projectionId);
+        projectionDocumentToUpsert.CreatedDate = projectionDocument?.CreatedDate ?? timeStamp;
+        projectionDocumentToUpsert.CreatedBy = projectionDocument?.CreatedBy ?? currentUserNameIdentifier;
+        projectionDocumentToUpsert.UpdatedDate = timeStamp;
+        projectionDocumentToUpsert.UpdatedBy = currentUserNameIdentifier;
+
+        var key = CreateProjectionKey(streamId, projectionId);
+        storage.ProjectionDocuments.AddOrUpdate(key, projectionDocumentToUpsert, (_, _) => projectionDocumentToUpsert);
+
+        return projection;
+    }
+
+    private static string CreateProjectionKey<T>(IStreamId streamId, IProjectionId<T> projectionId)
+        where T : IProjection => $"{streamId.Id}#{projectionId.ToStoreId()}";
+
     public void Dispose()
     {
         // Storage is shared, so we don't clear it here

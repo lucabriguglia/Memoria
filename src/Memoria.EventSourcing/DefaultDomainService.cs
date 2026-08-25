@@ -94,7 +94,8 @@ public class DefaultDomainService : IDomainService
     }
 
     public Task<Result<T?>> GetProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
-        CancellationToken cancellationToken = default) where T : IProjection, new()
+        ReadMode readMode = ReadMode.SnapshotOnly, CancellationToken cancellationToken = default)
+        where T : IProjection, new()
     {
         throw new NotImplementedException(NotImplementedMessage);
     }

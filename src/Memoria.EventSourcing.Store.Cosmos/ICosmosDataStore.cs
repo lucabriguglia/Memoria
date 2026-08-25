@@ -242,4 +242,30 @@ public interface ICosmosDataStore : IDisposable
     Task<Result<T?>> UpdateAggregateDocument<T>(IStreamId streamId,
         IAggregateId<T> aggregateId, AggregateDocument? aggregateDocument,
         CancellationToken cancellationToken = default) where T : IAggregateRoot, new();
+
+    /// <summary>
+    /// Retrieves a projection document from the Cosmos data store.
+    /// </summary>
+    /// <typeparam name="T">The type of the projection.</typeparam>
+    /// <param name="streamId">The identifier of the stream the projection belongs to.</param>
+    /// <param name="projectionId">The unique identifier of the projection.</param>
+    /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+    /// <returns>A result containing the retrieved projection document, null when no snapshot exists, or a failure.</returns>
+    Task<Result<ProjectionDocument?>> GetProjectionDocument<T>(IStreamId streamId,
+        IProjectionId<T> projectionId, CancellationToken cancellationToken = default)
+        where T : IProjection, new();
+
+    /// <summary>
+    /// Applies new events (beyond the projection's <c>LatestEventSequence</c>) to a projection
+    /// document and upserts the updated snapshot.
+    /// </summary>
+    /// <typeparam name="T">The type of the projection.</typeparam>
+    /// <param name="streamId">The stream identifier the projection belongs to.</param>
+    /// <param name="projectionId">The unique identifier of the projection.</param>
+    /// <param name="projectionDocument">The current projection document, or null when no snapshot exists.</param>
+    /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+    /// <returns>A result containing the updated projection, a null value when no events could be applied, or a failure.</returns>
+    Task<Result<T?>> UpdateProjectionDocument<T>(IStreamId streamId,
+        IProjectionId<T> projectionId, ProjectionDocument? projectionDocument,
+        CancellationToken cancellationToken = default) where T : IProjection, new();
 }

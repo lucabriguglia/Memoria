@@ -452,26 +452,85 @@ public class CosmosDomainService : IDomainService
     }
 
     /// <summary>
-    /// Retrieves a persisted projection snapshot for the specified projection identifier.
+    /// Retrieves a projection for the specified projection identifier, using the selected read mode.
     /// </summary>
     /// <typeparam name="T">The type of projection to retrieve.</typeparam>
     /// <param name="streamId">The stream identifier.</param>
     /// <param name="projectionId">The projection identifier.</param>
+    /// <param name="readMode">The mode in which the projection should be read.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A result containing the projection, a null value when no snapshot exists, or failure information.</returns>
+    /// <returns>A result containing the projection, a null value when no snapshot exists (or, for reconstruction modes, no events could be applied), or failure information.</returns>
     public async Task<Result<T?>> GetProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
-        CancellationToken cancellationToken = default) where T : IProjection, new()
+        ReadMode readMode = ReadMode.SnapshotOnly, CancellationToken cancellationToken = default)
+        where T : IProjection, new()
     {
-        try
+        var projectionDocumentResult =
+            await _cosmosDataStore.GetProjectionDocument(streamId, projectionId, cancellationToken);
+        if (projectionDocumentResult.IsNotSuccess)
         {
-            var response = await _container.ReadItemAsync<ProjectionDocument>(projectionId.ToStoreId(),
-                new PartitionKey(streamId.Id), cancellationToken: cancellationToken);
-            response.AddActivityEvent(streamId, operation: "Get Projection");
-            return response.Resource.ToProjection<T>();
+            return projectionDocumentResult.Failure!;
         }
-        catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+
+        if (projectionDocumentResult.Value != null)
+        {
+            var currentProjectionDocument = projectionDocumentResult.Value;
+            switch (readMode)
+            {
+                case ReadMode.SnapshotOnly or ReadMode.SnapshotOrCreate:
+                    return currentProjectionDocument.ToProjection<T>();
+                case ReadMode.SnapshotWithNewEvents or ReadMode.SnapshotWithNewEventsOrCreate:
+                    return await _cosmosDataStore.UpdateProjectionDocument(streamId, projectionId,
+                        currentProjectionDocument, cancellationToken);
+            }
+        }
+
+        if (readMode is ReadMode.SnapshotOnly or ReadMode.SnapshotWithNewEvents)
         {
             return default(T);
+        }
+
+        var projection = new T();
+
+        var eventDocumentsResult =
+            await _cosmosDataStore.GetEventDocuments(streamId, projection.EventTypeFilter, cancellationToken: cancellationToken);
+        if (eventDocumentsResult.IsNotSuccess)
+        {
+            return eventDocumentsResult.Failure!;
+        }
+
+        var eventDocuments = eventDocumentsResult.Value!.ToList();
+        if (eventDocuments.Count == 0)
+        {
+            return default(T);
+        }
+
+        var events = eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        projection.Apply(events);
+        if (projection.Version == 0)
+        {
+            return default(T);
+        }
+
+        projection.LatestEventSequence =
+            eventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
+
+        var timeStamp = _timeProvider.GetUtcNow();
+        var currentUserNameIdentifier = _httpContextAccessor.GetCurrentUserNameIdentifier();
+
+        try
+        {
+            var projectionDocument = projection.ToProjectionDocument(streamId, projectionId);
+            projectionDocument.CreatedDate = timeStamp;
+            projectionDocument.CreatedBy = currentUserNameIdentifier;
+            projectionDocument.UpdatedDate = timeStamp;
+            projectionDocument.UpdatedBy = currentUserNameIdentifier;
+
+            var response = await _container.UpsertItemAsync(projectionDocument, new PartitionKey(streamId.Id),
+                cancellationToken: cancellationToken);
+            response.AddActivityEvent(streamId, operation: "Get Projection");
+            return response.StatusCode is System.Net.HttpStatusCode.OK or System.Net.HttpStatusCode.Created
+                ? projection
+                : ErrorHandling.DefaultFailure;
         }
         catch (Exception ex)
         {

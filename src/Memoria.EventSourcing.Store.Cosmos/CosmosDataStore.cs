@@ -374,6 +374,102 @@ public class CosmosDataStore : ICosmosDataStore
     }
 
     /// <summary>
+    /// Retrieves a projection document from Cosmos DB for the specified stream and projection.
+    /// </summary>
+    /// <typeparam name="T">The type of projection to retrieve.</typeparam>
+    /// <param name="streamId">The stream identifier containing the projection.</param>
+    /// <param name="projectionId">The unique identifier of the projection.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A result containing the projection document if found, null if not found, or a failure if an error occurred.</returns>
+    public async Task<Result<ProjectionDocument?>> GetProjectionDocument<T>(IStreamId streamId,
+        IProjectionId<T> projectionId, CancellationToken cancellationToken = default)
+        where T : IProjection, new()
+    {
+        try
+        {
+            var response = await _container.ReadItemAsync<ProjectionDocument>(projectionId.ToStoreId(),
+                new PartitionKey(streamId.Id), cancellationToken: cancellationToken);
+            response.AddActivityEvent(streamId, operation: "Get Projection Document");
+            return response.Resource;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return (ProjectionDocument?)null;
+        }
+        catch (Exception ex)
+        {
+            ex.AddException(streamId, operation: "Get Projection Document");
+            return ErrorHandling.DefaultFailure;
+        }
+    }
+
+    /// <summary>
+    /// Applies new events beyond the projection's <c>LatestEventSequence</c> and upserts the updated snapshot.
+    /// </summary>
+    /// <typeparam name="T">The type of projection to update.</typeparam>
+    /// <param name="streamId">The stream identifier containing the projection.</param>
+    /// <param name="projectionId">The unique identifier of the projection.</param>
+    /// <param name="projectionDocument">The current projection document, or null when no snapshot exists.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A result containing the updated projection, null when no events could be applied, or a failure.</returns>
+    public async Task<Result<T?>> UpdateProjectionDocument<T>(IStreamId streamId,
+        IProjectionId<T> projectionId, ProjectionDocument? projectionDocument,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        var projection = projectionDocument is null ? new T() : projectionDocument.ToProjection<T>();
+
+        var currentProjectionVersion = projection.Version;
+
+        var newEventDocumentsResult = await GetEventDocumentsFromSequence(streamId,
+            fromSequence: projection.LatestEventSequence + 1, projection.EventTypeFilter,
+            cancellationToken: cancellationToken);
+        if (newEventDocumentsResult.IsNotSuccess)
+        {
+            return newEventDocumentsResult.Failure!;
+        }
+
+        var newEventDocuments = newEventDocumentsResult.Value!;
+        if (newEventDocuments.Count == 0)
+        {
+            return projection.Version > 0 ? projection : default;
+        }
+
+        var newEvents = newEventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        projection.Apply(newEvents);
+        if (projection.Version == currentProjectionVersion)
+        {
+            return projection.Version > 0 ? projection : default;
+        }
+
+        projection.LatestEventSequence =
+            newEventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
+
+        var timeStamp = _timeProvider.GetUtcNow();
+        var currentUserNameIdentifier = _httpContextAccessor.GetCurrentUserNameIdentifier();
+
+        try
+        {
+            var projectionDocumentToUpsert = projection.ToProjectionDocument(streamId, projectionId);
+            projectionDocumentToUpsert.CreatedDate = projectionDocument?.CreatedDate ?? timeStamp;
+            projectionDocumentToUpsert.CreatedBy = projectionDocument?.CreatedBy ?? currentUserNameIdentifier;
+            projectionDocumentToUpsert.UpdatedDate = timeStamp;
+            projectionDocumentToUpsert.UpdatedBy = currentUserNameIdentifier;
+
+            var response = await _container.UpsertItemAsync(projectionDocumentToUpsert,
+                new PartitionKey(streamId.Id), cancellationToken: cancellationToken);
+            response.AddActivityEvent(streamId, operation: "Update Projection Document");
+            return response.StatusCode is System.Net.HttpStatusCode.OK or System.Net.HttpStatusCode.Created
+                ? projection
+                : ErrorHandling.DefaultFailure;
+        }
+        catch (Exception ex)
+        {
+            ex.AddException(streamId, operation: "Update Projection Document");
+            return ErrorHandling.DefaultFailure;
+        }
+    }
+
+    /// <summary>
     /// Releases the unmanaged resources used by the CosmosDataStore and optionally releases the managed resources.
     /// This method disposes of the Cosmos client connection.
     /// </summary>

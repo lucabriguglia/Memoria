@@ -56,7 +56,7 @@ If you're using this repository for your learning, samples, workshop, or your pr
 - Option to automatically validate commands
 - Event Grid messaging provider
 - Kafka messaging provider
-- File store provider for event sourcing~~~~
+- File store provider for event sourcing
 - Amazon SQS messaging provider
 
 📣 _[Release Notes](https://lucabriguglia.github.io/Memoria/release-notes.html)_

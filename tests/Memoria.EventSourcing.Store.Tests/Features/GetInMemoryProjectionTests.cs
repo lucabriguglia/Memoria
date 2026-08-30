@@ -34,6 +34,7 @@ public abstract class GetInMemoryProjectionTests(IDomainServiceFactory domainSer
             getProjectionResult.Value.StreamId.Should().Be(streamId.Id);
             getProjectionResult.Value.ProjectionId.Should().Be(projectionId.ToStoreId());
             getProjectionResult.Value.Version.Should().Be(2);
+            getProjectionResult.Value.LatestEventSequence.Should().Be(2);
             getProjectionResult.Value.EventsApplied.Should().Be(2);
             getProjectionResult.Value.Name.Should().Be("Updated Name");
             getProjectionResult.Value.Description.Should().Be("Updated Description");
@@ -64,6 +65,7 @@ public abstract class GetInMemoryProjectionTests(IDomainServiceFactory domainSer
             getProjectionResult.Value.StreamId.Should().Be(streamId.Id);
             getProjectionResult.Value.ProjectionId.Should().Be(projectionId.ToStoreId());
             getProjectionResult.Value.Version.Should().Be(1);
+            getProjectionResult.Value.LatestEventSequence.Should().Be(1);
             getProjectionResult.Value.EventsApplied.Should().Be(1);
             getProjectionResult.Value.Name.Should().Be("Test Name");
             getProjectionResult.Value.Description.Should().Be("Test Description");
@@ -139,6 +141,7 @@ public abstract class GetInMemoryProjectionTests(IDomainServiceFactory domainSer
             result.IsSuccess.Should().BeTrue();
             result.Value.Should().NotBeNull();
             result.Value.Version.Should().Be(1);
+            result.Value.LatestEventSequence.Should().Be(1);
             result.Value.EventsApplied.Should().Be(1);
             result.Value.Name.Should().Be("Test Name");
             result.Value.Description.Should().Be("Test Description");

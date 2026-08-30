@@ -31,6 +31,7 @@ public abstract class GetInMemoryAggregateTests(IDomainServiceFactory domainServ
             getAggregateResult.Value.StreamId.Should().Be(streamId.Id);
             getAggregateResult.Value.AggregateId.Should().Be(aggregateId.ToStoreId());
             getAggregateResult.Value.Version.Should().Be(1);
+            getAggregateResult.Value.LatestEventSequence.Should().Be(1);
 
             getAggregateResult.Value.Id.Should().Be(aggregate.Id);
             getAggregateResult.Value.Name.Should().Be(aggregate.Name);
@@ -65,6 +66,7 @@ public abstract class GetInMemoryAggregateTests(IDomainServiceFactory domainServ
             getAggregateResult.Value.StreamId.Should().Be(streamId.Id);
             getAggregateResult.Value.AggregateId.Should().Be(aggregateId.ToStoreId());
             getAggregateResult.Value.Version.Should().Be(1);
+            getAggregateResult.Value.LatestEventSequence.Should().Be(1);
 
             getAggregateResult.Value.Id.Should().Be(aggregate.Id);
             getAggregateResult.Value.Name.Should().Be(aggregate.Name);
@@ -96,6 +98,7 @@ public abstract class GetInMemoryAggregateTests(IDomainServiceFactory domainServ
             aggregateResult.Value.StreamId.Should().Be(streamId.Id);
             aggregateResult.Value.AggregateId.Should().Be(aggregateId.ToStoreId());
             aggregateResult.Value.Version.Should().Be(2);
+            aggregateResult.Value.LatestEventSequence.Should().Be(2);
             aggregateResult.Value.Id.Should().Be(id);
             aggregateResult.Value.Name.Should().Be("Updated Name");
             aggregateResult.Value.Description.Should().Be("Updated Description");
@@ -126,6 +129,7 @@ public abstract class GetInMemoryAggregateTests(IDomainServiceFactory domainServ
             aggregateResult.Value.StreamId.Should().Be(streamId.Id);
             aggregateResult.Value.AggregateId.Should().Be(aggregateId.ToStoreId());
             aggregateResult.Value.Version.Should().Be(1);
+            aggregateResult.Value.LatestEventSequence.Should().Be(1);
             aggregateResult.Value.Id.Should().Be(id);
             aggregateResult.Value.Name.Should().Be("Test Name");
             aggregateResult.Value.Description.Should().Be("Test Description");
@@ -206,6 +210,14 @@ public abstract class GetInMemoryAggregateTests(IDomainServiceFactory domainServ
             result.IsSuccess.Should().BeTrue();
             result.Value.Should().NotBeNull();
             result.Value.Version.Should().Be(1);
+
+            // LatestEventSequence is the last event *read*, not the last one *applied*. Sequences
+            // 1..4 fall on or before the cut-off date and every one of them is in this aggregate's
+            // EventTypeFilter, so all four are read; only the created event changes state, which is
+            // why Version stays at 1. The distinction matters because an incremental read resumes
+            // from LatestEventSequence + 1, so events that were read but changed nothing are not
+            // fetched again.
+            result.Value.LatestEventSequence.Should().Be(4);
         }
     }
 

@@ -63,6 +63,10 @@ public static partial class IDomainDbContextExtensions
         var events = eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
         aggregate.Apply(events);
 
+        AggregateDiagnostics.AddAggregateFoldedEvent(streamId, aggregateId,
+            appliedFromSequence: eventEntities[0].Sequence, appliedToSequence: eventEntities[^1].Sequence,
+            appliedCount: eventEntities.Count, versionBefore: 0, versionAfter: aggregate.Version);
+
         if (aggregate.Version == 0)
         {
             return default(T);

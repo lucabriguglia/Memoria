@@ -92,6 +92,11 @@ public class CosmosDomainService : IDomainService
 
         var events = eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
         aggregate.Apply(events);
+
+        AggregateDiagnostics.AddAggregateFoldedEvent(streamId, aggregateId,
+            appliedFromSequence: eventDocuments[0].Sequence, appliedToSequence: eventDocuments[^1].Sequence,
+            appliedCount: eventDocuments.Count, versionBefore: 0, versionAfter: aggregate.Version);
+
         if (aggregate.Version == 0)
         {
             return default(T);
@@ -774,6 +779,11 @@ public class CosmosDomainService : IDomainService
         var newLatestEventSequenceForAggregate = latestEventSequence + aggregate.UncommittedEvents.Count();
         var currentAggregateVersion = aggregate.Version - aggregate.UncommittedEvents.Count();
         var aggregateIsNew = currentAggregateVersion == 0;
+
+        AggregateDiagnostics.AddAggregateFoldedEvent(streamId, aggregateId,
+            appliedFromSequence: latestEventSequence + 1, appliedToSequence: newLatestEventSequenceForAggregate,
+            appliedCount: aggregate.UncommittedEvents.Count(), versionBefore: currentAggregateVersion,
+            versionAfter: aggregate.Version);
 
         var timeStamp = _timeProvider.GetUtcNow();
         var currentUserNameIdentifier = _httpContextAccessor.GetCurrentUserNameIdentifier();

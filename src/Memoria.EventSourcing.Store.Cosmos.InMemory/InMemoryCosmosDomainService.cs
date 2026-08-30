@@ -60,6 +60,12 @@ public class InMemoryCosmosDomainService(
 
         var events = eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
         aggregate.Apply(events);
+
+        AggregateDiagnostics.AddAggregateFoldedEvent(streamId, aggregateId,
+            appliedFromSequence: eventDocuments.Min(eventDocument => eventDocument.Sequence),
+            appliedToSequence: eventDocuments.Max(eventDocument => eventDocument.Sequence),
+            appliedCount: eventDocuments.Count, versionBefore: 0, versionAfter: aggregate.Version);
+
         if (aggregate.Version == 0)
         {
             return default(T);
@@ -557,6 +563,11 @@ public class InMemoryCosmosDomainService(
         var newLatestEventSequenceForAggregate = latestEventSequence + aggregate.UncommittedEvents.Count();
         var currentAggregateVersion = aggregate.Version - aggregate.UncommittedEvents.Count();
         var aggregateIsNew = currentAggregateVersion == 0;
+
+        AggregateDiagnostics.AddAggregateFoldedEvent(streamId, aggregateId,
+            appliedFromSequence: latestEventSequence + 1, appliedToSequence: newLatestEventSequenceForAggregate,
+            appliedCount: aggregate.UncommittedEvents.Count(), versionBefore: currentAggregateVersion,
+            versionAfter: aggregate.Version);
 
         var timeStamp = timeProvider.GetUtcNow();
         var currentUserNameIdentifier = httpContextAccessor.GetCurrentUserNameIdentifier();

@@ -42,7 +42,8 @@ public static partial class IDomainDbContextExtensions
         var aggregate = aggregateResult.Value;
         aggregate ??= new T();
 
-        var aggregateIsNew = aggregate.Version == 0;
+        var currentAggregateVersion = aggregate.Version;
+        var aggregateIsNew = currentAggregateVersion == 0;
 
         var eventEntitiesHandledByTheAggregate = new Dictionary<int, EventEntity>();
         for (var i = 0; i < eventEntities.Count; i++)
@@ -65,6 +66,12 @@ public static partial class IDomainDbContextExtensions
         }
 
         aggregate.Apply(eventEntitiesHandledByTheAggregate.Select(@event => @event.Value.ToDomainEvent()));
+
+        AggregateDiagnostics.AddAggregateFoldedEvent(streamId, aggregateId,
+            appliedFromSequence: eventEntitiesHandledByTheAggregate.First().Value.Sequence,
+            appliedToSequence: eventEntitiesHandledByTheAggregate.Last().Value.Sequence,
+            appliedCount: eventEntitiesHandledByTheAggregate.Count, versionBefore: currentAggregateVersion,
+            versionAfter: aggregate.Version);
 
         var newLatestEventSequenceForAggregate = expectedEventSequence + eventEntitiesHandledByTheAggregate.Last().Key;
         var trackedAggregateEntity = domainDbContext.TrackAggregateEntity(streamId, aggregateId, aggregate, newLatestEventSequenceForAggregate, aggregateIsNew);

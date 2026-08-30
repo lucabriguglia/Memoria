@@ -42,6 +42,7 @@ Memoria is a .NET framework that can be used as a simple mediator or as an Event
 
 - [Domain Service](reference/domain-service.md)
 - [Entity Framework Core Extensions](reference/ef-core-extensions.md)
+- [Observability](reference/observability.md)
 - Configuration
   - [Memoria Core](reference/configuration/memoria.md)
   - [Event Sourcing](reference/configuration/event-sourcing.md)

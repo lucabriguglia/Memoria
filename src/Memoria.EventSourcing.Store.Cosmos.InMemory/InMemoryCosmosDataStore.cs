@@ -230,6 +230,13 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
 
         var newEvents = newEventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
         aggregate.Apply(newEvents);
+
+        AggregateDiagnostics.AddAggregateFoldedEvent(streamId, aggregateId,
+            appliedFromSequence: newEventDocuments.Min(eventDocument => eventDocument.Sequence),
+            appliedToSequence: newEventDocuments.Max(eventDocument => eventDocument.Sequence),
+            appliedCount: newEventDocuments.Count, versionBefore: currentAggregateVersion,
+            versionAfter: aggregate.Version);
+
         if (aggregate.Version == currentAggregateVersion)
         {
             return aggregate.Version > 0 ? aggregate : default;

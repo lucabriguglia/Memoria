@@ -49,6 +49,12 @@ public static partial class IDomainDbContextExtensions
         var currentAggregateVersion = aggregate.Version - aggregate.UncommittedEvents.Count();
 
         var trackedEventEntities = domainDbContext.TrackEventEntities(streamId, aggregate.UncommittedEvents.ToArray(), startingEventSequence: latestEventSequence + 1);
+
+        AggregateDiagnostics.AddAggregateFoldedEvent(streamId, aggregateId,
+            appliedFromSequence: trackedEventEntities[0].Sequence,
+            appliedToSequence: trackedEventEntities[^1].Sequence, appliedCount: trackedEventEntities.Count,
+            versionBefore: currentAggregateVersion, versionAfter: aggregate.Version);
+
         var trackedAggregateEntity = domainDbContext.TrackAggregateEntity(streamId, aggregateId, aggregate, newLatestEventSequenceForAggregate, aggregateIsNew: currentAggregateVersion == 0);
         var trackedAggregateEventEntities = domainDbContext.TrackAggregateEventEntities(trackedAggregateEntity, trackedEventEntities);
 

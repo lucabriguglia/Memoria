@@ -42,6 +42,11 @@ You can use the `CosmosSetup` helper to create the database and the container if
 cosmosSetup.CreateDatabaseAndContainerIfNotExist(throughput: 400);
 ```
 
+The container is created with the Cosmos DB default indexing policy, which indexes every path —
+including the `data` payload that no Memoria query can filter on. See
+[Tune the Cosmos DB container](../../guides/tune-the-cosmos-container.md) for a policy matched to the
+queries the store actually issues.
+
 ## Diagnostics
 
 Memoria emits diagnostic events using `System.Diagnostics` to help you monitor and troubleshoot your application.
@@ -56,4 +61,5 @@ Memoria emits diagnostic events using `System.Diagnostics` to help you monitor a
 
 ## Related
 
+- [Tune the Cosmos DB container](../../guides/tune-the-cosmos-container.md)
 - [Domain Service](../domain-service.md)

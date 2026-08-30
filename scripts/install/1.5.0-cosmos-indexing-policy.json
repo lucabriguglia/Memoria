@@ -1,0 +1,33 @@
+{
+  "indexingMode": "consistent",
+  "automatic": true,
+  "includedPaths": [
+    { "path": "/id/?" },
+    { "path": "/streamId/?" },
+    { "path": "/documentType/?" },
+    { "path": "/sequence/?" },
+    { "path": "/createdDate/?" },
+    { "path": "/aggregateId/?" },
+    { "path": "/appliedDate/?" },
+    { "path": "/eventType/?" }
+  ],
+  "excludedPaths": [
+    { "path": "/*" },
+    { "path": "/\"_etag\"/?" }
+  ],
+  "compositeIndexes": [
+    [
+      { "path": "/documentType", "order": "ascending" },
+      { "path": "/sequence", "order": "ascending" }
+    ],
+    [
+      { "path": "/documentType", "order": "ascending" },
+      { "path": "/createdDate", "order": "ascending" }
+    ],
+    [
+      { "path": "/documentType", "order": "ascending" },
+      { "path": "/aggregateId", "order": "ascending" },
+      { "path": "/appliedDate", "order": "ascending" }
+    ]
+  ]
+}

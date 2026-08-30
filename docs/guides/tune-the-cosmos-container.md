@@ -31,19 +31,23 @@ documents, never filtered or sorted on.
 ## Apply the policy
 
 The policy lives at
-[`scripts/install/1.5.0-cosmos-indexing-policy.json`](../../scripts/install/1.5.0-cosmos-indexing-policy.json).
+[`scripts/install/1.6.0-cosmos-indexing-policy.json`](../../scripts/install/1.6.0-cosmos-indexing-policy.json).
 It excludes `/*` and includes only the paths in the table above, plus three composite indexes for
 the filter-and-order-by reads.
+
+> **Applies to 1.5.0 as well.** The file is named for the release it ships in, but it is a container
+> setting, not package content. The query shapes it serves are unchanged since 1.5.0, so applying it
+> to a 1.5.0 deployment is safe and worthwhile.
 
 For an Azure account, run either script — they do the same thing:
 
 ```powershell
-./scripts/install/1.5.0-cosmos-apply-indexing-policy.ps1 `
+./scripts/install/1.6.0-cosmos-apply-indexing-policy.ps1 `
     -ResourceGroup rg-shop -Account cosmos-shop -Wait
 ```
 
 ```bash
-./scripts/install/1.5.0-cosmos-apply-indexing-policy.sh \
+./scripts/install/1.6.0-cosmos-apply-indexing-policy.sh \
     --resource-group rg-shop --account cosmos-shop --wait
 ```
 

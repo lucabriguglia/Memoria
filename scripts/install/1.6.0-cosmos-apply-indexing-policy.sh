@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Applies the Memoria 1.5.0 indexing policy to an Azure Cosmos DB container.
+# Applies the Memoria 1.6.0 indexing policy to an Azure Cosmos DB container.
 #
 # Memoria creates its container with the Cosmos DB default indexing policy, which indexes every
 # path in every document -- including the serialised `data` payload that no Memoria query can
@@ -14,15 +14,15 @@
 # a large container. Pass --wait to block until it finishes.
 #
 # The Azure CLI cannot reach the Cosmos DB emulator. For local development, set the policy from the
-# emulator's Data Explorer using 1.5.0-cosmos-indexing-policy.json, or recreate the container.
+# emulator's Data Explorer using 1.6.0-cosmos-indexing-policy.json, or recreate the container.
 #
 # Usage:
-#   ./1.5.0-cosmos-apply-indexing-policy.sh \
+#   ./1.6.0-cosmos-apply-indexing-policy.sh \
 #       --resource-group rg-shop \
 #       --account cosmos-shop \
 #       [--database Memoria] \
 #       [--container Domain] \
-#       [--policy ./1.5.0-cosmos-indexing-policy.json] \
+#       [--policy ./1.6.0-cosmos-indexing-policy.json] \
 #       [--wait]
 
 set -euo pipefail
@@ -33,7 +33,7 @@ resource_group=""
 account=""
 database="Memoria"
 container="Domain"
-policy="${script_dir}/1.5.0-cosmos-indexing-policy.json"
+policy="${script_dir}/1.6.0-cosmos-indexing-policy.json"
 wait_for_reindex=0
 
 usage() {

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Applies the Memoria 1.5.0 indexing policy to an Azure Cosmos DB container.
+    Applies the Memoria 1.6.0 indexing policy to an Azure Cosmos DB container.
 
 .DESCRIPTION
     Memoria creates its container with the Cosmos DB default indexing policy, which indexes every
@@ -16,7 +16,7 @@
 
     This script targets an Azure account through the Azure CLI. The CLI cannot reach the Cosmos DB
     emulator; for local development, set the policy from the emulator's Data Explorer using
-    1.5.0-cosmos-indexing-policy.json, or recreate the container.
+    1.6.0-cosmos-indexing-policy.json, or recreate the container.
 
 .PARAMETER ResourceGroup
     Resource group holding the Cosmos DB account.
@@ -31,13 +31,13 @@
     Container name. Defaults to Domain, matching CosmosOptions.ContainerName.
 
 .PARAMETER PolicyPath
-    Path to the indexing policy JSON. Defaults to 1.5.0-cosmos-indexing-policy.json next to this script.
+    Path to the indexing policy JSON. Defaults to 1.6.0-cosmos-indexing-policy.json next to this script.
 
 .PARAMETER Wait
     Poll until the index transformation reports 100% before returning.
 
 .EXAMPLE
-    ./1.5.0-cosmos-apply-indexing-policy.ps1 -ResourceGroup rg-shop -Account cosmos-shop -Wait
+    ./1.6.0-cosmos-apply-indexing-policy.ps1 -ResourceGroup rg-shop -Account cosmos-shop -Wait
 #>
 [CmdletBinding()]
 param(
@@ -45,7 +45,7 @@ param(
     [Parameter(Mandatory = $true)][string] $Account,
     [string] $Database = 'Memoria',
     [string] $Container = 'Domain',
-    [string] $PolicyPath = (Join-Path $PSScriptRoot '1.5.0-cosmos-indexing-policy.json'),
+    [string] $PolicyPath = (Join-Path $PSScriptRoot '1.6.0-cosmos-indexing-policy.json'),
     [switch] $Wait
 )
 

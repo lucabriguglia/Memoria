@@ -62,6 +62,27 @@ Uses `DomainDbContext` with three entities: `EventEntity`, `AggregateEntity`, `A
 
 Test projects mirror source projects (e.g., `Memoria.Tests` tests `Memoria`, `Memoria.Caching.Memory.Tests` tests `Memoria.Caching.Memory`). Tests are organized under `Features/` and `Models/` directories.
 
+### Tests that need something running
+
+Two categories are excluded from the main CI job (`--filter "Category!=Container&Category!=Emulator"`):
+
+- `Category=Container` — `Memoria.EventSourcing.Store.EntityFrameworkCore.Containers.Tests` starts real
+  SQL Server and PostgreSQL containers. These *skip* themselves via `RequiresDockerFact` when no
+  Docker endpoint is present, and run in their own `container-tests` CI job.
+- `Category=Emulator` — `Memoria.EventSourcing.Store.Cosmos.Tests` (85 tests) needs the Azure Cosmos DB
+  emulator on `https://localhost:8081`. These do **not** skip themselves — xUnit 2 cannot skip a test
+  inherited from a shared base class — so they fail rather than skip when it is absent. No CI job
+  provides an emulator, so this is a local-only gate: **start the emulator and run them before changing
+  the Cosmos store.**
+
+```bash
+# Windows, before touching src/Memoria.EventSourcing.Store.Cosmos
+"C:\Program Files\Azure Cosmos DB Emulator\Microsoft.Azure.Cosmos.Emulator.exe" /NoExplorer
+dotnet test tests/Memoria.EventSourcing.Store.Cosmos.Tests
+```
+
+The three tests in that project's `Features/Registration` need no emulator and do run in CI.
+
 ## Solution-Wide Build Properties
 
 `Directory.Build.props` at the root sets shared metadata (version, author, license). All projects default to `IsPackable=false`; source projects override to `true`. All projects use `ImplicitUsings` and `Nullable` enabled.

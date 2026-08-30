@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Memoria.EventSourcing.Store.Cosmos.Tests.Features.DataStore;
 
+[Trait("Category", "Emulator")]
 public class SaveAggregateTests : TestBase
 {
     [Fact]

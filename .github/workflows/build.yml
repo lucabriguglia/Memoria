@@ -23,8 +23,11 @@ jobs:
         run: dotnet build --configuration Release --no-restore
       # Container-backed tests run in their own job so a slow image pull cannot obscure a
       # unit-test failure, and so this job stays fast enough for pull request feedback.
+      # Category=Emulator covers the Cosmos DB store suite, which needs an emulator on
+      # https://localhost:8081. No runner here provides one, so those tests are excluded rather
+      # than left to fail — run them locally against the emulator before changing that store.
       - name: Run tests
-        run: dotnet test --configuration Release --no-build --verbosity normal --filter "Category!=Container"
+        run: dotnet test --configuration Release --no-build --verbosity normal --filter "Category!=Container&Category!=Emulator"
 
   container-tests:
 

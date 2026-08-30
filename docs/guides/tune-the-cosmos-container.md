@@ -21,7 +21,6 @@ store filters and sorts on a small, fixed set of paths:
 | `createdDate` | the date-bounded event reads (`GetEventsUpToDate`, `FromDate`, `BetweenDates`) |
 | `aggregateId`, `appliedDate` | `GetEventsAppliedToAggregate` |
 | `eventType` | the `EventTypeFilter` on aggregates and projections |
-| `id` | fetching specific events by identifier |
 | `streamId` | the redundant-but-present partition predicate in each `WHERE` clause |
 
 Nothing else is queried. `data`, `version`, `latestEventSequence`, `aggregateType`,
@@ -32,8 +31,11 @@ documents, never filtered or sorted on.
 
 The policy lives at
 [`scripts/install/1.6.0-cosmos-indexing-policy.json`](../../scripts/install/1.6.0-cosmos-indexing-policy.json).
-It excludes `/*` and includes only the paths in the table above, plus three composite indexes for
-the filter-and-order-by reads.
+It excludes `/*` and includes only the paths in the table above. It defines no composite indexes —
+see [why there are no composite indexes](#no-composite-indexes) below, which is a measurement, not
+an oversight.
+
+`id` is not listed: Cosmos DB always indexes it and rejects a policy that tries to override it.
 
 > **Applies to 1.5.0 as well.** The file is named for the release it ships in, but it is a container
 > setting, not package content. The query shapes it serves are unchanged since 1.5.0, so applying it
@@ -101,24 +103,37 @@ Keep `/data` excluded regardless. It is a serialised string, and `CONTAINS(c.dat
 how `eventPropertyFilter` is translated — cannot use an index in any case, so indexing it buys
 nothing and costs write RU on every event.
 
-### An optional fourth composite index
+<a name="no-composite-indexes"></a>
+### Why there are no composite indexes
 
-Workloads whose aggregates and projections declare a narrow `EventTypeFilter` issue
-`ARRAY_CONTAINS(@eventTypes, c.eventType)` alongside `ORDER BY c.sequence` on most reads. Adding
+An earlier draft of this policy defined three, on `(documentType, sequence)`,
+`(documentType, createdDate)` and `(documentType, aggregateId, appliedDate)`, reasoning that each
+served a filter-and-order-by read the store issues. Measured, they cost more than they returned.
 
-```json
-[
-  { "path": "/documentType", "order": "ascending" },
-  { "path": "/eventType", "order": "ascending" },
-  { "path": "/sequence", "order": "ascending" }
-]
-```
+Against the Cosmos DB emulator: 200 event documents of roughly 600 bytes written in two batches,
+then each read issued once. Request charge, against the default index-everything policy:
 
-may cut the RU charge on those reads. It is not in the shipped policy because it applies to every
-event document and so raises write cost for everyone, while only paying back for type-filtered
-reads. Measure before adding it: turn on
+| | Write 200 events | Read whole stream | `MAX(sequence)` | Sequence range | Date range | Type filter |
+|---|---|---|---|---|---|---|
+| Default policy | 1600.00 | 10.54 | 3.55 | 6.89 | 11.11 | 11.37 |
+| **Exclusions only (shipped)** | **1561.90** | **9.94** | 3.71 | **6.69** | **10.55** | **10.77** |
+| Composites only | 1714.28 | 10.54 | 3.63 | 6.69 | 10.75 | 10.87 |
+| Exclusions + composites | 1676.20 | 9.94 | 3.55 | 6.59 | 10.55 | 10.77 |
+
+The composite indexes add about **7% to every write** and return essentially nothing: the reads are
+as cheap with exclusions alone. Every query here is single-partition with an equality filter on
+`documentType` and an `ORDER BY c.sequence`, and within one partition the range index on
+`/sequence` already serves that ordering — so the composite is maintained on every write and then
+not used.
+
+Two caveats on those numbers. They come from the emulator, not a real account, and from one payload
+shape on one partition of 200 events. A workload with much larger partitions or more selective
+filters could tip the other way. If you think yours might, add a composite index back and measure
+before keeping it — turn on
 [index metrics](https://learn.microsoft.com/azure/cosmos-db/nosql/index-metrics) with
-`QueryRequestOptions.PopulateIndexMetrics` and compare `RequestCharge` with and without.
+`QueryRequestOptions.PopulateIndexMetrics` and compare `RequestCharge`.
+
+The exclusions are the part that pays, and they pay on both sides: writes drop 2.4% and reads 3–6%.
 
 ## Measuring the effect
 

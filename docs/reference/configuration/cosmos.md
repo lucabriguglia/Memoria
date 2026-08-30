@@ -58,6 +58,29 @@ including the `data` payload that no Memoria query can filter on. See
 [Tune the Cosmos DB container](../../guides/tune-the-cosmos-container.md) for a policy matched to the
 queries the store actually issues.
 
+## Write limits
+
+Cosmos DB commits at most 100 operations in one transactional batch, and the store writes more than
+one document per event. That turns into limits on how many events a single call can append:
+
+| Call | Maximum | Why |
+|---|---|---|
+| `SaveEvents` | 100 events | One event document each |
+| `SaveAggregate` | 49 uncommitted events | One event document and one aggregate-event link per event, plus the aggregate document |
+
+Exceeding either is refused before anything is sent, with a
+[`memoria/batch-limit-exceeded`](../../concepts/result-pattern.md#failure-classification) failure
+naming both the count supplied and the maximum. These batches cannot be split: they commit
+atomically with the sequence check that guards them, and splitting would let another writer
+interleave. Nothing is written when the limit is hit.
+
+Reading is not limited this way. Building or refreshing an aggregate snapshot over a stream of any
+length works, because those writes go over events that are already durable and are split across as
+many batches as needed.
+
+> A batch is also capped at 2 MB. Very large payloads can still exceed it under these event counts,
+> and that surfaces as an ordinary `memoria/storage-failure`.
+
 ## Diagnostics
 
 Memoria emits diagnostic events using `System.Diagnostics` to help you monitor and troubleshoot your application.

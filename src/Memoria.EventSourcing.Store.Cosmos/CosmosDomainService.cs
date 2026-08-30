@@ -100,42 +100,18 @@ public class CosmosDomainService : IDomainService
         var timeStamp = _timeProvider.GetUtcNow();
         var currentUserNameIdentifier = _httpContextAccessor.GetCurrentUserNameIdentifier();
 
-        try
-        {
-            var batch = _container.CreateTransactionalBatch(new PartitionKey(streamId.Id));
+        var latestEventSequenceForAggregate = eventDocuments[^1].Sequence;
+        var aggregateDocument =
+            aggregate.ToAggregateDocument(streamId, aggregateId, latestEventSequenceForAggregate);
+        aggregateDocument.CreatedDate = timeStamp;
+        aggregateDocument.CreatedBy = currentUserNameIdentifier;
+        aggregateDocument.UpdatedDate = timeStamp;
+        aggregateDocument.UpdatedBy = currentUserNameIdentifier;
 
-            var latestEventSequenceForAggregate = eventDocuments[^1].Sequence;
-            var aggregateDocument =
-                aggregate.ToAggregateDocument(streamId, aggregateId, latestEventSequenceForAggregate);
-            aggregateDocument.CreatedDate = timeStamp;
-            aggregateDocument.CreatedBy = currentUserNameIdentifier;
-            aggregateDocument.UpdatedDate = timeStamp;
-            aggregateDocument.UpdatedBy = currentUserNameIdentifier;
-            batch.CreateItem(aggregateDocument, WriteRequestOptions.BatchItem);
+        var writeResult = await _container.WriteAggregateSnapshot(streamId, aggregateId, aggregateDocument,
+            eventDocuments, timeStamp, operation: "Get Aggregate", cancellationToken);
 
-            foreach (var eventDocument in eventDocuments)
-            {
-                var aggregateEventDocument = new AggregateEventDocument
-                {
-                    Id = $"{aggregateId.ToStoreId()}|{eventDocument.Id}",
-                    StreamId = streamId.Id,
-                    AggregateId = aggregateId.ToStoreId(),
-                    EventId = eventDocument.Id,
-                    AppliedDate = timeStamp
-                };
-                batch.CreateItem(aggregateEventDocument, WriteRequestOptions.BatchItem);
-            }
-
-            var batchResponse = await batch.ExecuteAsync(cancellationToken);
-            batchResponse.AddActivityEvent(streamId, aggregateId, operation: "Get Aggregate");
-            return batchResponse.IsSuccessStatusCode ? aggregate : StoreFailures.StorageFailure("Get Aggregate", streamId);
-        }
-        catch (Exception ex)
-        {
-            const string operation = "Get Aggregate";
-            DiagnosticsExtensions.AddException(ex, streamId, operation);
-            return StoreFailures.StorageFailure(operation, streamId);
-        }
+        return writeResult.IsSuccess ? aggregate : writeResult.Failure!;
     }
 
     /// <summary>
@@ -772,6 +748,16 @@ public class CosmosDomainService : IDomainService
             return Result.Ok();
         }
 
+        // Rejected here rather than by Cosmos DB, so the caller can tell an oversized save from the
+        // store being unreachable. The batch cannot be split: it has to commit atomically with the
+        // sequence check below.
+        var uncommittedEventCount = aggregate.UncommittedEvents.Count();
+        if (uncommittedEventCount > CosmosLimits.MaxUncommittedEventsPerAggregateSave)
+        {
+            return StoreFailures.BatchLimitExceeded("Save Aggregate", streamId, uncommittedEventCount,
+                CosmosLimits.MaxUncommittedEventsPerAggregateSave);
+        }
+
         var latestEventSequenceResult = await GetLatestEventSequence(streamId, cancellationToken: cancellationToken);
         if (latestEventSequenceResult.IsNotSuccess)
         {
@@ -873,6 +859,14 @@ public class CosmosDomainService : IDomainService
         if (events.Length == 0)
         {
             return Result.Ok();
+        }
+
+        // As in SaveAggregate: this batch commits atomically with the sequence check, so an
+        // oversized append is refused up front instead of failing as a storage error.
+        if (events.Length > CosmosLimits.MaxEventsPerSave)
+        {
+            return StoreFailures.BatchLimitExceeded("Save Domain Events", streamId, events.Length,
+                CosmosLimits.MaxEventsPerSave);
         }
 
         var latestEventSequenceResult = await GetLatestEventSequence(streamId, cancellationToken: cancellationToken);

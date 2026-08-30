@@ -337,40 +337,16 @@ public class CosmosDataStore : ICosmosDataStore
         var timeStamp = _timeProvider.GetUtcNow();
         var currentUserNameIdentifier = _httpContextAccessor.GetCurrentUserNameIdentifier();
 
-        try
-        {
-            var batch = _container.CreateTransactionalBatch(new PartitionKey(streamId.Id));
+        var aggregateDocumentToUpdate = aggregate.ToAggregateDocument(streamId, aggregateId, newLatestEventSequenceForAggregate);
+        aggregateDocumentToUpdate.CreatedDate = aggregateDocument?.CreatedDate ?? timeStamp;
+        aggregateDocumentToUpdate.CreatedBy = aggregateDocument?.CreatedBy ?? currentUserNameIdentifier;
+        aggregateDocumentToUpdate.UpdatedDate = timeStamp;
+        aggregateDocumentToUpdate.UpdatedBy = currentUserNameIdentifier;
 
-            var aggregateDocumentToUpdate = aggregate.ToAggregateDocument(streamId, aggregateId, newLatestEventSequenceForAggregate);
-            aggregateDocumentToUpdate.CreatedDate = aggregateDocument?.CreatedDate ?? timeStamp;
-            aggregateDocumentToUpdate.CreatedBy = aggregateDocument?.CreatedBy ?? currentUserNameIdentifier;
-            aggregateDocumentToUpdate.UpdatedDate = timeStamp;
-            aggregateDocumentToUpdate.UpdatedBy = currentUserNameIdentifier;
-            batch.UpsertItem(aggregateDocumentToUpdate, WriteRequestOptions.BatchItem);
+        var writeResult = await _container.WriteAggregateSnapshot(streamId, aggregateId, aggregateDocumentToUpdate,
+            newEventDocuments, timeStamp, operation: "Update Aggregate Document", cancellationToken);
 
-            foreach (var eventDocument in newEventDocuments)
-            {
-                var aggregateEventDocument = new AggregateEventDocument
-                {
-                    Id = $"{aggregateId.ToStoreId()}|{eventDocument.Id}",
-                    StreamId = streamId.Id,
-                    AggregateId = aggregateId.ToStoreId(),
-                    EventId = eventDocument.Id,
-                    AppliedDate = timeStamp
-                };
-                batch.CreateItem(aggregateEventDocument, WriteRequestOptions.BatchItem);
-            }
-
-            var batchResponse = await batch.ExecuteAsync(cancellationToken);
-            batchResponse.AddActivityEvent(streamId, aggregateId, operation: "Update Aggregate Document");
-            return batchResponse.IsSuccessStatusCode ? aggregate : StoreFailures.StorageFailure("Update Aggregate Document", streamId);
-        }
-        catch (Exception ex)
-        {
-            const string operation = "Update Aggregate Document";
-            DiagnosticsExtensions.AddException(ex, streamId, operation);
-            return StoreFailures.StorageFailure(operation, streamId);
-        }
+        return writeResult.IsSuccess ? aggregate : writeResult.Failure!;
     }
 
     /// <summary>

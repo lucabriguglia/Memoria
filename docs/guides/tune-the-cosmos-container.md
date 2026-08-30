@@ -21,7 +21,13 @@ store filters and sorts on a small, fixed set of paths:
 | `createdDate` | the date-bounded event reads (`GetEventsUpToDate`, `FromDate`, `BetweenDates`) |
 | `aggregateId`, `appliedDate` | `GetEventsAppliedToAggregate` |
 | `eventType` | the `EventTypeFilter` on aggregates and projections |
-| `streamId` | the redundant-but-present partition predicate in each `WHERE` clause |
+| `streamId` | the partition predicate in each `WHERE` clause, and the `MAX(sequence)` aggregate |
+
+> **Do not remove `/streamId`.** Every query already scopes itself with a partition key, so indexing
+> the partition key path looks redundant. Measured, excluding it takes 4.9% off writes but costs
+> **119% more** on `SELECT VALUE MAX(c.sequence)` — the concurrency check that runs on every
+> `SaveAggregate` and `SaveEvents`. That is +4.43 RU per save against a saving of about 0.38 RU per
+> event written, so it loses for anything but enormous batches.
 
 Nothing else is queried. `data`, `version`, `latestEventSequence`, `aggregateType`,
 `projectionType`, `eventId`, `createdBy`, `updatedBy`, and `updatedDate` are read from the returned

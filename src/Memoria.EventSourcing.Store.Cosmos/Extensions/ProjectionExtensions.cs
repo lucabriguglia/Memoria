@@ -26,12 +26,6 @@ public static class ProjectionExtensions
     public static ProjectionDocument ToProjectionDocument<T>(this IProjection projection, IStreamId streamId,
         IProjectionId<T> projectionId) where T : IProjection
     {
-        var projectionType = projection.GetType().GetCustomAttribute<ProjectionType>();
-        if (projectionType == null)
-        {
-            throw new InvalidOperationException($"Projection {projection.GetType().Name} does not have a ProjectionType attribute.");
-        }
-
         projection.StreamId = streamId.Id;
         projection.ProjectionId = projectionId.ToStoreId();
 
@@ -41,7 +35,7 @@ public static class ProjectionExtensions
             StreamId = streamId.Id,
             Version = projection.Version,
             LatestEventSequence = projection.LatestEventSequence,
-            ProjectionType = TypeBindings.GetTypeBindingKey(projectionType.Name, projectionType.Version),
+            ProjectionType = TypeBindings.GetProjectionBindingKey(projection.GetType()),
             Data = DomainSerializer.Current.Serialize(projection)
         };
     }

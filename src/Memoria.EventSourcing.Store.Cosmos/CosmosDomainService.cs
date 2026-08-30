@@ -104,8 +104,7 @@ public class CosmosDomainService : IDomainService
         {
             var batch = _container.CreateTransactionalBatch(new PartitionKey(streamId.Id));
 
-            var latestEventSequenceForAggregate =
-                eventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
+            var latestEventSequenceForAggregate = eventDocuments[^1].Sequence;
             var aggregateDocument =
                 aggregate.ToAggregateDocument(streamId, aggregateId, latestEventSequenceForAggregate);
             aggregateDocument.CreatedDate = timeStamp;
@@ -371,7 +370,7 @@ public class CosmosDomainService : IDomainService
 
         aggregate.StreamId = streamId.Id;
         aggregate.AggregateId = aggregateId.ToStoreId();
-        aggregate.LatestEventSequence = eventDocuments.OrderBy(eventEntity => eventEntity.Sequence).Last().Sequence;
+        aggregate.LatestEventSequence = eventDocuments[^1].Sequence;
         aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent()));
 
         return aggregate;
@@ -406,7 +405,7 @@ public class CosmosDomainService : IDomainService
 
         aggregate.StreamId = streamId.Id;
         aggregate.AggregateId = aggregateId.ToStoreId();
-        aggregate.LatestEventSequence = eventDocuments.OrderBy(eventEntity => eventEntity.Sequence).Last().Sequence;
+        aggregate.LatestEventSequence = eventDocuments[^1].Sequence;
         aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent()));
 
         return aggregate;
@@ -443,7 +442,7 @@ public class CosmosDomainService : IDomainService
 
         aggregate.StreamId = streamId.Id;
         aggregate.AggregateId = aggregateId.ToStoreId();
-        aggregate.LatestEventSequence = eventDocuments.OrderBy(eventEntity => eventEntity.Sequence).Last().Sequence;
+        aggregate.LatestEventSequence = eventDocuments[^1].Sequence;
         aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent()));
 
         return aggregate;
@@ -484,7 +483,7 @@ public class CosmosDomainService : IDomainService
 
         projection.StreamId = streamId.Id;
         projection.ProjectionId = projectionId.ToStoreId();
-        projection.LatestEventSequence = eventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
+        projection.LatestEventSequence = eventDocuments[^1].Sequence;
 
         return projection;
     }
@@ -525,7 +524,7 @@ public class CosmosDomainService : IDomainService
 
         projection.StreamId = streamId.Id;
         projection.ProjectionId = projectionId.ToStoreId();
-        projection.LatestEventSequence = eventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
+        projection.LatestEventSequence = eventDocuments[^1].Sequence;
 
         return projection;
     }
@@ -566,7 +565,7 @@ public class CosmosDomainService : IDomainService
 
         projection.StreamId = streamId.Id;
         projection.ProjectionId = projectionId.ToStoreId();
-        projection.LatestEventSequence = eventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
+        projection.LatestEventSequence = eventDocuments[^1].Sequence;
 
         return projection;
     }
@@ -631,8 +630,7 @@ public class CosmosDomainService : IDomainService
             return default(T);
         }
 
-        projection.LatestEventSequence =
-            eventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
+        projection.LatestEventSequence = eventDocuments[^1].Sequence;
 
         var timeStamp = _timeProvider.GetUtcNow();
         var currentUserNameIdentifier = _httpContextAccessor.GetCurrentUserNameIdentifier();

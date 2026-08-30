@@ -32,9 +32,10 @@ internal static class EventFilterQueryExtensions
     {
         if (eventTypeFilter is { Length: > 0 })
         {
+            var bindingKeysByType = TypeBindings.GetEventBindingKeysByType();
             var eventTypes = eventTypeFilter
-                .Select(eventType => TypeBindings.EventTypeBindings.FirstOrDefault(b => b.Value == eventType))
-                .Select(b => b.Key).ToList();
+                .Select(bindingKeysByType.GetValueOrDefault)
+                .ToList();
 
             queryDefinition = queryDefinition.WithParameter("@eventTypes", eventTypes);
         }

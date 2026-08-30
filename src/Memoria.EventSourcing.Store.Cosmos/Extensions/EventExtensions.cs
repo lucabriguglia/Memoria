@@ -22,18 +22,12 @@ public static class EventExtensions
     /// <exception cref="Exception">Thrown when the event type does not have an EventType attribute.</exception>
     public static EventDocument ToEventDocument(this IEvent @event, IStreamId streamId, int sequence)
     {
-        var eventType = @event.GetType().GetCustomAttribute<EventType>();
-        if (eventType == null)
-        {
-            throw new InvalidOperationException($"Event {@event.GetType().Name} does not have a EventType attribute.");
-        }
-
         return new EventDocument
         {
             Id = $"{streamId.Id}:{sequence}",
             StreamId = streamId.Id,
             Sequence = sequence,
-            EventType = TypeBindings.GetTypeBindingKey(eventType.Name, eventType.Version),
+            EventType = TypeBindings.GetEventBindingKey(@event.GetType()),
             Data = DomainSerializer.Current.Serialize(@event)
         };
     }

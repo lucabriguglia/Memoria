@@ -23,12 +23,6 @@ public static class AggregateExtensions
     /// <exception cref="Exception">Thrown when the aggregate type does not have an AggregateType attribute.</exception>
     public static AggregateDocument ToAggregateDocument<T>(this IAggregateRoot aggregate, IStreamId streamId, IAggregateId<T> aggregateId, int newLatestEventSequence) where T : IAggregateRoot
     {
-        var aggregateType = aggregate.GetType().GetCustomAttribute<AggregateType>();
-        if (aggregateType == null)
-        {
-            throw new InvalidOperationException($"Aggregate {aggregate.GetType().Name} does not have a AggregateType attribute.");
-        }
-
         aggregate.StreamId = streamId.Id;
         aggregate.AggregateId = aggregateId.ToStoreId();
         aggregate.LatestEventSequence = newLatestEventSequence;
@@ -39,7 +33,7 @@ public static class AggregateExtensions
             StreamId = streamId.Id,
             Version = aggregate.Version,
             LatestEventSequence = newLatestEventSequence,
-            AggregateType = TypeBindings.GetTypeBindingKey(aggregateType.Name, aggregateType.Version),
+            AggregateType = TypeBindings.GetAggregateBindingKey(aggregate.GetType()),
             Data = DomainSerializer.Current.Serialize(aggregate)
         };
     }

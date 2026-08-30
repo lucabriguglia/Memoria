@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 
 namespace Memoria.EventSourcing.Domain;
@@ -38,14 +39,22 @@ public static class IProjectionIdExtensions
     /// </summary>
     /// <param name="projectionId">The projection identifier.</param>
     /// <returns>The store ID.</returns>
-    public static string ToStoreId<T>(this IProjectionId<T> projectionId) where T : IProjection
+    public static string ToStoreId<T>(this IProjectionId<T> projectionId) where T : IProjection =>
+        $"{projectionId.Id}:{GetVersion(typeof(T))}";
+
+    // Resolved once per closed generic rather than per call. A throwing factory caches nothing, so
+    // an unattributed type still throws on every call rather than turning into a
+    // TypeInitializationException.
+    private static int GetVersion(Type projectionClrType) => Versions.GetOrAdd(projectionClrType, static clrType =>
     {
-        var projectionType = typeof(T).GetCustomAttribute<ProjectionType>();
+        var projectionType = clrType.GetCustomAttribute<ProjectionType>();
         if (projectionType == null)
         {
-            throw new InvalidOperationException($"Projection {typeof(T).Name} does not have a ProjectionType attribute.");
+            throw new InvalidOperationException($"Projection {clrType.Name} does not have a ProjectionType attribute.");
         }
 
-        return $"{projectionId.Id}:{projectionType.Version}";
-    }
+        return projectionType.Version;
+    });
+
+    private static readonly ConcurrentDictionary<Type, int> Versions = new();
 }

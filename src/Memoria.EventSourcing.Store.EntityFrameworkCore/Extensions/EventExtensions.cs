@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-using System.Reflection;
 using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
 using Newtonsoft.Json;
@@ -195,21 +193,9 @@ public static class EventExtensions
             Id = $"{streamId.Id}:{sequence}",
             StreamId = streamId.Id,
             Sequence = sequence,
-            EventType = GetTypeBindingKey(@event.GetType()),
+            EventType = TypeBindings.GetEventBindingKey(@event.GetType()),
             Data = DomainSerializer.Current.Serialize(@event)
         };
     }
     
-    private static string GetTypeBindingKey(Type type) => TypeBindingKeys.GetOrAdd(type, static eventClrType =>
-    {
-        var eventType = eventClrType.GetCustomAttribute<EventType>();
-        if (eventType == null)
-        {
-            throw new InvalidOperationException($"Event {eventClrType.Name} does not have a EventType attribute.");
-        }
-
-        return TypeBindings.GetTypeBindingKey(eventType.Name, eventType.Version);
-    });
-    
-    private static readonly ConcurrentDictionary<Type, string> TypeBindingKeys = new();
 }

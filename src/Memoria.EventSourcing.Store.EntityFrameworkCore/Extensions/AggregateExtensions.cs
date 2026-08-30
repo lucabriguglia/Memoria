@@ -1,6 +1,4 @@
-using System.Collections.Concurrent;
-﻿using System.Reflection;
-using Memoria.EventSourcing.Domain;
+﻿using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
 using Newtonsoft.Json;
 
@@ -120,7 +118,7 @@ public static class AggregateExtensions
     /// </example>
     public static AggregateEntity ToAggregateEntity<T>(this IAggregateRoot aggregate, IStreamId streamId, IAggregateId<T> aggregateId, int newLatestEventSequence) where T : IAggregateRoot
     {
-        var aggregateTypeBindingKey = GetTypeBindingKey(aggregate.GetType());
+        var aggregateTypeBindingKey = TypeBindings.GetAggregateBindingKey(aggregate.GetType());
 
         aggregate.StreamId = streamId.Id;
         aggregate.AggregateId = aggregateId.ToStoreId();
@@ -137,16 +135,4 @@ public static class AggregateExtensions
         };
     }
     
-    private static string GetTypeBindingKey(Type type) => TypeBindingKeys.GetOrAdd(type, static aggregateClrType =>
-    {
-        var aggregateType = aggregateClrType.GetCustomAttribute<AggregateType>();
-        if (aggregateType == null)
-        {
-            throw new InvalidOperationException($"Aggregate {aggregateClrType.Name} does not have a AggregateType attribute.");
-        }
-
-        return TypeBindings.GetTypeBindingKey(aggregateType.Name, aggregateType.Version);
-    });
-    
-    private static readonly ConcurrentDictionary<Type, string> TypeBindingKeys = new();
 }

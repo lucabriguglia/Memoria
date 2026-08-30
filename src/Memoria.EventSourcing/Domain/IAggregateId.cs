@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections.Concurrent;
+using System.Reflection;
 
 namespace Memoria.EventSourcing.Domain;
 
@@ -52,14 +53,22 @@ public static class IAggregateIdExtensions
     /// </summary>
     /// <param name="aggregateId">The aggregate identifier.</param>
     /// <returns>The store ID.</returns>
-    public static string ToStoreId<T>(this IAggregateId<T> aggregateId) where T : IAggregateRoot
+    public static string ToStoreId<T>(this IAggregateId<T> aggregateId) where T : IAggregateRoot =>
+        $"{aggregateId.Id}:{GetVersion(typeof(T))}";
+
+    // Called twice per event document written, so the attribute lookup is resolved once per closed
+    // generic instead. A throwing factory caches nothing, so an unattributed type still throws on
+    // every call rather than turning into a TypeInitializationException.
+    private static int GetVersion(Type aggregateClrType) => Versions.GetOrAdd(aggregateClrType, static clrType =>
     {
-        var aggregateType = typeof(T).GetCustomAttribute<AggregateType>();
+        var aggregateType = clrType.GetCustomAttribute<AggregateType>();
         if (aggregateType == null)
         {
-            throw new InvalidOperationException($"Aggregate {typeof(T).Name} does not have a AggregateType attribute.");
+            throw new InvalidOperationException($"Aggregate {clrType.Name} does not have a AggregateType attribute.");
         }
 
-        return $"{aggregateId.Id}:{aggregateType.Version}";
-    }
+        return aggregateType.Version;
+    });
+
+    private static readonly ConcurrentDictionary<Type, int> Versions = new();
 }

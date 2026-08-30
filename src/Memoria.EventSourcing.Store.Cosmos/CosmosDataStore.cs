@@ -333,7 +333,7 @@ public class CosmosDataStore : ICosmosDataStore
             return aggregate.Version > 0 ? aggregate : default;
         }
 
-        var newLatestEventSequenceForAggregate = newEventDocuments.OrderBy(eventEntity => eventEntity.Sequence).Last().Sequence;
+        var newLatestEventSequenceForAggregate = newEventDocuments[^1].Sequence;
         var timeStamp = _timeProvider.GetUtcNow();
         var currentUserNameIdentifier = _httpContextAccessor.GetCurrentUserNameIdentifier();
 
@@ -442,8 +442,7 @@ public class CosmosDataStore : ICosmosDataStore
             return projection.Version > 0 ? projection : default;
         }
 
-        projection.LatestEventSequence =
-            newEventDocuments.OrderBy(eventDocument => eventDocument.Sequence).Last().Sequence;
+        projection.LatestEventSequence = newEventDocuments[^1].Sequence;
 
         var timeStamp = _timeProvider.GetUtcNow();
         var currentUserNameIdentifier = _httpContextAccessor.GetCurrentUserNameIdentifier();

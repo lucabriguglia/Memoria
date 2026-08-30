@@ -18,21 +18,19 @@ public class CosmosDataStore : ICosmosDataStore
 {
     private readonly TimeProvider _timeProvider;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly CosmosClient _cosmosClient;
     private readonly Container _container;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CosmosDataStore"/> class.
     /// </summary>
-    /// <param name="options">The Cosmos DB configuration options.</param>
+    /// <param name="clientProvider">Provides the container backed by the shared Cosmos DB client.</param>
     /// <param name="timeProvider">The time provider for timestamp operations.</param>
     /// <param name="httpContextAccessor">The HTTP context accessor for retrieving user information.</param>
-    public CosmosDataStore(IOptions<CosmosOptions> options, TimeProvider timeProvider, IHttpContextAccessor httpContextAccessor)
+    public CosmosDataStore(CosmosClientProvider clientProvider, TimeProvider timeProvider, IHttpContextAccessor httpContextAccessor)
     {
         _timeProvider = timeProvider;
         _httpContextAccessor = httpContextAccessor;
-        _cosmosClient = new CosmosClient(options.Value.Endpoint, options.Value.AuthKey, options.Value.ClientOptions);
-        _container = _cosmosClient.GetContainer(options.Value.DatabaseName, options.Value.ContainerName);
+        _container = clientProvider.Container;
     }
 
     /// <summary>
@@ -474,11 +472,12 @@ public class CosmosDataStore : ICosmosDataStore
     }
 
     /// <summary>
-    /// Releases the unmanaged resources used by the CosmosDataStore and optionally releases the managed resources.
-    /// This method disposes of the Cosmos client connection.
+    /// Does nothing. The Cosmos DB client is shared across the application and owned by
+    /// <see cref="CosmosClientProvider"/>; disposing it here would tear down connections still in
+    /// use by other scopes. <see cref="ICosmosDataStore"/> declares <see cref="IDisposable"/>, so
+    /// the method remains.
     /// </summary>
     public void Dispose()
     {
-        _cosmosClient.Dispose();
     }
 }

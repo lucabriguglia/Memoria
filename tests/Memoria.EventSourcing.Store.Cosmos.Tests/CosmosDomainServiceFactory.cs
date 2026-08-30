@@ -18,10 +18,11 @@ public class CosmosDomainServiceFactory : IDomainServiceFactory
             AuthKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
         });
 
-        var dataStore = new CosmosDataStore(cosmosOptions, timeProvider, httpContextAccessor);
-        var domainService = new CosmosDomainService(cosmosOptions, timeProvider, httpContextAccessor, dataStore);
+        var clientProvider = new CosmosClientProvider(cosmosOptions);
+        var dataStore = new CosmosDataStore(clientProvider, timeProvider, httpContextAccessor);
+        var domainService = new CosmosDomainService(clientProvider, timeProvider, httpContextAccessor, dataStore);
 
-        var cosmosSetup = new CosmosSetup(cosmosOptions);
+        var cosmosSetup = new CosmosSetup(cosmosOptions, clientProvider);
         _ = cosmosSetup.CreateDatabaseAndContainerIfNotExist();
 
         return domainService;

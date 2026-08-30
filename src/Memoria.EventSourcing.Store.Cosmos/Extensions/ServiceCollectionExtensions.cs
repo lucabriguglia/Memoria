@@ -23,11 +23,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
         services.AddOptions<CosmosOptions>().Configure(options);
+        // Singleton: a CosmosClient is meant to live for the lifetime of the application. See
+        // CosmosClientProvider for why creating one per scope is expensive.
+        services.TryAddSingleton<CosmosClientProvider>();
         services.TryAddScoped<ICosmosDataStore, CosmosDataStore>();
         services.TryAddSingleton<CosmosSetup>();
         services.Replace(ServiceDescriptor.Scoped<IDomainService>(provider =>
             new CosmosDomainService(
-                provider.GetRequiredService<IOptions<CosmosOptions>>(),
+                provider.GetRequiredService<CosmosClientProvider>(),
                 provider.GetRequiredService<TimeProvider>(),
                 provider.GetRequiredService<IHttpContextAccessor>(),
                 provider.GetRequiredService<ICosmosDataStore>())));

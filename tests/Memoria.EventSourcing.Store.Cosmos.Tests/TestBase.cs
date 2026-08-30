@@ -56,10 +56,11 @@ public abstract class TestBase : IDisposable
         TimeProvider = new FakeTimeProvider();
         var httpContextAccessor = CreateHttpContextAccessor();
 
-        DataStore = new CosmosDataStore(cosmosOptions, TimeProvider, httpContextAccessor);
-        DomainService = new CosmosDomainService(cosmosOptions, TimeProvider, httpContextAccessor, DataStore);
+        var clientProvider = new CosmosClientProvider(cosmosOptions);
+        DataStore = new CosmosDataStore(clientProvider, TimeProvider, httpContextAccessor);
+        DomainService = new CosmosDomainService(clientProvider, TimeProvider, httpContextAccessor, DataStore);
 
-        var cosmosSetup = new CosmosSetup(cosmosOptions);
+        var cosmosSetup = new CosmosSetup(cosmosOptions, clientProvider);
         _ = cosmosSetup.CreateDatabaseAndContainerIfNotExist();
     }
 

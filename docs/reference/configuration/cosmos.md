@@ -36,6 +36,17 @@ services.AddMemoriaCosmos(options =>
 });
 ```
 
+`AddMemoriaCosmos` creates **one** `CosmosClient` for the application, held by a singleton
+`CosmosClientProvider`. That is deliberate: a client performs its own account discovery and opens
+its own connections, so one per request would pay that cost on every request. Two consequences:
+
+- Do not dispose the client yourself. `CosmosDataStore.Dispose()` and `CosmosDomainService.Dispose()`
+  are no-ops for this reason; the container disposes the provider at shutdown.
+- The client is built from `CosmosOptions` once. Changing those options afterwards does not change
+  the connection it holds.
+
+Resolve `CosmosClientProvider` if you need the shared `CosmosClient` or `Container` directly.
+
 You can use the `CosmosSetup` helper to create the database and the container if they do not exist:
 
 ```C#

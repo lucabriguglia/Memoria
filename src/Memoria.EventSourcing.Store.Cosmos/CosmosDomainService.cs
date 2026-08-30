@@ -17,25 +17,22 @@ public class CosmosDomainService : IDomainService
 {
     private readonly TimeProvider _timeProvider;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly CosmosClient _cosmosClient;
     private readonly Container _container;
     private readonly ICosmosDataStore _cosmosDataStore;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CosmosDomainService"/> class.
     /// </summary>
-    /// <param name="cosmosOptions">Cosmos DB configuration options.</param>
+    /// <param name="clientProvider">Provides the container backed by the shared Cosmos DB client.</param>
     /// <param name="timeProvider">The time provider for timestamps.</param>
     /// <param name="httpContextAccessor">HTTP context accessor for user information.</param>
     /// <param name="cosmosDataStore">The Cosmos data store for document operations.</param>
-    public CosmosDomainService(IOptions<CosmosOptions> cosmosOptions, TimeProvider timeProvider,
+    public CosmosDomainService(CosmosClientProvider clientProvider, TimeProvider timeProvider,
         IHttpContextAccessor httpContextAccessor, ICosmosDataStore cosmosDataStore)
     {
         _timeProvider = timeProvider;
         _httpContextAccessor = httpContextAccessor;
-        _cosmosClient = new CosmosClient(cosmosOptions.Value.Endpoint, cosmosOptions.Value.AuthKey,
-            cosmosOptions.Value.ClientOptions);
-        _container = _cosmosClient.GetContainer(cosmosOptions.Value.DatabaseName, cosmosOptions.Value.ContainerName);
+        _container = clientProvider.Container;
         _cosmosDataStore = cosmosDataStore;
     }
 
@@ -945,7 +942,12 @@ public class CosmosDomainService : IDomainService
     }
 
     /// <summary>
-    /// Disposes the Cosmos client resources.
+    /// Does nothing. The Cosmos DB client is shared across the application and owned by
+    /// <see cref="CosmosClientProvider"/>; disposing it here would tear down connections still in
+    /// use by other scopes. <see cref="IDomainService"/> declares <see cref="IDisposable"/>, so the
+    /// method remains.
     /// </summary>
-    public void Dispose() => _cosmosClient.Dispose();
+    public void Dispose()
+    {
+    }
 }

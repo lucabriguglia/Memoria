@@ -47,6 +47,39 @@ public static class StoreFailures
     /// The store could not complete the operation. Not retryable without addressing the cause; the
     /// provider's own exception is on the current <see cref="Activity"/>.
     /// </summary>
+    /// <summary>
+    /// The write was larger than the store can commit in one atomic unit.
+    /// </summary>
+    public const string BatchLimitExceededType = "memoria/batch-limit-exceeded";
+
+    /// <summary>
+    /// Creates a failure for a write the store cannot commit atomically because it exceeds a
+    /// provider limit.
+    /// </summary>
+    /// <param name="operation">The operation that was rejected.</param>
+    /// <param name="streamId">The stream the write targeted.</param>
+    /// <param name="requested">How many events the caller supplied.</param>
+    /// <param name="maximum">The most the provider can accept in one write.</param>
+    /// <returns>A failure describing the limit.</returns>
+    /// <remarks>
+    /// <see cref="ErrorCode.BadRequest"/> rather than <see cref="ErrorCode.Error"/>: the store is
+    /// healthy and retrying the same call cannot help. The caller has to split the work, so this
+    /// must be distinguishable from a storage failure.
+    /// </remarks>
+    public static Failure BatchLimitExceeded(string operation, IStreamId streamId, int requested, int maximum) =>
+        new(ErrorCode.BadRequest,
+            Title: "Batch limit exceeded",
+            Description:
+            $"The '{operation}' operation supplied {requested} events for stream '{streamId.Id}' but the store commits at most {maximum} in one atomic write. Split the work across several calls.",
+            Type: BatchLimitExceededType,
+            Tags: WithTraceId(new Dictionary<string, string>
+            {
+                ["operation"] = operation,
+                ["streamId"] = streamId.Id,
+                ["requestedEventCount"] = requested.ToString(CultureInfo.InvariantCulture),
+                ["maximumEventCount"] = maximum.ToString(CultureInfo.InvariantCulture)
+            }));
+
     public static Failure StorageFailure(string operation, IStreamId? streamId = null)
     {
         var tags = new Dictionary<string, string> { ["operation"] = operation };

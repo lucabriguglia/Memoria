@@ -42,12 +42,13 @@ var aggregate = aggregateResult.Value;
 ## Failure classification
 
 Event store providers classify their failures, so a caller can tell what to do next without knowing
-which provider is behind `IDomainService`. Every provider reports the same two shapes:
+which provider is behind `IDomainService`. Every provider reports the same shapes:
 
 | `Type` | `ErrorCode` | Means | What to do |
 |---|---|---|---|
 | `memoria/concurrency-conflict` | `Conflict` | The stream moved on between reading its sequence and appending to it | Reload and retry — the tags carry `latestEventSequence` |
 | `memoria/storage-failure` | `Error` | The store could not complete the operation | Not retryable on its own; the provider's exception is on the current `Activity` |
+| `memoria/batch-limit-exceeded` | `BadRequest` | The write was larger than the provider commits in one atomic unit | Split it across several calls — retrying unchanged cannot succeed. Tags carry `requestedEventCount` and `maximumEventCount` |
 
 The constants live on `StoreFailures`, so you can branch on them without matching strings:
 

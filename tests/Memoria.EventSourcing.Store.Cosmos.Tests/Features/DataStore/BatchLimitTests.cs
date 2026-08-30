@@ -133,21 +133,6 @@ public class BatchLimitTests : TestBase
     }
 
     [Fact]
-    public async Task GivenAStreamPastTheBatchCeiling_WhenTheAggregateIsFirstBuilt_ThenEveryEventIsLinkedToIt()
-    {
-        var id = Guid.NewGuid().ToString();
-        var streamId = new TestStreamId(id);
-        var aggregateId = new TestAggregate1Id(id);
-        await SaveAggregateEvents(streamId, id, 150);
-
-        await DomainService.GetAggregate(streamId, aggregateId, ReadMode.SnapshotOrCreate);
-        var applied = await DomainService.GetEventsAppliedToAggregate(streamId, aggregateId);
-
-        // Splitting the write must not drop link documents from the later batches.
-        applied.Value!.Count.Should().Be(150);
-    }
-
-    [Fact]
     public async Task GivenASnapshotAndManyNewEvents_WhenTheAggregateIsRefreshed_ThenItCatchesUp()
     {
         var id = Guid.NewGuid().ToString();

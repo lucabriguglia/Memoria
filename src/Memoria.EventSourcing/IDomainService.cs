@@ -38,26 +38,6 @@ public interface IDomainService : IDisposable
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieves the list of domain events that were applied to the specified aggregate.
-    /// </summary>
-    /// <typeparam name="T">The type of the aggregate for which to retrieve applied domain events.</typeparam>
-    /// <param name="streamId">The unique identifier of the stream to which the aggregate belongs.</param>
-    /// <param name="aggregateId">The unique identifier of the aggregate whose applied domain events are to be retrieved.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a list of applied domain events wrapped in a <see cref="Result{TValue}"/>.</returns>
-    /// <example>
-    /// var result = await domainService.GetEventsAppliedToAggregate&lt;T&gt;(streamId, aggregateId);
-    /// if (!result.IsSuccess)
-    /// {
-    ///     return result.Failure;
-    /// }
-    /// var events = result.Value;
-    /// </example>
-    Task<Result<List<IEvent>>> GetEventsAppliedToAggregate<T>(IStreamId streamId,
-        IAggregateId<T> aggregateId, CancellationToken cancellationToken = default)
-        where T : IAggregateRoot, new();
-
-    /// <summary>
     /// Retrieves the list of domain events that occurred between the specified sequence numbers.
     /// </summary>
     /// <param name="streamId">The unique identifier of the stream from which to retrieve domain events.</param>

@@ -27,7 +27,6 @@ The Entity Framework Core store provider offers a variety of built-in extension 
   - [Get Domain Events From Date](#get-domain-events-from-date)
   - [Get Domain Events Up To Date](#get-domain-events-up-to-date)
   - [Get Domain Events Between Dates](#get-domain-events-between-dates)
-  - [Get Domain Events Applied To Aggregate](#get-domain-events-applied-to-aggregate)
   - [Get Latest Event Sequence](#get-latest-event-sequence)
 - [Retrieving Database Entities](#retrieving-database-entities)
   - [Get Event Entities](#get-event-entities)
@@ -334,15 +333,6 @@ var fromDate = new DateTime(2024, 6, 15, 17, 45, 48);
 var toDate = new DateTime(2024, 6, 25, 12, 46, 22);
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var eventsResult = await dbContext.GetEventsBetweenDates(streamId, fromDate, toDate, eventTypes);
-```
-
-<a name="get-domain-events-applied-to-aggregate"></a>
-### Get Domain Events Applied To Aggregate
-Retrieves all domain events that have been applied to a specific aggregate instance, using the explicit aggregate-event relationship tracking. This method provides precise access to the events that actually contributed to an aggregate's current state.
-```C#
-var streamId = new CustomerStreamId(customerId);
-var aggregateId = new OrderAggregateId(orderId);
-var eventsResult = await dbContext.GetEventsAppliedToAggregate(streamId, aggregateId);
 ```
 
 <a name="get-latest-event-sequence"></a>

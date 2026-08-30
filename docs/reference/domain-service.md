@@ -27,7 +27,6 @@ Every store provider has its own implementation of the `IDomainService` interfac
 - [Get Events From Date](#get-domain-events-from-date)
 - [Get Events Up To Date](#get-domain-events-up-to-date)
 - [Get Events Between Dates](#get-domain-events-between-dates)
-- [Get Events Applied To Aggregate](#get-domain-events-applied-to-aggregate)
 - [Get Latest Event Sequence](#get-latest-event-sequence)
 
 <a name="save-aggregate"></a>
@@ -347,15 +346,6 @@ var toDate = new DateTime(2024, 6, 25, 12, 46, 22);
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var eventProperties = new Dictionary<string, string> { ["OrderId"] = orderId.ToString() };
 var eventsResult = await domainService.GetEventsBetweenDates(streamId, fromDate, toDate, eventTypes, eventProperties);
-```
-
-<a name="get-domain-events-applied-to-aggregate"></a>
-### Get Events Applied To Aggregate
-Retrieves all domain events that have been applied to a specific aggregate instance, using the explicit aggregate-event relationship tracking. This method provides precise access to the events that actually contributed to an aggregate's current state.
-```C#
-var streamId = new CustomerStreamId(customerId);
-var aggregateId = new OrderAggregateId(orderId);
-var eventsResult = await domainService.GetEventsAppliedToAggregate(streamId, aggregateId);
 ```
 
 <a name="get-latest-event-sequence"></a>

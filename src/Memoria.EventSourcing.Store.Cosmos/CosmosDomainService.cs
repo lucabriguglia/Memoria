@@ -140,41 +140,6 @@ public class CosmosDomainService : IDomainService
     }
 
     /// <summary>
-    /// Gets domain events that have been applied to a specific aggregate.
-    /// </summary>
-    /// <typeparam name="T">The type of aggregate.</typeparam>
-    /// <param name="streamId">The stream identifier.</param>
-    /// <param name="aggregateId">The aggregate identifier.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A result containing the list of domain events applied to the aggregate or failure information.</returns>
-    public async Task<Result<List<IEvent>>> GetEventsAppliedToAggregate<T>(IStreamId streamId,
-        IAggregateId<T> aggregateId, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
-    {
-        var aggregateEventDocumentsResult =
-            await _cosmosDataStore.GetAggregateEventDocuments(streamId, aggregateId, cancellationToken);
-        if (aggregateEventDocumentsResult.IsNotSuccess)
-        {
-            return aggregateEventDocumentsResult.Failure!;
-        }
-
-        var aggregateEventDocuments = aggregateEventDocumentsResult.Value!;
-        if (aggregateEventDocuments.Count == 0)
-        {
-            return new List<IEvent>();
-        }
-
-        var eventDocumentsResult = await _cosmosDataStore.GetEventDocuments(streamId,
-            aggregateEventDocuments.Select(ae => ae.EventId).ToArray(), cancellationToken);
-        if (eventDocumentsResult.IsNotSuccess)
-        {
-            return eventDocumentsResult.Failure!;
-        }
-
-        var eventDocuments = eventDocumentsResult.Value!;
-        return eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
-    }
-
-    /// <summary>
     /// Gets domain events between two specific sequence numbers with optional event type filtering.
     /// </summary>
     /// <param name="streamId">The stream identifier.</param>

@@ -42,20 +42,6 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext, 
     }
 
     /// <summary>
-    /// Gets domain events that have been applied to a specific aggregate.
-    /// </summary>
-    /// <typeparam name="T">The type of aggregate.</typeparam>
-    /// <param name="streamId">The stream identifier.</param>
-    /// <param name="aggregateId">The aggregate identifier.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A result containing the list of domain events applied to the aggregate.</returns>
-    public async Task<Result<List<IEvent>>> GetEventsAppliedToAggregate<T>(IStreamId streamId,
-        IAggregateId<T> aggregateId, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
-    {
-        return await domainDbContext.GetEventsAppliedToAggregate(aggregateId, cancellationToken);
-    }
-
-    /// <summary>
     /// Gets domain events between two specific sequence numbers with optional event type filtering.
     /// </summary>
     /// <param name="streamId">The stream identifier.</param>

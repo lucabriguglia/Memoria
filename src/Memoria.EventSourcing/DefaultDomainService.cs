@@ -20,12 +20,6 @@ public class DefaultDomainService : IDomainService
         throw new NotImplementedException(NotImplementedMessage);
     }
 
-    public Task<Result<List<IEvent>>> GetEventsAppliedToAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId,
-        CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
-    {
-        throw new NotImplementedException(NotImplementedMessage);
-    }
-
     public Task<Result<List<IEvent>>> GetEventsBetweenSequences(IStreamId streamId, int fromSequence, int toSequence,
         Type[]? eventTypeFilter = null,
         IDictionary<string, string>? eventPropertyFilter = null,

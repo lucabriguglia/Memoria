@@ -134,33 +134,6 @@ public class InMemoryCosmosDomainService(
         return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
     }
 
-    public async Task<Result<List<IEvent>>> GetEventsAppliedToAggregate<T>(IStreamId streamId,
-        IAggregateId<T> aggregateId, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
-    {
-        var aggregateEventDocumentsResult =
-            await _dataStore.GetAggregateEventDocuments(streamId, aggregateId, cancellationToken);
-        if (aggregateEventDocumentsResult.IsNotSuccess)
-        {
-            return aggregateEventDocumentsResult.Failure!;
-        }
-
-        var aggregateEventDocuments = aggregateEventDocumentsResult.Value!;
-        if (aggregateEventDocuments.Count == 0)
-        {
-            return new List<IEvent>();
-        }
-
-        var eventDocumentsResult = await _dataStore.GetEventDocuments(streamId,
-            aggregateEventDocuments.Select(ae => ae.EventId).ToArray(), cancellationToken);
-        if (eventDocumentsResult.IsNotSuccess)
-        {
-            return eventDocumentsResult.Failure!;
-        }
-
-        var eventDocuments = eventDocumentsResult.Value!;
-        return eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
-    }
-
     public async Task<Result<List<IEvent>>> GetEventsBetweenSequences(IStreamId streamId, int fromSequence,
         int toSequence, Type[]? eventTypeFilter = null,
         IDictionary<string, string>? eventPropertyFilter = null, CancellationToken cancellationToken = default)

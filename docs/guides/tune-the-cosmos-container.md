@@ -21,7 +21,7 @@ store filters and sorts on a small, fixed set of paths:
 | `documentType` | every query — the container mixes events, aggregates, aggregate-event links, and projections |
 | `sequence` | event range reads, `ORDER BY`, and `SELECT VALUE MAX(c.sequence)` on every save |
 | `createdDate` | the date-bounded event reads (`GetEventsUpToDate`, `FromDate`, `BetweenDates`) |
-| `aggregateId`, `appliedDate` | `GetEventsAppliedToAggregate` |
+| `aggregateId`, `appliedDate` | nothing — no query reads the aggregate-event links any more. They are still written, so the paths still cost index maintenance; both go when the links do |
 | `eventType` | the `EventTypeFilter` on aggregates and projections |
 | `streamId` | the partition predicate in each `WHERE` clause, and the `MAX(sequence)` aggregate |
 

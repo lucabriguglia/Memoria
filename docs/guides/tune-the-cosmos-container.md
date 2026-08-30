@@ -1,12 +1,14 @@
 # Tune the Cosmos DB container
 
-`CosmosSetup.CreateDatabaseAndContainerIfNotExist` creates the container with the Cosmos DB
-**default indexing policy**, which indexes every path of every document. For an event store that is
-the wrong default: the `data` property holds a serialised domain event or snapshot, it is the
-largest property in the document, and no query Memoria issues can filter on it — `CONTAINS` never
-uses the index. Every write pays to index it anyway.
+The Cosmos DB **default indexing policy** indexes every path of every document. For an event store
+that is the wrong default: the `data` property holds a serialised domain event or snapshot, it is
+the largest property in the document, and no query Memoria issues can filter on it — `CONTAINS`
+never uses the index. Every write pays to index it anyway.
 
-This guide replaces that policy with one built for the queries the store actually issues.
+`CosmosSetup.CreateDatabaseAndContainerIfNotExist` already creates containers with the better
+policy, so **if Memoria provisions your container there is nothing to do here**. This guide is for
+containers provisioned elsewhere — infrastructure as code, a portal, a DBA — and for containers that
+already exist, which keep whatever policy they were created with.
 
 ## What the store queries
 
@@ -73,7 +75,13 @@ If you provision infrastructure declaratively, take the JSON straight into your 
 
 ### The emulator
 
-The Azure CLI cannot reach the Cosmos DB emulator. For local development, paste the JSON into
+The Azure CLI cannot reach the Cosmos DB emulator, so use the API instead:
+
+```C#
+await cosmosSetup.ReplaceIndexingPolicy(CosmosIndexingPolicy.CreateRecommended());
+```
+
+That works against any account, not just the emulator. You can also paste the JSON into
 **Data Explorer → your container → Settings → Indexing Policy → Save**, or delete and recreate the
 container.
 

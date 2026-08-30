@@ -1,13 +1,45 @@
 # Upgrade to 1.6.0
 
-One change needs attention, and it only affects the Cosmos DB store.
+Two changes need attention. Both affect only the Cosmos DB store.
 
-1. [**The Cosmos DB client is now shared**](#cosmos-client-is-now-shared) — only if you construct
+1. [**Containers are created with an indexing policy**](#cosmos-containers-get-an-indexing-policy)
+   — nothing to do unless you query the container yourself. Existing containers are untouched.
+2. [**The Cosmos DB client is now shared**](#cosmos-client-is-now-shared) — only if you construct
    `CosmosDataStore`, `CosmosDomainService` or `CosmosSetup` yourself.
 
-Nothing else needs action. The Cosmos DB container gains a recommended indexing policy, but it ships
-as a script you choose to apply rather than a change the package makes for you — see
-[Tune the Cosmos DB container](tune-the-cosmos-container.md).
+<a name="cosmos-containers-get-an-indexing-policy"></a>
+## Cosmos DB containers are created with an indexing policy
+
+Only affects the Cosmos DB store, and only containers that `CosmosSetup` creates from now on.
+
+`CreateDatabaseAndContainerIfNotExist` used to create the container with the Cosmos DB default
+indexing policy, which indexes every path of every document — including the serialised `data`
+payload, the largest property in the document, which no Memoria query can filter on. It now creates
+the container with a policy covering only the paths the store filters or sorts on. Measured against
+the emulator that is about 2.4% off writes and 3–6% off reads.
+
+**Existing containers are untouched.** The policy applies only to a container this call creates, so
+upgrading changes nothing about a database you already have. To bring an existing container across,
+ask for it explicitly:
+
+```C#
+await cosmosSetup.ReplaceIndexingPolicy(CosmosIndexingPolicy.CreateRecommended());
+```
+
+That starts a background reindex: the container stays online and writes keep succeeding, but queries
+can return incomplete results until it finishes. Do it during a quiet period on a container that
+holds data. The equivalent scripts under `scripts/install` do the same thing through the Azure CLI.
+
+**If you query the container yourself**, check your queries first. Filtering or sorting on a path
+the policy excludes still returns correct results, but scans the partition instead of using an
+index. Either add the path, or keep the previous behaviour by passing a policy of your own:
+
+```C#
+await cosmosSetup.CreateDatabaseAndContainerIfNotExist(new IndexingPolicy());
+```
+
+See [Tune the Cosmos DB container](tune-the-cosmos-container.md) for which paths are indexed and
+why, including why there are no composite indexes.
 
 <a name="cosmos-client-is-now-shared"></a>
 ## The Cosmos DB client is now shared

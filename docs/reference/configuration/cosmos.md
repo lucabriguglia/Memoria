@@ -53,10 +53,25 @@ You can use the `CosmosSetup` helper to create the database and the container if
 cosmosSetup.CreateDatabaseAndContainerIfNotExist(throughput: 400);
 ```
 
-The container is created with the Cosmos DB default indexing policy, which indexes every path —
-including the `data` payload that no Memoria query can filter on. See
-[Tune the Cosmos DB container](../../guides/tune-the-cosmos-container.md) for a policy matched to the
-queries the store actually issues.
+The container is created with the [indexing policy the store is built
+for](../../guides/tune-the-cosmos-container.md) — only the paths it filters or sorts on. To keep the
+Cosmos DB default of indexing every path instead, pass one explicitly:
+
+```C#
+await cosmosSetup.CreateDatabaseAndContainerIfNotExist(new IndexingPolicy());
+```
+
+The policy applies only to a container this call creates. A container that already exists keeps the
+policy it has, because changing it starts a background reindex during which queries can return
+incomplete results. When you want that, ask for it:
+
+```C#
+await cosmosSetup.ReplaceIndexingPolicy(CosmosIndexingPolicy.CreateRecommended());
+```
+
+Applying the same policy twice is a no-op, so both are safe from a deployment step. On a container
+that already holds data, do the replace during a quiet period.
+
 
 ## Write limits
 

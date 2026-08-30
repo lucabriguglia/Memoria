@@ -14,7 +14,7 @@ namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Containers.Tests;
 [Collection(SqlServerCollection.Name)]
 public class SqlServerInstallScriptTests(SqlServerFixture fixture)
 {
-    private const string ScriptFileName = "1.5.0-install-sqlserver.sql";
+    private const string ScriptFileName = "1.7.0-install-sqlserver.sql";
 
     private static Task<IReadOnlyList<string>> Describe(RelationalTestDbContext dbContext) =>
         InstallScriptComparison.DescribeAsync(dbContext,

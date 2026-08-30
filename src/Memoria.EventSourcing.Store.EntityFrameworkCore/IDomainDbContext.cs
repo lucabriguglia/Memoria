@@ -20,7 +20,6 @@ namespace Memoria.EventSourcing.Store.EntityFrameworkCore;
 ///     
 ///     public DbSet&lt;AggregateEntity&gt; Aggregates { get; set; } = null!;
 ///     public DbSet&lt;EventEntity&gt; Events { get; set; } = null!;
-///     public DbSet&lt;AggregateEventEntity&gt; AggregateEvents { get; set; } = null!;
 ///     
 ///     public void DetachAggregate&lt;T&gt;(IAggregateId aggregateId, T aggregate) 
 ///         where T : IAggregate
@@ -307,132 +306,6 @@ public interface IDomainDbContext : IDisposable, IAsyncDisposable
     DbSet<EventEntity> Events { get; set; }
 
     /// <summary>
-    /// Gets or sets the DbSet for aggregate-event relationship entities, providing explicit many-to-many
-    /// associations between aggregates and their related events. This junction table enables efficient
-    /// querying and maintains referential integrity in complex event sourcing scenarios.
-    /// </summary>
-    /// <value>
-    /// A <see cref="DbSet{TEntity}"/> of <see cref="AggregateEventEntity"/> objects representing
-    /// the explicit relationships between aggregates and events. Each entity links a specific
-    /// aggregate to a specific event, enabling advanced querying and relationship management.
-    /// </value>
-    /// <example>
-    /// <code>
-    /// // Load all events for a specific aggregate
-    /// public async Task&lt;List&lt;EventEntity&gt;&gt; GetAggregateEventsAsync(string aggregateId)
-    /// {
-    ///     return await _context.AggregateEvents
-    ///         .AsNoTracking()
-    ///         .Where(ae =&gt; ae.AggregateId == aggregateId)
-    ///         .Include(ae =&gt; ae.Event)
-    ///         .Select(ae =&gt; ae.Event)
-    ///         .OrderBy(e =&gt; e.Sequence)
-    ///         .ToListAsync();
-    /// }
-    /// 
-    /// // Find aggregates affected by specific events
-    /// public async Task&lt;List&lt;string&gt;&gt; GetAffectedAggregatesAsync(List&lt;string&gt; eventIds)
-    /// {
-    ///     return await _context.AggregateEvents
-    ///         .AsNoTracking()
-    ///         .Where(ae =&gt; eventIds.Contains(ae.EventId))
-    ///         .Select(ae =&gt; ae.AggregateId)
-    ///         .Distinct()
-    ///         .ToListAsync();
-    /// }
-    /// 
-    /// // Bulk load events for multiple aggregates
-    /// public async Task&lt;Dictionary&lt;string, List&lt;IDomainEvent&gt;&gt;&gt; BulkLoadAggregateEventsAsync(
-    ///     List&lt;string&gt; aggregateIds)
-    /// {
-    ///     var aggregateEvents = await _context.AggregateEvents
-    ///         .AsNoTracking()
-    ///         .Where(ae =&gt; aggregateIds.Contains(ae.AggregateId))
-    ///         .Include(ae =&gt; ae.Event)
-    ///         .ToListAsync();
-    ///     
-    ///     return aggregateEvents
-    ///         .GroupBy(ae =&gt; ae.AggregateId)
-    ///         .ToDictionary(
-    ///             g =&gt; g.Key,
-    ///             g =&gt; g.Select(ae =&gt; ae.Event.ToDomainEvent())
-    ///                   .OrderBy(e =&gt; ae.Event.Sequence)
-    ///                   .ToList()
-    ///         );
-    /// }
-    /// 
-    /// // Create relationship between aggregate and events
-    /// public async Task LinkAggregateToEventsAsync(string aggregateId, List&lt;string&gt; eventIds)
-    /// {
-    ///     var relationships = eventIds.Select(eventId =&gt; new AggregateEventEntity
-    ///     {
-    ///         AggregateId = aggregateId,
-    ///         EventId = eventId
-    ///     }).ToList();
-    ///     
-    ///     _context.AggregateEvents.AddRange(relationships);
-    ///     await _context.SaveChangesAsync();
-    /// }
-    /// 
-    /// // Advanced querying with complex filters
-    /// public async Task&lt;List&lt;AggregateEventEntity&gt;&gt; GetRelationshipsAsync(
-    ///     string? aggregateType = null,
-    ///     string? eventType = null,
-    ///     DateTime? since = null)
-    /// {
-    ///     var query = _context.AggregateEvents
-    ///         .AsNoTracking()
-    ///         .Include(ae =&gt; ae.Aggregate)
-    ///         .Include(ae =&gt; ae.Event)
-    ///         .AsQueryable();
-    ///     
-    ///     if (!string.IsNullOrEmpty(aggregateType))
-    ///     {
-    ///         query = query.Where(ae =&gt; ae.Aggregate.TypeName == aggregateType);
-    ///     }
-    ///     
-    ///     if (!string.IsNullOrEmpty(eventType))
-    ///     {
-    ///         query = query.Where(ae =&gt; ae.Event.TypeName == eventType);
-    ///     }
-    ///     
-    ///     if (since.HasValue)
-    ///     {
-    ///         var sinceOffset = new DateTimeOffset(since.Value, TimeSpan.Zero);
-    ///         query = query.Where(ae =&gt; ae.Event.CreatedDate &gt;= sinceOffset);
-    ///     }
-    ///     
-    ///     return await query.ToListAsync();
-    /// }
-    /// 
-    /// // Analytics and reporting
-    /// public async Task&lt;Dictionary&lt;string, int&gt;&gt; GetEventCountsByAggregateAsync()
-    /// {
-    ///     return await _context.AggregateEvents
-    ///         .AsNoTracking()
-    ///         .GroupBy(ae =&gt; ae.AggregateId)
-    ///         .Select(g =&gt; new { AggregateId = g.Key, EventCount = g.Count() })
-    ///         .ToDictionaryAsync(x =&gt; x.AggregateId, x =&gt; x.EventCount);
-    /// }
-    /// 
-    /// // Cleanup operations for maintenance
-    /// public async Task RemoveOrphanedRelationshipsAsync()
-    /// {
-    ///     var orphanedRelationships = await _context.AggregateEvents
-    ///         .Where(ae =&gt; ae.Aggregate == null || ae.Event == null)
-    ///         .ToListAsync();
-    ///     
-    ///     if (orphanedRelationships.Any())
-    ///     {
-    ///         _context.AggregateEvents.RemoveRange(orphanedRelationships);
-    ///         await _context.SaveChangesAsync();
-    ///     }
-    /// }
-    /// </code>
-    /// </example>
-    DbSet<AggregateEventEntity> AggregateEvents { get; set; }
-
-    /// <summary>
     /// Gets or sets the DbSet for projection entities that store serialized projection (read model) snapshots.
     /// Projection snapshots are persisted independently of aggregate snapshots in their own table.
     /// </summary>
@@ -614,7 +487,6 @@ public interface IDomainDbContext : IDisposable, IAsyncDisposable
     ///     {
     ///         AggregateEntity ae =&gt; ae.Id == aggregateId.Id,
     ///         EventEntity ee =&gt; ee.StreamId == aggregateId.Id,
-    ///         AggregateEventEntity aee =&gt; aee.AggregateId == aggregateId.Id,
     ///         IAggregate a =&gt; a.AggregateId == aggregateId.Id,
     ///         _ =&gt; false
     ///     };

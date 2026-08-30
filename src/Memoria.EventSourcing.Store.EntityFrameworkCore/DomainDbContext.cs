@@ -111,11 +111,8 @@ namespace Memoria.EventSourcing.Store.EntityFrameworkCore;
 /// </example>
 /// <remarks>
 /// Identifiers are persisted in bounded columns: stream ids, aggregate store ids and projection store
-/// ids are capped at 255 characters, and event ids at 450. On SQL Server there is a further
-/// constraint — the aggregate store id and event id form the composite primary key of
-/// <c>DomainAggregateEvents</c>, which must stay under 900 bytes (450 characters) or the write is
-/// rejected at insert time. GUID-based identifiers are far below all of these. See the Identifier
-/// lengths section of the Entity Framework Core configuration reference.
+/// ids are capped at 255 characters, and event ids at 450. GUID-based identifiers are far below all
+/// of these. See the Identifier lengths section of the Entity Framework Core configuration reference.
 /// </remarks>
 public abstract class DomainDbContext(
     DbContextOptions<DomainDbContext> options,
@@ -192,7 +189,6 @@ public abstract class DomainDbContext(
 
         modelBuilder.ApplyConfiguration(new AggregateEntityConfiguration());
         modelBuilder.ApplyConfiguration(new EventEntityConfiguration());
-        modelBuilder.ApplyConfiguration(new AggregateEventEntityConfiguration());
         modelBuilder.ApplyConfiguration(new ProjectionEntityConfiguration());
     }
 
@@ -217,17 +213,6 @@ public abstract class DomainDbContext(
     /// supporting event stream management and aggregate reconstruction in the event sourcing system.
     /// </value>
     public DbSet<EventEntity> Events { get; set; } = null!;
-
-    /// <summary>
-    /// Gets or sets the database set for aggregate-event relationship entities that link aggregates to their events.
-    /// Provides access to relationship management operations supporting complex querying and referential integrity
-    /// between aggregates and their associated domain events.
-    /// </summary>
-    /// <value>
-    /// A <see cref="DbSet{AggregateEventEntity}"/> that enables CRUD operations on aggregate-event relationships,
-    /// facilitating efficient navigation between aggregates and events in the event sourcing system.
-    /// </value>
-    public DbSet<AggregateEventEntity> AggregateEvents { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the database set for projection entities that store serialized projection (read model) snapshots.

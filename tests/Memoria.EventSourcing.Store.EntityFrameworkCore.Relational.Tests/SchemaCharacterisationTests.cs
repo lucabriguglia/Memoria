@@ -51,24 +51,6 @@ public class SchemaCharacterisationTests : RelationalTestBase
     }
 
     [Fact]
-    public void AggregateEventCompositeKeyColumnsAreBothUnbounded()
-    {
-        // Item 1. These two make up the composite primary key, so their combined width is what a
-        // provider has to fit into an index key.
-        //
-        // Both report no max length here, but that is the *model* view and does not predict the DDL:
-        // a foreign key's type mapping resolves through its principal, so SQL Server emits
-        // nvarchar(255) for AggregateId (inherited from AggregateEntity.Id) and nvarchar(450) for
-        // EventId (inherited from the unbounded EventEntity.Id). See the container tests for the
-        // measured column types — this assertion pins the model, not the schema.
-        using (new AssertionScope())
-        {
-            MaxLengthOf<AggregateEventEntity>(nameof(AggregateEventEntity.AggregateId)).Should().BeNull();
-            MaxLengthOf<AggregateEventEntity>(nameof(AggregateEventEntity.EventId)).Should().BeNull();
-        }
-    }
-
-    [Fact]
     public void EventIndexesAreAsConfigured()
     {
         // The redundant [StreamId] index is gone (item 2), [StreamId, Sequence] is unique (item 3),
@@ -77,14 +59,6 @@ public class SchemaCharacterisationTests : RelationalTestBase
             "[EventType]",
             "[StreamId, CreatedDate]",
             "[StreamId, Sequence] unique");
-    }
-
-    [Fact]
-    public void AggregateEventIndexesAreAsConfigured()
-    {
-        // Item 2: the explicit [AggregateId] index is gone — it duplicated the leading column of the
-        // composite primary key. [EventId] remains, created by EF for the foreign key.
-        IndexesOf<AggregateEventEntity>().Should().Equal("[EventId]");
     }
 
     [Fact]
@@ -106,8 +80,10 @@ public class SchemaCharacterisationTests : RelationalTestBase
         {
             script.Should().Contain("CREATE TABLE \"events\"");
             script.Should().Contain("CREATE TABLE \"DomainAggregates\"");
-            script.Should().Contain("CREATE TABLE \"DomainAggregateEvents\"");
             script.Should().Contain("CREATE TABLE \"DomainProjections\"");
+
+            // The aggregate-event link table is gone; the model must not resurrect it.
+            script.Should().NotContain("DomainAggregateEvents");
         }
     }
 }

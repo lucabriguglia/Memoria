@@ -27,7 +27,6 @@ public class SqlServerMigrationScriptTests(SqlServerFixture fixture)
         CREATE INDEX [IX_Events_StreamId_Sequence] ON [dbo].[events] ([StreamId], [Sequence]);
         CREATE INDEX [IX_Events_StreamId] ON [dbo].[events] ([StreamId]);
         DROP INDEX [IX_Events_StreamId_CreatedDate] ON [dbo].[events];
-        CREATE INDEX [IX_AggregateEvents_AggregateId] ON [dbo].[DomainAggregateEvents] ([AggregateId]);
         """;
 
     private async Task WithPreMigrationDatabase(Func<RelationalTestDbContext, Task> act)
@@ -60,7 +59,6 @@ public class SqlServerMigrationScriptTests(SqlServerFixture fixture)
         await WithPreMigrationDatabase(async dbContext =>
         {
             var events = await IndexMetadata.ReadSqlServerAsync(dbContext, "events");
-            var aggregateEvents = await IndexMetadata.ReadSqlServerAsync(dbContext, "DomainAggregateEvents");
 
             using (new AssertionScope())
             {
@@ -68,8 +66,6 @@ public class SqlServerMigrationScriptTests(SqlServerFixture fixture)
                     "IX_Events_EventType",
                     "IX_Events_StreamId",
                     "IX_Events_StreamId_Sequence");
-
-                aggregateEvents.Should().Contain("IX_AggregateEvents_AggregateId");
             }
         });
 
@@ -80,7 +76,6 @@ public class SqlServerMigrationScriptTests(SqlServerFixture fixture)
             await MigrationScript.ExecuteAsync(dbContext, MigrationScript.Read(ScriptFileName));
 
             var events = await IndexMetadata.ReadSqlServerAsync(dbContext, "events");
-            var aggregateEvents = await IndexMetadata.ReadSqlServerAsync(dbContext, "DomainAggregateEvents");
 
             using (new AssertionScope())
             {
@@ -88,8 +83,6 @@ public class SqlServerMigrationScriptTests(SqlServerFixture fixture)
                     "IX_Events_EventType",
                     "IX_Events_StreamId_CreatedDate",
                     "IX_Events_StreamId_Sequence unique");
-
-                aggregateEvents.Should().NotContain("IX_AggregateEvents_AggregateId");
             }
         });
 

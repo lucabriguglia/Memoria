@@ -65,15 +65,6 @@ public class AuditInterceptor(TimeProvider timeProvider, IHttpContextAccessor ht
                 }
             }
 
-            if (changedEntity.Entity is IApplicableEntity applicableEntity)
-            {
-                switch (changedEntity.State)
-                {
-                    case EntityState.Added:
-                        applicableEntity.AppliedDate = utcNow;
-                        break;
-                }
-            }
         }
     }
 }

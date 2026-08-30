@@ -14,7 +14,7 @@ namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Containers.Tests;
 [Collection(PostgreSqlCollection.Name)]
 public class PostgreSqlInstallScriptTests(PostgreSqlFixture fixture)
 {
-    private const string ScriptFileName = "1.5.0-install-postgresql.sql";
+    private const string ScriptFileName = "1.7.0-install-postgresql.sql";
 
     private static Task<IReadOnlyList<string>> Describe(RelationalTestDbContext dbContext) =>
         InstallScriptComparison.DescribeAsync(dbContext,

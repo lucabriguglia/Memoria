@@ -83,29 +83,6 @@ below are the ones to design against.
 
 Exceeding one of these fails the write with a truncation error from the provider.
 
-### The SQL Server composite key limit
-
-SQL Server has one further limit that the column widths above do not express. `DomainAggregateEvents`
-has a composite primary key of `AggregateId` plus `EventId` — `nvarchar(255)` and `nvarchar(450)`,
-1410 bytes of maximum potential key against SQL Server's 900-byte limit for a clustered index key.
-
-The table is still created: SQL Server permits an index whose *maximum potential* key exceeds the
-limit and rejects only rows whose *actual* key does. So this surfaces at insert time, not at
-deployment:
-
-> **On SQL Server, the aggregate store id and the event id must together stay under 450 characters**
-> (900 bytes at two bytes per character). In practice that means the aggregate id and the stream id
-> combined, since the event id is derived from the stream id.
-
-Past that, writes fail with `... exceeds the maximum length of 900 bytes ...` naming
-`PK_DomainAggregateEvents`. The store reports this as a storage failure — `ErrorCode.Error` with
-`Type` of `memoria/storage-failure` — and records the provider's exception on the current `Activity`,
-where the message naming the constraint can be read. See
-[Failure classification](../../concepts/result-pattern.md#failure-classification).
-
-**PostgreSQL is not affected.** Npgsql maps unbounded string keys to `text`, and PostgreSQL's btree
-limit of roughly 2704 bytes is far above the largest key this model can produce.
-
 ## ASP.NET Core Identity
 
 Memoria also supports ASP.NET Core Identity. See [Entity Framework Core + Identity](ef-core-identity.md).

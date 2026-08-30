@@ -27,7 +27,6 @@ public class PostgreSqlMigrationScriptTests(PostgreSqlFixture fixture)
         CREATE INDEX "IX_Events_StreamId_Sequence" ON public."events" ("StreamId", "Sequence");
         CREATE INDEX "IX_Events_StreamId" ON public."events" ("StreamId");
         DROP INDEX public."IX_Events_StreamId_CreatedDate";
-        CREATE INDEX "IX_AggregateEvents_AggregateId" ON public."DomainAggregateEvents" ("AggregateId");
         """;
 
     private async Task WithPreMigrationDatabase(Func<RelationalTestDbContext, Task> act)
@@ -60,7 +59,6 @@ public class PostgreSqlMigrationScriptTests(PostgreSqlFixture fixture)
         await WithPreMigrationDatabase(async dbContext =>
         {
             var events = await IndexMetadata.ReadPostgreSqlAsync(dbContext, "events");
-            var aggregateEvents = await IndexMetadata.ReadPostgreSqlAsync(dbContext, "DomainAggregateEvents");
 
             using (new AssertionScope())
             {
@@ -68,8 +66,6 @@ public class PostgreSqlMigrationScriptTests(PostgreSqlFixture fixture)
                     "IX_Events_EventType",
                     "IX_Events_StreamId",
                     "IX_Events_StreamId_Sequence");
-
-                aggregateEvents.Should().Contain("IX_AggregateEvents_AggregateId");
             }
         });
 
@@ -80,7 +76,6 @@ public class PostgreSqlMigrationScriptTests(PostgreSqlFixture fixture)
             await MigrationScript.ExecuteAsync(dbContext, MigrationScript.Read(ScriptFileName));
 
             var events = await IndexMetadata.ReadPostgreSqlAsync(dbContext, "events");
-            var aggregateEvents = await IndexMetadata.ReadPostgreSqlAsync(dbContext, "DomainAggregateEvents");
 
             using (new AssertionScope())
             {
@@ -88,8 +83,6 @@ public class PostgreSqlMigrationScriptTests(PostgreSqlFixture fixture)
                     "IX_Events_EventType",
                     "IX_Events_StreamId_CreatedDate",
                     "IX_Events_StreamId_Sequence unique");
-
-                aggregateEvents.Should().NotContain("IX_AggregateEvents_AggregateId");
             }
         });
 

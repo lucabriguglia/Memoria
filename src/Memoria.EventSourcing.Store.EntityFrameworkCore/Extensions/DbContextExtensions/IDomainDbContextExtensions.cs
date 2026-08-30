@@ -35,10 +35,8 @@ public static partial class IDomainDbContextExtensions
         }
 
         var latestEventSequenceForAggregate = newEventEntities[^1].Sequence;
-        var trackedAggregateEntity = domainDbContext.TrackAggregateEntity(streamId, aggregateId, aggregate,
+        domainDbContext.TrackAggregateEntity(streamId, aggregateId, aggregate,
             latestEventSequenceForAggregate, aggregateIsNew: currentAggregateVersion == 0);
-        var trackedAggregateEventEntities =
-            domainDbContext.TrackAggregateEventEntities(trackedAggregateEntity, newEventEntities);
 
         try
         {
@@ -52,7 +50,6 @@ public static partial class IDomainDbContextExtensions
         }
 
         domainDbContext.DetachAggregate(aggregateId, aggregate);
-        domainDbContext.DetachWrittenEntities(trackedAggregateEventEntities);
 
         return aggregate;
     }
@@ -156,12 +153,4 @@ public static partial class IDomainDbContextExtensions
         }
     }
 
-    private static List<AggregateEventEntity> TrackAggregateEventEntities(this IDomainDbContext domainDbContext,
-        AggregateEntity aggregateEntity, List<EventEntity> eventEntities)
-    {
-        var aggregateEventEntities = eventEntities.Select(eventEntity => new AggregateEventEntity
-            { AggregateId = aggregateEntity.Id, EventId = eventEntity.Id }).ToList();
-        domainDbContext.AggregateEvents.AddRange(aggregateEventEntities);
-        return aggregateEventEntities;
-    }
 }

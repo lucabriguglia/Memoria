@@ -15,7 +15,6 @@ public static class InstallScriptComparison
     /// <summary>The store's tables, in an order safe for dropping — dependants first.</summary>
     public static readonly string[] TablesInDropOrder =
     [
-        "DomainAggregateEvents",
         "events",
         "DomainAggregates",
         "DomainProjections"

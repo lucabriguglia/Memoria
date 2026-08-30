@@ -1,8 +1,7 @@
 # Install the store schema
 
-The Entity Framework Core store needs four tables: `events`, `DomainAggregates`,
-`DomainProjections`, and `DomainAggregateEvents` linking the first three. This guide covers getting
-them into a database, whichever way you manage schema.
+The Entity Framework Core store needs three tables: `events`, `DomainAggregates`, and
+`DomainProjections`. This guide covers getting them into a database, whichever way you manage schema.
 
 You do not need to write a migration by hand either way.
 
@@ -27,8 +26,8 @@ If your context adds entities of its own, they appear in the same migration — 
 For databases managed with DbUp, Flyway, by a DBA, or by hand, run the install script for your
 engine:
 
-- [`scripts/install/1.5.0-install-sqlserver.sql`](../../scripts/install/1.5.0-install-sqlserver.sql)
-- [`scripts/install/1.5.0-install-postgresql.sql`](../../scripts/install/1.5.0-install-postgresql.sql)
+- [`scripts/install/1.7.0-install-sqlserver.sql`](../../scripts/install/1.7.0-install-sqlserver.sql)
+- [`scripts/install/1.7.0-install-postgresql.sql`](../../scripts/install/1.7.0-install-postgresql.sql)
 
 Both are safe to run more than once: every object is guarded, so a re-run adds only what is missing.
 Both assume the default table names and the default schema (`dbo` on SQL Server, `public` on
@@ -54,7 +53,7 @@ database the store then fails against for reasons nobody can see.
 
 So on every CI run, for each engine, the container suite builds one database from the script and
 another from the model, then compares every column with its engine type and every index including
-primary keys, across all four tables. Any divergence fails the build.
+primary keys, across all three tables. Any divergence fails the build.
 
 ## Related
 

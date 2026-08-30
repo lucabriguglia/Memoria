@@ -43,19 +43,13 @@ public class PostgreSqlSchemaTests(PostgreSqlFixture fixture)
         await WithFreshSchema(async dbContext =>
         {
             var events = await ColumnMetadata.ReadAsync(dbContext, "events");
-            var aggregateEvents = await ColumnMetadata.ReadAsync(dbContext, "DomainAggregateEvents");
 
             using (new AssertionScope())
             {
-                // Item 1 does not apply here: Npgsql maps an unbounded string to text, which has no
-                // length limit, so there is no provider-chosen key width to overflow.
+                // Npgsql maps an unbounded string to text, which has no length limit, so there is no
+                // provider-chosen key width to overflow.
                 events["Id"].ToString().Should().Be("text");
                 events["StreamId"].ToString().Should().Be("character varying(255)");
-
-                // As on SQL Server, AggregateId inherits its principal's cap while EventId inherits
-                // EventEntity.Id's unbounded mapping.
-                aggregateEvents["AggregateId"].ToString().Should().Be("character varying(255)");
-                aggregateEvents["EventId"].ToString().Should().Be("text");
             }
         });
 }

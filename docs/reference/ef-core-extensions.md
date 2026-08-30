@@ -33,8 +33,6 @@ The Entity Framework Core store provider offers a variety of built-in extension 
   - [Get Event Entities Between Sequences](#get-event-entities-between-sequences)
   - [Get Event Entities From Sequence](#get-event-entities-from-sequence)
   - [Get Event Entities Up To Sequence](#get-event-entities-up-to-sequence)
-  - [Get Event Entities Applied To Aggregate](#get-event-entities-applied-to-aggregate)
-  - [Get Aggregate Event Entities](#get-aggregate-event-entities)
 
 <a name="saving"></a>
 ## Saving
@@ -414,22 +412,4 @@ var streamId = new CustomerStreamId(customerId);
 var upToSequence = 10;
 var eventTypes = new Type[] { typeof(OrderPlaced), typeof(OrderShipped) };
 var eventEntitiesResult = await dbContext.GetEventEntitiesUpToSequence(streamId, upToSequence, eventTypes);
-```
-
-<a name="get-event-entities-applied-to-aggregate"></a>
-### Get Event Entities Applied To Aggregate
-Retrieves all event entities that have been applied to a specific aggregate instance, providing a complete audit trail of changes that contributed to the aggregate's current state.
-```C#
-var streamId = new CustomerStreamId(customerId);
-var aggregateId = new OrderAggregateId(orderId);
-var eventEntitiesResult = await dbContext.GetEventEntitiesAppliedToAggregate(streamId, aggregateId);
-```
-
-<a name="get-aggregate-event-entities"></a>
-### Get Aggregate Event Entities
-Retrieves all aggregate-event relationship entities associated with a specific aggregate instance, providing complete visibility into the many-to-many relationships between the aggregate and its applied events.
-```C#
-var streamId = new CustomerStreamId(customerId);
-var aggregateId = new OrderAggregateId(orderId);
-var aggregateEventEntitiesResult = await dbContext.GetAggregateEventEntities(streamId, aggregateId);
 ```

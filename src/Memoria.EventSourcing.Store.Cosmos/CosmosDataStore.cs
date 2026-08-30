@@ -346,7 +346,7 @@ public class CosmosDataStore : ICosmosDataStore
             aggregateDocumentToUpdate.CreatedBy = aggregateDocument?.CreatedBy ?? currentUserNameIdentifier;
             aggregateDocumentToUpdate.UpdatedDate = timeStamp;
             aggregateDocumentToUpdate.UpdatedBy = currentUserNameIdentifier;
-            batch.UpsertItem(aggregateDocumentToUpdate);
+            batch.UpsertItem(aggregateDocumentToUpdate, WriteRequestOptions.BatchItem);
 
             foreach (var eventDocument in newEventDocuments)
             {
@@ -358,7 +358,7 @@ public class CosmosDataStore : ICosmosDataStore
                     EventId = eventDocument.Id,
                     AppliedDate = timeStamp
                 };
-                batch.CreateItem(aggregateEventDocument);
+                batch.CreateItem(aggregateEventDocument, WriteRequestOptions.BatchItem);
             }
 
             var batchResponse = await batch.ExecuteAsync(cancellationToken);
@@ -457,7 +457,7 @@ public class CosmosDataStore : ICosmosDataStore
             projectionDocumentToUpsert.UpdatedBy = currentUserNameIdentifier;
 
             var response = await _container.UpsertItemAsync(projectionDocumentToUpsert,
-                new PartitionKey(streamId.Id), cancellationToken: cancellationToken);
+                new PartitionKey(streamId.Id), WriteRequestOptions.Item, cancellationToken);
             response.AddActivityEvent(streamId, operation: "Update Projection Document");
             return response.StatusCode is System.Net.HttpStatusCode.OK or System.Net.HttpStatusCode.Created
                 ? projection

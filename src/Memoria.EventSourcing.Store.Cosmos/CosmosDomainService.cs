@@ -112,7 +112,7 @@ public class CosmosDomainService : IDomainService
             aggregateDocument.CreatedBy = currentUserNameIdentifier;
             aggregateDocument.UpdatedDate = timeStamp;
             aggregateDocument.UpdatedBy = currentUserNameIdentifier;
-            batch.CreateItem(aggregateDocument);
+            batch.CreateItem(aggregateDocument, WriteRequestOptions.BatchItem);
 
             foreach (var eventDocument in eventDocuments)
             {
@@ -124,7 +124,7 @@ public class CosmosDomainService : IDomainService
                     EventId = eventDocument.Id,
                     AppliedDate = timeStamp
                 };
-                batch.CreateItem(aggregateEventDocument);
+                batch.CreateItem(aggregateEventDocument, WriteRequestOptions.BatchItem);
             }
 
             var batchResponse = await batch.ExecuteAsync(cancellationToken);
@@ -646,7 +646,7 @@ public class CosmosDomainService : IDomainService
             projectionDocument.UpdatedBy = currentUserNameIdentifier;
 
             var response = await _container.UpsertItemAsync(projectionDocument, new PartitionKey(streamId.Id),
-                cancellationToken: cancellationToken);
+                WriteRequestOptions.Item, cancellationToken);
             response.AddActivityEvent(streamId, operation: "Get Projection");
             return response.StatusCode is System.Net.HttpStatusCode.OK or System.Net.HttpStatusCode.Created
                 ? projection
@@ -696,7 +696,7 @@ public class CosmosDomainService : IDomainService
             projectionDocument.UpdatedBy = currentUserNameIdentifier;
 
             var response = await _container.UpsertItemAsync(projectionDocument, new PartitionKey(streamId.Id),
-                cancellationToken: cancellationToken);
+                WriteRequestOptions.Item, cancellationToken);
             response.AddActivityEvent(streamId, operation: "Save Projection");
             return response.StatusCode is System.Net.HttpStatusCode.OK or System.Net.HttpStatusCode.Created
                 ? Result.Ok()
@@ -829,14 +829,14 @@ public class CosmosDomainService : IDomainService
                 }
             }
 
-            batch.UpsertItem(aggregateDocument);
+            batch.UpsertItem(aggregateDocument, WriteRequestOptions.BatchItem);
 
             foreach (var @event in aggregate.UncommittedEvents)
             {
                 var eventDocument = @event.ToEventDocument(streamId, sequence: ++latestEventSequence);
                 eventDocument.CreatedDate = timeStamp;
                 eventDocument.CreatedBy = currentUserNameIdentifier;
-                batch.CreateItem(eventDocument);
+                batch.CreateItem(eventDocument, WriteRequestOptions.BatchItem);
 
                 var aggregateEventDocument = new AggregateEventDocument
                 {
@@ -846,7 +846,7 @@ public class CosmosDomainService : IDomainService
                     EventId = eventDocument.Id,
                     AppliedDate = timeStamp
                 };
-                batch.CreateItem(aggregateEventDocument);
+                batch.CreateItem(aggregateEventDocument, WriteRequestOptions.BatchItem);
             }
 
             var batchResponse = await batch.ExecuteAsync(cancellationToken);
@@ -903,7 +903,7 @@ public class CosmosDomainService : IDomainService
                 eventDocument.CreatedDate = timeStamp;
                 eventDocument.CreatedBy = currentUserNameIdentifier;
                 eventDocuments.Add(eventDocument);
-                batch.CreateItem(eventDocument);
+                batch.CreateItem(eventDocument, WriteRequestOptions.BatchItem);
             }
 
             var batchResponse = await batch.ExecuteAsync(cancellationToken);

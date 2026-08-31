@@ -7,7 +7,7 @@ namespace Memoria.EventSourcing.Domain;
 /// event-sourced model members, an aggregate is a write model that stages new domain events as
 /// uncommitted events until they are persisted.
 /// </summary>
-public interface IAggregateRoot : IEventSourcedModel
+public interface IAggregateRoot : IStreamedModel
 {
     /// <summary>
     /// Gets or sets the unique identifier for this aggregate instance.

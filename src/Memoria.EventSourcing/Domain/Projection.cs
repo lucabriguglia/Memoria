@@ -8,7 +8,7 @@ namespace Memoria.EventSourcing.Domain;
 /// applying domain events, but it never produces new events, so it has no <c>Add</c> method and no
 /// uncommitted-events collection.
 /// </summary>
-public abstract class Projection : EventSourcedModel, IProjection
+public abstract class Projection : StreamedModel, IProjection
 {
     /// <summary>
     /// Gets or sets the projection ID.

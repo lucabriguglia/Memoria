@@ -3,19 +3,14 @@ using Newtonsoft.Json;
 namespace Memoria.EventSourcing.Domain;
 
 /// <summary>
-/// Abstract base class shared by every event-sourced model. It owns the concerns common to both
-/// write models (<see cref="AggregateRoot"/>) and read models (<see cref="Projection"/>):
-/// stream and aggregate identity, version tracking, and rebuilding state by applying domain events.
-/// Write-model-only concerns such as staging uncommitted events live on <see cref="AggregateRoot"/>.
+/// Abstract base class shared by every event-sourced model. It owns the concerns common to any
+/// model rebuilt by applying domain events: version tracking, the event type filter, and the
+/// fold itself. It deliberately owns no identity, because what identifies a model differs by
+/// consistency model — stream identity lives on <see cref="StreamedModel"/>, and write-model-only
+/// concerns such as staging uncommitted events live on <see cref="AggregateRoot"/>.
 /// </summary>
 public abstract class EventSourcedModel : IEventSourcedModel
 {
-    /// <summary>
-    /// Gets or sets the stream ID.
-    /// </summary>
-    [JsonIgnore]
-    public string StreamId { get; set; } = null!;
-
     /// <summary>
     /// Gets or sets the version.
     /// </summary>

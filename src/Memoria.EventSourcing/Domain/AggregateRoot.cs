@@ -7,7 +7,7 @@ namespace Memoria.EventSourcing.Domain;
 /// <see cref="EventSourcedModel"/> behaviour, an aggregate stages new domain events as uncommitted
 /// events via <see cref="Add"/> until they are persisted.
 /// </summary>
-public abstract class AggregateRoot : EventSourcedModel, IAggregateRoot
+public abstract class AggregateRoot : StreamedModel, IAggregateRoot
 {
     /// <summary>
     /// Gets or sets the aggregate ID.

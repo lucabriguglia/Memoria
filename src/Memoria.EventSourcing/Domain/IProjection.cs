@@ -6,7 +6,7 @@ namespace Memoria.EventSourcing.Domain;
 /// but unlike an <see cref="IAggregateRoot"/> it never produces new events, so it has no notion
 /// of staging or committing uncommitted events.
 /// </summary>
-public interface IProjection : IEventSourcedModel
+public interface IProjection : IStreamedModel
 {
     /// <summary>
     /// Gets or sets the unique identifier for this projection instance.

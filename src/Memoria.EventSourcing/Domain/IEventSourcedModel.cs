@@ -19,15 +19,6 @@ public interface IEventSourcedModel
     int Version { get; set; }
 
     /// <summary>
-    /// Gets or sets the sequence number of the latest event applied to this model.
-    /// </summary>
-    /// <value>
-    /// An integer representing the sequence position of the most recent event in the event stream.
-    /// Used for event ordering and ensuring proper event application sequence.
-    /// </value>
-    int LatestEventSequence { get; set; }
-
-    /// <summary>
     /// Applies a collection of domain events to rebuild the model's state.
     /// Used during reconstruction from the event store.
     /// </summary>

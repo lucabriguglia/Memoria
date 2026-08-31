@@ -18,12 +18,6 @@ public abstract class EventSourcedModel : IEventSourcedModel
     public int Version { get; set; }
 
     /// <summary>
-    /// Gets or sets the latest event sequence.
-    /// </summary>
-    [JsonIgnore]
-    public int LatestEventSequence { get; set; }
-
-    /// <summary>
     /// Applies a collection of domain events.
     /// </summary>
     /// <param name="events">The domain events.</param>

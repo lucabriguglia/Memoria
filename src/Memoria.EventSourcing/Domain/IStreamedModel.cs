@@ -21,4 +21,17 @@ public interface IStreamedModel : IEventSourcedModel
     /// This is typically derived from the model's identifier and type information.
     /// </value>
     string StreamId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the sequence number of the latest event applied to this model.
+    /// </summary>
+    /// <value>
+    /// An integer representing the sequence position of the most recent event in the event stream.
+    /// Used for event ordering and ensuring proper event application sequence.
+    /// </value>
+    /// <remarks>
+    /// A sequence is per-stream, so it lives here rather than on <see cref="IEventSourcedModel"/>.
+    /// A consistency model with one global ordering needs a wider counter, not this one.
+    /// </remarks>
+    int LatestEventSequence { get; set; }
 }

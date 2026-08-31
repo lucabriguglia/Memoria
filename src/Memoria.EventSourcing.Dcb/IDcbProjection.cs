@@ -8,7 +8,7 @@ namespace Memoria.EventSourcing.Dcb;
 /// staging. Like an <see cref="IDcbAggregateRoot"/> it belongs to no stream: the events it folds
 /// are selected by a <see cref="TagQuery"/>.
 /// </summary>
-public interface IDcbProjection : IEventSourcedModel
+public interface IDcbProjection : IDcbModel
 {
     /// <summary>
     /// Gets or sets the unique identifier for this projection instance.

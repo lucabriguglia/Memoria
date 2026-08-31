@@ -22,7 +22,7 @@ namespace Memoria.EventSourcing.Dcb;
 /// }
 /// </code>
 /// </example>
-public abstract class DcbProjection : EventSourcedModel, IDcbProjection
+public abstract class DcbProjection : DcbModel, IDcbProjection
 {
     /// <summary>
     /// Gets or sets the projection ID.

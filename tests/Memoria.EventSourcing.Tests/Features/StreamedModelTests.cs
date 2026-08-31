@@ -19,29 +19,35 @@ public class StreamedModelTests
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
     [Fact]
-    public void The_shared_event_sourced_model_owns_no_stream_identity()
+    public void The_shared_event_sourced_model_owns_nothing_stream_specific()
     {
+        // Both of these describe a position within one stream. A consistency model with a single
+        // global ordering needs neither, and would need a wider counter than an int for the second.
         typeof(EventSourcedModel).GetProperty("StreamId", AnyMember | BindingFlags.DeclaredOnly)
             .Should().BeNull("stream identity belongs to StreamedModel, not to every event-sourced model");
+        typeof(EventSourcedModel).GetProperty("LatestEventSequence", AnyMember | BindingFlags.DeclaredOnly)
+            .Should().BeNull("a sequence is a position within a stream");
 
         typeof(IEventSourcedModel).GetProperty("StreamId", AnyMember)
             .Should().BeNull("a model rebuilt by applying events need not belong to a stream");
+        typeof(IEventSourcedModel).GetProperty("LatestEventSequence", AnyMember)
+            .Should().BeNull();
     }
 
     [Fact]
     public void The_shared_event_sourced_model_still_owns_the_fold()
     {
         typeof(IEventSourcedModel).GetProperty("Version", AnyMember).Should().NotBeNull();
-        typeof(IEventSourcedModel).GetProperty("LatestEventSequence", AnyMember).Should().NotBeNull();
         typeof(IEventSourcedModel).GetProperty("EventTypeFilter", AnyMember).Should().NotBeNull();
         typeof(IEventSourcedModel).GetMethod("Apply", AnyMember).Should().NotBeNull();
         typeof(IEventSourcedModel).GetMethod("IsEventHandled", AnyMember).Should().NotBeNull();
     }
 
     [Fact]
-    public void Streamed_models_carry_stream_identity()
+    public void Streamed_models_carry_stream_identity_and_a_stream_sequence()
     {
         typeof(IStreamedModel).GetProperty("StreamId", AnyMember).Should().NotBeNull();
+        typeof(IStreamedModel).GetProperty("LatestEventSequence", AnyMember).Should().NotBeNull();
         typeof(IStreamedModel).Should().BeAssignableTo<IEventSourcedModel>();
     }
 
@@ -61,13 +67,15 @@ public class StreamedModelTests
     [Fact]
     public void Stream_identity_round_trips_through_the_streamed_model()
     {
-        var aggregate = new ItemAggregate { StreamId = "item-1" };
-        var projection = new ItemProjection { StreamId = "item-1" };
+        var aggregate = new ItemAggregate { StreamId = "item-1", LatestEventSequence = 7 };
+        var projection = new ItemProjection { StreamId = "item-1", LatestEventSequence = 7 };
 
         aggregate.StreamId.Should().Be("item-1");
         projection.StreamId.Should().Be("item-1");
 
         ((IStreamedModel)aggregate).StreamId.Should().Be("item-1");
+        ((IStreamedModel)aggregate).LatestEventSequence.Should().Be(7);
         ((IStreamedModel)projection).StreamId.Should().Be("item-1");
+        ((IStreamedModel)projection).LatestEventSequence.Should().Be(7);
     }
 }

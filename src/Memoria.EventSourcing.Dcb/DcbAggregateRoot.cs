@@ -29,7 +29,7 @@ namespace Memoria.EventSourcing.Dcb;
 /// }
 /// </code>
 /// </example>
-public abstract class DcbAggregateRoot : EventSourcedModel, IDcbAggregateRoot
+public abstract class DcbAggregateRoot : DcbModel, IDcbAggregateRoot
 {
     private readonly List<TaggedEvent> _uncommittedEvents = [];
 

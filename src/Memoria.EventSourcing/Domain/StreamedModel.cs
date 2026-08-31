@@ -22,4 +22,10 @@ public abstract class StreamedModel : EventSourcedModel, IStreamedModel
     /// </summary>
     [JsonIgnore]
     public string StreamId { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the latest event sequence.
+    /// </summary>
+    [JsonIgnore]
+    public int LatestEventSequence { get; set; }
 }

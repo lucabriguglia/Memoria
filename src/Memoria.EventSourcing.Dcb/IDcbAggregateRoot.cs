@@ -8,7 +8,7 @@ namespace Memoria.EventSourcing.Dcb;
 /// <see cref="TagQuery"/> evaluated at append time rather than a stream fixed at design time — so
 /// it carries no stream identity and its staged events carry tags.
 /// </summary>
-public interface IDcbAggregateRoot : IEventSourcedModel
+public interface IDcbAggregateRoot : IDcbModel
 {
     /// <summary>
     /// Gets or sets the unique identifier for this aggregate instance.

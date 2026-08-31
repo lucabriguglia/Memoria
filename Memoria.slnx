@@ -91,6 +91,7 @@
     <Project Path="tests/Memoria.EventSourcing.Tests/Memoria.EventSourcing.Tests.csproj" />
     <Project Path="tests/Memoria.EventSourcing.Dcb.Tests/Memoria.EventSourcing.Dcb.Tests.csproj" />
     <Project Path="tests/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Tests/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Relational.Tests/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Relational.Tests.csproj" />
     <Project Path="tests/Memoria.Messaging.RabbitMq.InMemory.Tests/Memoria.Messaging.RabbitMq.InMemory.Tests.csproj" />
     <Project Path="tests/Memoria.Messaging.ServiceBus.Tests/Memoria.Messaging.ServiceBus.Tests.csproj" />
     <Project Path="tests/Memoria.Messaging.ServiceBus.InMemory.Tests/Memoria.Messaging.ServiceBus.InMemory.Tests.csproj" />

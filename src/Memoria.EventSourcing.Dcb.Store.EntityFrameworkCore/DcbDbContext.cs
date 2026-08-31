@@ -67,6 +67,7 @@ public abstract class DcbDbContext(
 
         modelBuilder.ApplyConfiguration(new DcbEventEntityConfiguration());
         modelBuilder.ApplyConfiguration(new DcbEventTagEntityConfiguration(TagCollation));
+        modelBuilder.ApplyConfiguration(new DcbTagHeadEntityConfiguration(TagCollation));
     }
 
     /// <summary>
@@ -78,4 +79,9 @@ public abstract class DcbDbContext(
     /// Gets or sets the tags on those events.
     /// </summary>
     public DbSet<DcbEventTagEntity> DcbEventTags { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the per-tag rows appends contend on.
+    /// </summary>
+    public DbSet<DcbTagHeadEntity> DcbTagHeads { get; set; } = null!;
 }

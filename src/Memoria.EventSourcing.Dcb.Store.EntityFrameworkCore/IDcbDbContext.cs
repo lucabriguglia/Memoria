@@ -21,6 +21,11 @@ public interface IDcbDbContext
     DbSet<DcbEventTagEntity> DcbEventTags { get; }
 
     /// <summary>
+    /// Gets the per-tag rows appends contend on.
+    /// </summary>
+    DbSet<DcbTagHeadEntity> DcbTagHeads { get; }
+
+    /// <summary>
     /// Gets the change tracker.
     /// </summary>
     ChangeTracker ChangeTracker { get; }

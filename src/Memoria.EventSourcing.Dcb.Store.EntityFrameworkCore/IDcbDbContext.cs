@@ -26,6 +26,11 @@ public interface IDcbDbContext
     DbSet<DcbTagHeadEntity> DcbTagHeads { get; }
 
     /// <summary>
+    /// Gets the persisted folds of a boundary into an aggregate or a projection.
+    /// </summary>
+    DbSet<DcbSnapshotEntity> DcbSnapshots { get; }
+
+    /// <summary>
     /// Gets the change tracker.
     /// </summary>
     ChangeTracker ChangeTracker { get; }

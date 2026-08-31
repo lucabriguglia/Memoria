@@ -44,6 +44,16 @@ public abstract class RelationalTestBase : IAsyncLifetime
             { "SeatReserved:1", typeof(SeatReservedEvent) },
             { "SeatReleased:1", typeof(SeatReleasedEvent) }
         };
+
+        DcbTypeBindings.AggregateTypeBindings = new Dictionary<string, Type>
+        {
+            { "Seat:1", typeof(SeatAggregate) }
+        };
+
+        DcbTypeBindings.ProjectionTypeBindings = new Dictionary<string, Type>
+        {
+            { "SeatSummary:1", typeof(SeatSummaryProjection) }
+        };
     }
 
     /// <summary>

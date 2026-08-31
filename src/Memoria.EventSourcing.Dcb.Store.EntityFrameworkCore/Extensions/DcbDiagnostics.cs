@@ -28,6 +28,50 @@ public static class DcbDiagnostics
             }));
 
     /// <summary>
+    /// Records what a snapshot write folded, on the current activity.
+    /// </summary>
+    /// <remarks>
+    /// Emitted under <see cref="AggregateDiagnostics.AggregateFoldedEventName"/> — the same name the
+    /// streamed stores use, and the constant itself rather than a copy of the string, so an operator
+    /// querying for folds gets both consistency models and the two cannot drift apart. The tags
+    /// differ where the concepts do: a boundary instead of a stream, and positions instead of
+    /// sequences.
+    /// <para>
+    /// <c>appliedCount</c> counts events the fold consumed; <c>versionAfter - versionBefore</c>
+    /// counts those that changed the model. The gap is events the type filter admitted and
+    /// <c>Apply</c> ignored, which is usually the interesting part.
+    /// </para>
+    /// </remarks>
+    /// <param name="query">The boundary the events were read from.</param>
+    /// <param name="storeId">The model the events were folded into.</param>
+    /// <param name="appliedFromPosition">Position of the first event folded.</param>
+    /// <param name="appliedToPosition">Position of the last event folded.</param>
+    /// <param name="appliedCount">How many events were folded.</param>
+    /// <param name="versionBefore">The model's version before the fold.</param>
+    /// <param name="versionAfter">The model's version after the fold.</param>
+    public static void AddModelFoldedEvent(TagQuery query, string storeId, long appliedFromPosition,
+        long appliedToPosition, int appliedCount, int versionBefore, int versionAfter)
+    {
+        var activity = Activity.Current;
+        if (activity is null)
+        {
+            return;
+        }
+
+        activity.AddEvent(new ActivityEvent(AggregateDiagnostics.AggregateFoldedEventName, timestamp: default,
+            tags: new ActivityTagsCollection
+            {
+                { "tagQuery", query.ToString() },
+                { "aggregateId", storeId },
+                { "appliedFromPosition", appliedFromPosition },
+                { "appliedToPosition", appliedToPosition },
+                { "appliedCount", appliedCount },
+                { "versionBefore", versionBefore },
+                { "versionAfter", versionAfter }
+            }));
+    }
+
+    /// <summary>
     /// Records an exception against the current activity, tagged with the operation and boundary.
     /// </summary>
     /// <remarks>

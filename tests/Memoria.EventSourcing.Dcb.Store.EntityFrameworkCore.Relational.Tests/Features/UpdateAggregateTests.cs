@@ -18,7 +18,7 @@ public class UpdateAggregateTests : RelationalTestBase
         var aggregate = new SeatAggregate();
         aggregate.Reserve("a1", "s7");
 
-        var result = await Context.SaveAggregate(aggregate, condition: null);
+        var result = await Context.SaveAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), aggregate, condition: null);
 
         result.IsSuccess.Should().BeTrue();
         Context.DcbEvents.Count().Should().Be(1);
@@ -27,7 +27,7 @@ public class UpdateAggregateTests : RelationalTestBase
     [Fact]
     public async Task Saving_an_aggregate_that_staged_nothing_succeeds_and_writes_nothing()
     {
-        var result = await Context.SaveAggregate(new SeatAggregate(), condition: null);
+        var result = await Context.SaveAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), new SeatAggregate(), condition: null);
 
         result.IsSuccess.Should().BeTrue();
         Context.DcbEvents.Count().Should().Be(0);
@@ -71,7 +71,7 @@ public class UpdateAggregateTests : RelationalTestBase
         await other.UpdateAggregate(boundary, new SeatId("a1"), other => other.Reserve("a1", "s8"));
 
         aggregate.Reserve("a1", "s7");
-        var result = await Context.SaveAggregate(aggregate, new AppendCondition(boundary, position));
+        var result = await Context.SaveAggregate(boundary, new SeatId("a1"), aggregate, new AppendCondition(boundary, position));
 
         result.IsNotSuccess.Should().BeTrue("the boundary moved between the fold and the append");
         result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);

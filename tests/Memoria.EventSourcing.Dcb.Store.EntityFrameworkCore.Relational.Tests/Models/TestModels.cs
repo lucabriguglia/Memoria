@@ -38,3 +38,27 @@ public class SeatId(string id) : IDcbAggregateId<SeatAggregate>
 {
     public string Id { get; } = id;
 }
+
+[ProjectionType("SeatSummary")]
+public class SeatSummaryProjection : DcbProjection
+{
+    public int Reservations { get; private set; }
+
+    public override Type[]? EventTypeFilter { get; } = [typeof(SeatReservedEvent)];
+
+    protected override bool Apply<T>(T @event)
+    {
+        if (@event is not SeatReservedEvent)
+        {
+            return false;
+        }
+
+        Reservations++;
+        return true;
+    }
+}
+
+public class SeatSummaryId(string id) : IDcbProjectionId<SeatSummaryProjection>
+{
+    public string Id { get; } = id;
+}

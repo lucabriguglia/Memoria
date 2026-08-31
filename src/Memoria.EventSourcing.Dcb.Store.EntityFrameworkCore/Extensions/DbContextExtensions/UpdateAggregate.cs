@@ -47,8 +47,8 @@ public static partial class DcbDbContextExtensions
 
         update(aggregate);
 
-        var saveResult = await dcbDbContext.SaveAggregate(aggregate, new AppendCondition(query, latestPosition),
-            maxEventsPerAppend, cancellationToken);
+        var saveResult = await dcbDbContext.SaveAggregate(query, aggregateId, aggregate,
+            new AppendCondition(query, latestPosition), maxEventsPerAppend, cancellationToken);
 
         return saveResult.IsNotSuccess ? saveResult.Failure! : aggregate;
     }

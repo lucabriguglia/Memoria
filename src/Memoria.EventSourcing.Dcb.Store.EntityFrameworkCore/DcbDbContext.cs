@@ -68,6 +68,7 @@ public abstract class DcbDbContext(
         modelBuilder.ApplyConfiguration(new DcbEventEntityConfiguration());
         modelBuilder.ApplyConfiguration(new DcbEventTagEntityConfiguration(TagCollation));
         modelBuilder.ApplyConfiguration(new DcbTagHeadEntityConfiguration(TagCollation));
+        modelBuilder.ApplyConfiguration(new DcbSnapshotEntityConfiguration());
     }
 
     /// <summary>
@@ -84,4 +85,9 @@ public abstract class DcbDbContext(
     /// Gets or sets the per-tag rows appends contend on.
     /// </summary>
     public DbSet<DcbTagHeadEntity> DcbTagHeads { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the persisted folds of a boundary into an aggregate or a projection.
+    /// </summary>
+    public DbSet<DcbSnapshotEntity> DcbSnapshots { get; set; } = null!;
 }

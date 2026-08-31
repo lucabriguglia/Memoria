@@ -28,4 +28,22 @@ public static class DcbTypeBindings
     /// Gets or sets the DCB projection bindings, keyed by <c>{name}:{version}</c>.
     /// </summary>
     public static Dictionary<string, Type> ProjectionTypeBindings { get; set; } = new();
+
+    /// <summary>
+    /// Resolves a DCB aggregate's binding key from its <see cref="AggregateType"/> attribute.
+    /// </summary>
+    /// <param name="aggregateClrType">The aggregate type.</param>
+    /// <returns>The binding key.</returns>
+    /// <exception cref="InvalidOperationException">The type has no attribute.</exception>
+    public static string GetAggregateBindingKey(Type aggregateClrType) =>
+        TypeBindings.GetAggregateBindingKey(aggregateClrType);
+
+    /// <summary>
+    /// Resolves a DCB projection's binding key from its <see cref="ProjectionType"/> attribute.
+    /// </summary>
+    /// <param name="projectionClrType">The projection type.</param>
+    /// <returns>The binding key.</returns>
+    /// <exception cref="InvalidOperationException">The type has no attribute.</exception>
+    public static string GetProjectionBindingKey(Type projectionClrType) =>
+        TypeBindings.GetProjectionBindingKey(projectionClrType);
 }

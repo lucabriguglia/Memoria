@@ -25,18 +25,6 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         return Task.FromResult(Result<AggregateDocument?>.Ok(document));
     }
 
-    public Task<Result<List<AggregateEventDocument>>> GetAggregateEventDocuments<T>(
-        IStreamId streamId,
-        IAggregateId<T> aggregateId,
-        CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
-    {
-        var key = InMemoryCosmosStorage.CreateAggregateKey(streamId, aggregateId);
-        var documents = storage.AggregateEventDocuments.TryGetValue(key, out var eventDocuments)
-            ? eventDocuments.OrderBy(d => d.AppliedDate).ToList()
-            : [];
-        return Task.FromResult(Result<List<AggregateEventDocument>>.Ok(documents));
-    }
-
     public Task<Result<List<EventDocument>>> GetEventDocuments(
         IStreamId streamId,
         Type[]? eventTypeFilter = null,
@@ -47,19 +35,6 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
             .Where(doc => doc.StreamId == streamId.Id)
             .Where(doc => MatchesEventTypeFilter(doc, eventTypeFilter))
             .Where(doc => MatchesEventPropertyFilter(doc, eventPropertyFilter))
-            .OrderBy(doc => doc.Sequence)
-            .ToList();
-
-        return Task.FromResult(Result<List<EventDocument>>.Ok(documents));
-    }
-
-    public Task<Result<List<EventDocument>>> GetEventDocuments(
-        IStreamId streamId,
-        string[] eventIds,
-        CancellationToken cancellationToken = default)
-    {
-        var documents = storage.EventDocuments.Values
-            .Where(doc => doc.StreamId == streamId.Id && eventIds.Contains(doc.Id))
             .OrderBy(doc => doc.Sequence)
             .ToList();
 
@@ -252,24 +227,6 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         aggregateDocumentToUpdate.UpdatedDate = timeStamp;
         aggregateDocumentToUpdate.UpdatedBy = currentUserNameIdentifier;
         storage.AggregateDocuments.AddOrUpdate(aggregateKey, aggregateDocumentToUpdate, (_, _) => aggregateDocumentToUpdate);
-
-        foreach (var eventDocument in newEventDocuments)
-        {
-            var aggregateEventDocument = new AggregateEventDocument
-            {
-                Id = $"{aggregateId.ToStoreId()}|{eventDocument.Id}",
-                StreamId = streamId.Id,
-                AggregateId = aggregateId.ToStoreId(),
-                EventId = eventDocument.Id,
-                AppliedDate = timeStamp
-            };
-            if (!storage.AggregateEventDocuments.TryGetValue(aggregateKey, out var bag))
-            {
-                bag = [];
-                storage.AggregateEventDocuments.TryAdd(aggregateKey, bag);
-            }
-            bag.Add(aggregateEventDocument);
-        }
 
         return aggregate;
     }

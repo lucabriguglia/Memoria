@@ -41,8 +41,6 @@ public static class CosmosIndexingPolicy
         "/documentType/?",
         "/sequence/?",
         "/createdDate/?",
-        "/aggregateId/?",
-        "/appliedDate/?",
         "/eventType/?"
     ];
 

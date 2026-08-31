@@ -27,26 +27,6 @@ public interface ICosmosDataStore : IDisposable
         where T : IAggregateRoot, new();
 
     /// <summary>
-    /// Retrieves the event documents associated with an aggregate from the Cosmos data store.
-    /// </summary>
-    /// <typeparam name="T">The type of the aggregate.</typeparam>
-    /// <param name="streamId">The identifier of the stream to which the aggregate belongs.</param>
-    /// <param name="aggregateId">The unique identifier of the aggregate.</param>
-    /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
-    /// <returns>A result containing the retrieved list of aggregate event documents or a failure.</returns>
-    /// <example>
-    /// var result = await cosmosDataStore.GetAggregateEventDocuments&lt;T&gt;(streamId, aggregateId);
-    /// if (!result.IsSuccess)
-    /// {
-    ///     return result.Failure;
-    /// }
-    /// var documents = result.Value;
-    /// </example>
-    Task<Result<List<AggregateEventDocument>>> GetAggregateEventDocuments<T>(IStreamId streamId,
-        IAggregateId<T> aggregateId, CancellationToken cancellationToken = default)
-        where T : IAggregateRoot, new();
-
-    /// <summary>
     /// Retrieves a list of event documents from the Cosmos data store for a specific stream.
     /// </summary>
     /// <param name="streamId">The identifier of the stream from which the events are to be retrieved.</param>
@@ -65,25 +45,6 @@ public interface ICosmosDataStore : IDisposable
     Task<Result<List<EventDocument>>> GetEventDocuments(IStreamId streamId, Type[]? eventTypeFilter = null,
         IDictionary<string, string>? eventPropertyFilter = null,
         CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Retrieves event documents from the Cosmos data store based on a stream and a set of event identifiers.
-    /// </summary>
-    /// <param name="streamId">The identifier of the stream to which the events belong.</param>
-    /// <param name="eventIds">An array of event identifiers to retrieve.</param>
-    /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
-    /// <returns>A result containing a list of retrieved event documents or a failure.</returns>
-    /// <example>
-    /// var result = await cosmosDataStore.GetEventDocuments(streamId, eventIds);
-    /// if (!result.IsSuccess)
-    /// {
-    ///     return result.Failure;
-    /// }
-    /// var documents = result.Value;
-    /// </example>
-    Task<Result<List<EventDocument>>> GetEventDocuments(IStreamId streamId, string[] eventIds,
-        CancellationToken cancellationToken = default);
-
     /// <summary>
     /// Retrieves event documents from the Cosmos data store between specified sequence numbers.
     /// </summary>

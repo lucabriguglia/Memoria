@@ -75,8 +75,8 @@ public class BatchLimitTests : TestBase
         var streamId = new TestStreamId(id);
         var aggregateId = new TestAggregate1Id(id);
 
-        // Two documents per event plus the aggregate document, so 49 events fill the batch exactly.
-        var aggregate = AggregateWithUncommittedEvents(id, 49);
+        // One document per event plus the aggregate document, so 99 events fill the batch exactly.
+        var aggregate = AggregateWithUncommittedEvents(id, 99);
 
         var result = await DomainService.SaveAggregate(streamId, aggregateId, aggregate, expectedEventSequence: 0);
         var events = await DomainService.GetEvents(streamId);
@@ -84,7 +84,7 @@ public class BatchLimitTests : TestBase
         using (new AssertionScope())
         {
             result.IsSuccess.Should().BeTrue();
-            events.Value!.Count.Should().Be(49);
+            events.Value!.Count.Should().Be(99);
         }
     }
 
@@ -94,7 +94,7 @@ public class BatchLimitTests : TestBase
         var id = Guid.NewGuid().ToString();
         var streamId = new TestStreamId(id);
         var aggregateId = new TestAggregate1Id(id);
-        var aggregate = AggregateWithUncommittedEvents(id, 50);
+        var aggregate = AggregateWithUncommittedEvents(id, 100);
 
         var result = await DomainService.SaveAggregate(streamId, aggregateId, aggregate, expectedEventSequence: 0);
         var events = await DomainService.GetEvents(streamId);
@@ -104,7 +104,7 @@ public class BatchLimitTests : TestBase
             result.IsSuccess.Should().BeFalse();
             result.Failure!.Type.Should().Be(StoreFailures.BatchLimitExceededType);
             result.Failure.ErrorCode.Should().Be(ErrorCode.BadRequest);
-            result.Failure.Description.Should().Contain("50").And.Contain("49");
+            result.Failure.Description.Should().Contain("100").And.Contain("99");
 
             events.Value!.Count.Should().Be(0);
         }
@@ -155,7 +155,7 @@ public class BatchLimitTests : TestBase
     }
 
     [Fact]
-    public async Task GivenTheSnapshotIsRebuiltOverEventsAlreadyLinked_ThenTheRebuildSucceeds()
+    public async Task GivenTheSnapshotIsRebuiltOverTheSameEvents_ThenTheRebuildSucceeds()
     {
         var id = Guid.NewGuid().ToString();
         var streamId = new TestStreamId(id);
@@ -165,12 +165,12 @@ public class BatchLimitTests : TestBase
         // Driven through the data store rather than GetAggregate, because passing no current
         // document rebuilds from sequence 1 every time. Going through GetAggregate a second time
         // would find the snapshot already current, return early, and write nothing — proving
-        // nothing about rewriting links.
+        // nothing about rewriting the snapshot.
         var first = await DataStore.UpdateAggregateDocument(streamId, aggregateId, aggregateDocument: null);
 
-        // Same 150 link document ids as the first build. They must be idempotent: a build that
-        // failed part-way leaves some already written, and a CreateItem would reject those as
-        // conflicts, turning a transient failure into one no retry could ever clear.
+        // Same document id as the first build. The write is an upsert, so a rebuild replaces the
+        // snapshot rather than colliding with it — a CreateItem would reject the second attempt as
+        // a conflict, turning a transient failure into one no retry could ever clear.
         var rebuild = await DataStore.UpdateAggregateDocument(streamId, aggregateId, aggregateDocument: null);
 
         using (new AssertionScope())

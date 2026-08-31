@@ -21,7 +21,7 @@ public class AggregateDocument
     /// Gets the document type associated with the aggregate document.
     /// This property indicates the type of document being handled,
     /// which is critical for distinguishing between different types of stored entities
-    /// in an event-sourcing implementation (e.g., Event, Aggregate, or AggregateEvent).
+    /// in an event-sourcing implementation (Event, Aggregate, or Projection).
     /// </summary>
     [JsonProperty("documentType")]
     public static string DocumentType => Documents.DocumentType.Aggregate;

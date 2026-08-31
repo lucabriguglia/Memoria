@@ -17,7 +17,7 @@ public static class DiagnosticsExtensions
     /// <param name="streamId">The stream identifier.</param>
     /// <param name="aggregateId">The aggregate identifier.</param>
     /// <param name="operation">The operation being performed.</param>
-    public static void AddActivityEvent<T>(this TransactionalBatchResponse batchResponse, IStreamId streamId, IAggregateId<T> aggregateId, string operation) where T : IAggregateRoot
+    public static void AddActivityEvent<T>(TransactionalBatchResponse batchResponse, IStreamId streamId, IAggregateId<T> aggregateId, string operation) where T : IAggregateRoot
     {
         Activity.Current?.AddEvent(new ActivityEvent("Cosmos Transactional Batch", default, new ActivityTagsCollection
         {
@@ -39,7 +39,7 @@ public static class DiagnosticsExtensions
     /// <param name="streamId">The stream identifier.</param>
     /// <param name="eventDocuments">The collection of event documents processed in the batch.</param>
     /// <param name="operation">The operation being performed.</param>
-    public static void AddActivityEvent(this TransactionalBatchResponse batchResponse, IStreamId streamId, IEnumerable<EventDocument> eventDocuments, string operation)
+    public static void AddActivityEvent(TransactionalBatchResponse batchResponse, IStreamId streamId, IEnumerable<EventDocument> eventDocuments, string operation)
     {
         Activity.Current?.AddEvent(new ActivityEvent(name: "Cosmos Transactional Batch", timestamp: default, new ActivityTagsCollection
         {
@@ -61,7 +61,7 @@ public static class DiagnosticsExtensions
     /// <param name="streamId">The stream identifier.</param>
     /// <param name="aggregateId">The aggregate identifier.</param>
     /// <param name="operation">The operation being performed.</param>
-    public static void AddActivityEvent<T>(this ItemResponse<AggregateDocument> itemResponse, IStreamId streamId, IAggregateId<T> aggregateId, string operation) where T : IAggregateRoot
+    public static void AddActivityEvent<T>(ItemResponse<AggregateDocument> itemResponse, IStreamId streamId, IAggregateId<T> aggregateId, string operation) where T : IAggregateRoot
     {
         Activity.Current?.AddEvent(new ActivityEvent("Cosmos Read Item", default, new ActivityTagsCollection
         {
@@ -80,7 +80,7 @@ public static class DiagnosticsExtensions
     /// <param name="itemResponse">The item response from CosmosDB.</param>
     /// <param name="streamId">The stream identifier.</param>
     /// <param name="operation">The operation being performed.</param>
-    public static void AddActivityEvent(this ItemResponse<ProjectionDocument> itemResponse, IStreamId streamId, string operation)
+    public static void AddActivityEvent(ItemResponse<ProjectionDocument> itemResponse, IStreamId streamId, string operation)
     {
         Activity.Current?.AddEvent(new ActivityEvent("Cosmos Read Item", default, new ActivityTagsCollection
         {
@@ -98,7 +98,7 @@ public static class DiagnosticsExtensions
     /// <param name="feedResponse">The feed response from CosmosDB.</param>
     /// <param name="streamId">The stream identifier.</param>
     /// <param name="operation">The operation being performed.</param>
-    public static void AddActivityEvent<T>(this FeedResponse<T> feedResponse, IStreamId streamId, string operation)
+    public static void AddActivityEvent<T>(FeedResponse<T> feedResponse, IStreamId streamId, string operation)
     {
         Activity.Current?.AddEvent(new ActivityEvent(name: "Cosmos Feed Iterator", timestamp: default, new ActivityTagsCollection
         {

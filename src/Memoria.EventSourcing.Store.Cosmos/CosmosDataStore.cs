@@ -49,7 +49,7 @@ public class CosmosDataStore : ICosmosDataStore
         try
         {
             var response = await _container.ReadItemAsync<AggregateDocument>(aggregateDocumentId, new PartitionKey(streamId.Id), cancellationToken: cancellationToken);
-            response.AddActivityEvent(streamId, aggregateId, operation: "Get Aggregate Document");
+            DiagnosticsExtensions.AddActivityEvent(response, streamId, aggregateId, operation: "Get Aggregate Document");
             return response.Resource;
         }
         catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -62,28 +62,6 @@ public class CosmosDataStore : ICosmosDataStore
             DiagnosticsExtensions.AddException(ex, streamId, operation);
             return StoreFailures.StorageFailure(operation, streamId);
         }
-    }
-
-    /// <summary>
-    /// Retrieves all aggregate event documents for a specific aggregate from Cosmos DB.
-    /// The results are ordered by applied date.
-    /// </summary>
-    /// <typeparam name="T">The type of aggregate whose events to retrieve.</typeparam>
-    /// <param name="streamId">The stream identifier containing the aggregate.</param>
-    /// <param name="aggregateId">The unique identifier of the aggregate.</param>
-    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
-    /// <returns>A result containing a list of aggregate event documents, or a failure if an error occurred.</returns>
-    /// <exception cref="Exception">Thrown when the aggregate type does not have an AggregateType attribute.</exception>
-    public async Task<Result<List<AggregateEventDocument>>> GetAggregateEventDocuments<T>(IStreamId streamId, IAggregateId<T> aggregateId, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
-    {
-        const string sql = "SELECT * FROM c WHERE c.streamId = @streamId AND c.aggregateId = @aggregateId AND c.documentType = @documentType ORDER BY c.appliedDate";
-        var queryDefinition = new QueryDefinition(sql)
-            .WithParameter("@streamId", streamId.Id)
-            .WithParameter("@aggregateId", aggregateId.ToStoreId())
-            .WithParameter("@documentType", DocumentType.AggregateEvent);
-
-        return await _container.QueryListAsync<AggregateEventDocument>(queryDefinition, streamId,
-            operation: "Get Aggregate Event Documents", cancellationToken);
     }
 
     /// <summary>
@@ -109,74 +87,6 @@ public class CosmosDataStore : ICosmosDataStore
 
         return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
             operation: "Get Event Documents", cancellationToken);
-    }
-
-    /// <summary>
-    /// Retrieves specific event documents from a stream by their identifiers.
-    /// The results are ordered by sequence number.
-    /// </summary>
-    /// <param name="streamId">The stream identifier to retrieve events from.</param>
-    /// <param name="eventIds">An array of event identifiers to retrieve.</param>
-    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
-    /// <returns>A result containing a list of event documents matching the specified IDs, or a failure if an error occurred.</returns>
-    public async Task<Result<List<EventDocument>>> GetEventDocuments(IStreamId streamId, string[] eventIds, CancellationToken cancellationToken = default)
-    {
-        // Matching on the numeric sequence rather than the string id measures materially cheaper on
-        // the same result set — 7.68 RU against 10.60 for 150 events — because sequence is the path
-        // the ORDER BY already uses. Every id this store writes is "{streamId}:{sequence}", so the
-        // sequence is recoverable without another read.
-        if (TryGetSequences(streamId, eventIds, out var sequences))
-        {
-            const string bySequence = "SELECT * FROM c WHERE c.streamId = @streamId AND c.documentType = @documentType AND ARRAY_CONTAINS(@sequences, c.sequence) ORDER BY c.sequence";
-            var bySequenceQuery = new QueryDefinition(bySequence)
-                .WithParameter("@streamId", streamId.Id)
-                .WithParameter("@documentType", DocumentType.Event)
-                .WithParameter("@sequences", sequences);
-
-            return await _container.QueryListAsync<EventDocument>(bySequenceQuery, streamId,
-                operation: "Get Event Documents by IDs", cancellationToken);
-        }
-
-        // An id this store did not write. Fall back to matching the id itself, so documents put in
-        // the container by other means are still found.
-        const string sql = "SELECT * FROM c WHERE c.streamId = @streamId AND c.documentType = @documentType AND ARRAY_CONTAINS(@eventIds, c.id) ORDER BY c.sequence";
-        var queryDefinition = new QueryDefinition(sql)
-            .WithParameter("@streamId", streamId.Id)
-            .WithParameter("@documentType", DocumentType.Event)
-            .WithParameter("@eventIds", eventIds);
-
-        return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
-            operation: "Get Event Documents by IDs", cancellationToken);
-    }
-
-    /// <summary>
-    /// Recovers the sequence numbers from event document identifiers.
-    /// </summary>
-    /// <remarks>
-    /// <see cref="EventExtensions.ToEventDocument"/> builds the id as <c>{streamId}:{sequence}</c>.
-    /// The stream id may itself contain colons, so the sequence is taken from the last one. All or
-    /// nothing: one unrecognised id makes the whole set unsafe to match on sequence, because the
-    /// events behind it would silently go missing.
-    /// </remarks>
-    private static bool TryGetSequences(IStreamId streamId, string[] eventIds, out int[] sequences)
-    {
-        sequences = new int[eventIds.Length];
-        var prefix = $"{streamId.Id}:";
-
-        for (var index = 0; index < eventIds.Length; index++)
-        {
-            var eventId = eventIds[index];
-            if (!eventId.StartsWith(prefix, StringComparison.Ordinal)
-                || !int.TryParse(eventId.AsSpan(prefix.Length), out var sequence))
-            {
-                sequences = [];
-                return false;
-            }
-
-            sequences[index] = sequence;
-        }
-
-        return eventIds.Length > 0;
     }
 
     /// <summary>
@@ -398,7 +308,7 @@ public class CosmosDataStore : ICosmosDataStore
         aggregateDocumentToUpdate.UpdatedBy = currentUserNameIdentifier;
 
         var writeResult = await _container.WriteAggregateSnapshot(streamId, aggregateId, aggregateDocumentToUpdate,
-            newEventDocuments, timeStamp, operation: "Update Aggregate Document", cancellationToken);
+            operation: "Update Aggregate Document", cancellationToken);
 
         return writeResult.IsSuccess ? aggregate : writeResult.Failure!;
     }
@@ -419,7 +329,7 @@ public class CosmosDataStore : ICosmosDataStore
         {
             var response = await _container.ReadItemAsync<ProjectionDocument>(projectionId.ToStoreId(),
                 new PartitionKey(streamId.Id), cancellationToken: cancellationToken);
-            response.AddActivityEvent(streamId, operation: "Get Projection Document");
+            DiagnosticsExtensions.AddActivityEvent(response, streamId, operation: "Get Projection Document");
             return response.Resource;
         }
         catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -487,7 +397,7 @@ public class CosmosDataStore : ICosmosDataStore
 
             var response = await _container.UpsertItemAsync(projectionDocumentToUpsert,
                 new PartitionKey(streamId.Id), WriteRequestOptions.Item, cancellationToken);
-            response.AddActivityEvent(streamId, operation: "Update Projection Document");
+            DiagnosticsExtensions.AddActivityEvent(response, streamId, operation: "Update Projection Document");
             return response.StatusCode is System.Net.HttpStatusCode.OK or System.Net.HttpStatusCode.Created
                 ? projection
                 : StoreFailures.StorageFailure("Update Projection Document", streamId);

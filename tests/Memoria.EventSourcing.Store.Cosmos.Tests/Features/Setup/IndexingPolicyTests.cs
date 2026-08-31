@@ -157,7 +157,7 @@ public class IndexingPolicyTests
 
         directory.Should().NotBeNull("the repository root should be found by walking up from the test binaries");
 
-        var path = Path.Combine(directory!.FullName, "scripts", "install", "1.6.0-cosmos-indexing-policy.json");
+        var path = Path.Combine(directory!.FullName, "scripts", "install", "1.7.0-cosmos-indexing-policy.json");
         File.Exists(path).Should().BeTrue($"the shipped policy should exist at {path}");
 
         return JsonDocument.Parse(File.ReadAllText(path)).RootElement.Clone();

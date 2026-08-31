@@ -25,7 +25,7 @@ internal static class ContainerQueryExtensions
                 // FeedResponse<T> is not ICollection<T>, so AddRange cannot size the list from it.
                 documents.EnsureCapacity(documents.Count + response.Count);
                 documents.AddRange(response);
-                response.AddActivityEvent(streamId, operation);
+                DiagnosticsExtensions.AddActivityEvent(response, streamId, operation);
             }
         }
         catch (Exception ex)

@@ -92,26 +92,6 @@ public class InMemoryCosmosDomainService(
                 throw new Exception("Could not add aggregate");
             }
 
-            foreach (var eventDocument in eventDocuments)
-            {
-                var aggregateEventDocument = new AggregateEventDocument
-                {
-                    Id = $"{aggregateId.ToStoreId()}|{eventDocument.Id}",
-                    StreamId = streamId.Id,
-                    AggregateId = aggregateId.ToStoreId(),
-                    EventId = eventDocument.Id,
-                    AppliedDate = timeStamp
-                };
-
-                if (!storage.AggregateEventDocuments.TryGetValue(aggregateKey, out var bag))
-                {
-                    bag = [];
-                    storage.AggregateEventDocuments.TryAdd(aggregateKey, bag);
-                }
-
-                bag.Add(aggregateEventDocument);
-            }
-
             return aggregate;
         }
         catch (Exception ex)
@@ -608,22 +588,6 @@ public class InMemoryCosmosDomainService(
 
                 var sequence = latestEventSequence;
                 storage.StreamSequences.AddOrUpdate(streamId.Id, sequence, (key, oldValue) => sequence);
-
-                var aggregateEventDocument = new AggregateEventDocument
-                {
-                    Id = $"{aggregateId.ToStoreId()}|{eventDocument.Id}",
-                    StreamId = streamId.Id,
-                    AggregateId = aggregateId.ToStoreId(),
-                    EventId = eventDocument.Id,
-                    AppliedDate = timeStamp
-                };
-                if (!storage.AggregateEventDocuments.TryGetValue(aggregateKey, out var bag))
-                {
-                    bag = [];
-                    storage.AggregateEventDocuments.TryAdd(aggregateKey, bag);
-                }
-
-                bag.Add(aggregateEventDocument);
             }
 
             return Result.Ok();

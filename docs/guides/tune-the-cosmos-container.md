@@ -18,10 +18,9 @@ store filters and sorts on a small, fixed set of paths:
 
 | Path | Used by |
 |------|---------|
-| `documentType` | every query — the container mixes events, aggregates, aggregate-event links, and projections |
+| `documentType` | every query — the container mixes events, aggregates, and projections |
 | `sequence` | event range reads, `ORDER BY`, and `SELECT VALUE MAX(c.sequence)` on every save |
 | `createdDate` | the date-bounded event reads (`GetEventsUpToDate`, `FromDate`, `BetweenDates`) |
-| `aggregateId`, `appliedDate` | nothing — no query reads the aggregate-event links any more. They are still written, so the paths still cost index maintenance; both go when the links do |
 | `eventType` | the `EventTypeFilter` on aggregates and projections |
 | `streamId` | the partition predicate in each `WHERE` clause, and the `MAX(sequence)` aggregate |
 
@@ -32,32 +31,38 @@ store filters and sorts on a small, fixed set of paths:
 > event written, so it loses for anything but enormous batches.
 
 Nothing else is queried. `data`, `version`, `latestEventSequence`, `aggregateType`,
-`projectionType`, `eventId`, `createdBy`, `updatedBy`, and `updatedDate` are read from the returned
-documents, never filtered or sorted on.
+`projectionType`, `createdBy`, `updatedBy`, and `updatedDate` are read from the returned documents,
+never filtered or sorted on.
 
 ## Apply the policy
 
 The policy lives at
-[`scripts/install/1.6.0-cosmos-indexing-policy.json`](../../scripts/install/1.6.0-cosmos-indexing-policy.json).
+[`scripts/install/1.7.0-cosmos-indexing-policy.json`](../../scripts/install/1.7.0-cosmos-indexing-policy.json).
 It excludes `/*` and includes only the paths in the table above. It defines no composite indexes —
 see [why there are no composite indexes](#no-composite-indexes) below, which is a measurement, not
 an oversight.
 
 `id` is not listed: Cosmos DB always indexes it and rejects a policy that tries to override it.
 
-> **Applies to 1.5.0 as well.** The file is named for the release it ships in, but it is a container
-> setting, not package content. The query shapes it serves are unchanged since 1.5.0, so applying it
-> to a 1.5.0 deployment is safe and worthwhile.
+> **Match the policy to your Memoria version.** Until 1.7.0 the container also held aggregate-event
+> link documents, and the policy indexed `/aggregateId/?` and `/appliedDate/?` to serve the one query
+> that read them. 1.7.0 writes no link documents, so this policy drops both paths — applying it to an
+> older deployment would leave that query scanning. On 1.5.0 or 1.6.0, use
+> [`1.6.0-cosmos-indexing-policy.json`](../../scripts/install/1.6.0-cosmos-indexing-policy.json)
+> instead; it remains correct for those versions.
+>
+> Applying the 1.7.0 policy after upgrading is safe and worthwhile: the two dropped paths cost write
+> RU on every document and now index nothing.
 
 For an Azure account, run either script — they do the same thing:
 
 ```powershell
-./scripts/install/1.6.0-cosmos-apply-indexing-policy.ps1 `
+./scripts/install/1.7.0-cosmos-apply-indexing-policy.ps1 `
     -ResourceGroup rg-shop -Account cosmos-shop -Wait
 ```
 
 ```bash
-./scripts/install/1.6.0-cosmos-apply-indexing-policy.sh \
+./scripts/install/1.7.0-cosmos-apply-indexing-policy.sh \
     --resource-group rg-shop --account cosmos-shop --wait
 ```
 
@@ -121,8 +126,10 @@ nothing and costs write RU on every event.
 ### Why there are no composite indexes
 
 An earlier draft of this policy defined three, on `(documentType, sequence)`,
-`(documentType, createdDate)` and `(documentType, aggregateId, appliedDate)`, reasoning that each
-served a filter-and-order-by read the store issues. Measured, they cost more than they returned.
+`(documentType, createdDate)` and — while aggregate-event links still existed —
+`(documentType, aggregateId, appliedDate)`, reasoning that each served a filter-and-order-by read the
+store issues. Measured, they cost more than they returned. The third became moot in 1.7.0 when the
+link documents went; the measurement below stands as taken, on the schema of the day.
 
 Against the Cosmos DB emulator: 200 event documents of roughly 600 bytes written in two batches,
 then each read issued once. Request charge, against the default index-everything policy:

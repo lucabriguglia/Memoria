@@ -13,7 +13,6 @@ public class InMemoryCosmosStorage
     public ConcurrentDictionary<string, AggregateDocument> AggregateDocuments { get; } = new();
     public ConcurrentDictionary<string, ProjectionDocument> ProjectionDocuments { get; } = new();
     public ConcurrentDictionary<string, EventDocument> EventDocuments { get; } = new();
-    public ConcurrentDictionary<string, ConcurrentBag<AggregateEventDocument>> AggregateEventDocuments { get; } = new();
     public ConcurrentDictionary<string, int> StreamSequences { get; } = new();
 
     public static string CreateAggregateKey<T>(IStreamId streamId, IAggregateId<T> aggregateId) where T : IAggregateRoot, new()
@@ -37,7 +36,6 @@ public class InMemoryCosmosStorage
         AggregateDocuments.Clear();
         ProjectionDocuments.Clear();
         EventDocuments.Clear();
-        AggregateEventDocuments.Clear();
         StreamSequences.Clear();
     }
 }

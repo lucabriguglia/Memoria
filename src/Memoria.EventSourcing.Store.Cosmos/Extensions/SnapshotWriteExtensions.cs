@@ -6,30 +6,19 @@ using Microsoft.Azure.Cosmos;
 namespace Memoria.EventSourcing.Store.Cosmos.Extensions;
 
 /// <summary>
-/// Writes an aggregate snapshot and the links from it to the events it was built from.
+/// Writes an aggregate snapshot.
 /// </summary>
 /// <remarks>
+/// One document, one upsert, whatever the length of the stream behind it. Until 1.7.0 this also
+/// wrote a link document per event, which could overflow a transactional batch and so had to be
+/// split across several — with an argument about why a partial write was recoverable. The links are
+/// gone and that machinery went with them.
+///
 /// <para>
-/// Cosmos DB commits at most <see cref="CosmosLimits.MaxBatchOperations"/> operations per
-/// transactional batch, and this write is one document per event plus the snapshot — so a stream
-/// longer than that cannot be snapshotted in a single batch. Unlike appending events, splitting is
-/// safe here: the events are already durable, so nothing is lost if only part of the write lands.
+/// The write is an upsert because a snapshot is rebuilt over events that are already durable: a
+/// rebuild has to replace what is there rather than collide with it, which a <c>CreateItem</c> would
+/// reject as a conflict.
 /// </para>
-/// <para>
-/// Two things make a partial write recoverable rather than permanent:
-/// </para>
-/// <list type="bullet">
-/// <item>
-/// The link documents go first and the snapshot last. A failure part-way therefore leaves no
-/// snapshot, so the next read treats the aggregate as cold and does the work again, rather than
-/// trusting a snapshot whose links are incomplete.
-/// </item>
-/// <item>
-/// Every write is an upsert. A retry rewrites link documents that already exist, which a
-/// <c>CreateItem</c> would reject as a conflict — turning a transient failure into one no retry
-/// could clear.
-/// </item>
-/// </list>
 /// </remarks>
 internal static class SnapshotWriteExtensions
 {
@@ -37,44 +26,14 @@ internal static class SnapshotWriteExtensions
         IStreamId streamId,
         IAggregateId<T> aggregateId,
         AggregateDocument aggregateDocument,
-        IReadOnlyList<EventDocument> eventDocuments,
-        DateTimeOffset appliedDate,
         string operation,
         CancellationToken cancellationToken) where T : IAggregateRoot
     {
-        var partitionKey = new PartitionKey(streamId.Id);
-        var aggregateStoreId = aggregateId.ToStoreId();
-
         try
         {
-            foreach (var chunk in eventDocuments.InBatches())
-            {
-                var batch = container.CreateTransactionalBatch(partitionKey);
-
-                foreach (var eventDocument in chunk)
-                {
-                    batch.UpsertItem(new AggregateEventDocument
-                    {
-                        Id = $"{aggregateStoreId}|{eventDocument.Id}",
-                        StreamId = streamId.Id,
-                        AggregateId = aggregateStoreId,
-                        EventId = eventDocument.Id,
-                        AppliedDate = appliedDate
-                    }, WriteRequestOptions.BatchItem);
-                }
-
-                var batchResponse = await batch.ExecuteAsync(cancellationToken);
-                batchResponse.AddActivityEvent(streamId, aggregateId, operation);
-                if (!batchResponse.IsSuccessStatusCode)
-                {
-                    return StoreFailures.StorageFailure(operation, streamId);
-                }
-            }
-
-            // Last, so that a snapshot existing implies its links do too.
-            var response = await container.UpsertItemAsync(aggregateDocument, partitionKey,
+            var response = await container.UpsertItemAsync(aggregateDocument, new PartitionKey(streamId.Id),
                 WriteRequestOptions.Item, cancellationToken);
-            response.AddActivityEvent(streamId, aggregateId, operation);
+            DiagnosticsExtensions.AddActivityEvent(response, streamId, aggregateId, operation);
 
             return response.StatusCode is System.Net.HttpStatusCode.OK or System.Net.HttpStatusCode.Created
                 ? Result.Ok()

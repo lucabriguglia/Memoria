@@ -1,0 +1,16 @@
+{
+  "indexingMode": "consistent",
+  "automatic": true,
+  "includedPaths": [
+    { "path": "/streamId/?" },
+    { "path": "/documentType/?" },
+    { "path": "/sequence/?" },
+    { "path": "/createdDate/?" },
+    { "path": "/eventType/?" }
+  ],
+  "excludedPaths": [
+    { "path": "/*" },
+    { "path": "/\"_etag\"/?" }
+  ],
+  "compositeIndexes": []
+}

@@ -28,7 +28,7 @@ namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Containers.Tests;
 /// Each test stands up its own database, so nothing leaks between them.
 /// </para>
 /// </remarks>
-public abstract class DcbAppendConditionOnEngineTests
+public abstract partial class DcbStoreOnEngineTests
 {
     private static readonly Tag SeatA1 = new("seat", "a1");
     private static readonly Tag SeatA2 = new("seat", "a2");
@@ -65,6 +65,16 @@ public abstract class DcbAppendConditionOnEngineTests
         {
             { "SeatReserved:1", typeof(SeatReservedEvent) },
             { "SeatReleased:1", typeof(SeatReleasedEvent) }
+        };
+
+        DcbTypeBindings.AggregateTypeBindings = new Dictionary<string, Type>
+        {
+            { "Seat:1", typeof(SeatAggregate) }
+        };
+
+        DcbTypeBindings.ProjectionTypeBindings = new Dictionary<string, Type>
+        {
+            { "SeatSummary:1", typeof(SeatSummaryProjection) }
         };
 
         var connectionString = Fixture.ConnectionStringForFreshDatabase();
@@ -261,7 +271,7 @@ public abstract class DcbAppendConditionOnEngineTests
 
 [Trait("Category", "Container")]
 [Collection(SqlServerCollection.Name)]
-public class SqlServerDcbAppendConditionTests(SqlServerFixture fixture) : DcbAppendConditionOnEngineTests
+public class SqlServerDcbStoreTests(SqlServerFixture fixture) : DcbStoreOnEngineTests
 {
     protected override DatabaseFixture Fixture => fixture;
 
@@ -271,7 +281,7 @@ public class SqlServerDcbAppendConditionTests(SqlServerFixture fixture) : DcbApp
 
 [Trait("Category", "Container")]
 [Collection(PostgreSqlCollection.Name)]
-public class PostgreSqlDcbAppendConditionTests(PostgreSqlFixture fixture) : DcbAppendConditionOnEngineTests
+public class PostgreSqlDcbStoreTests(PostgreSqlFixture fixture) : DcbStoreOnEngineTests
 {
     protected override DatabaseFixture Fixture => fixture;
 

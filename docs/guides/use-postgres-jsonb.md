@@ -67,6 +67,40 @@ services.AddMemoriaEntityFrameworkCore<ApplicationDbContext>();
 
 The default registration uses `TryAdd`, so a pre-registered filter is honoured.
 
+## The dynamic consistency boundary store
+
+There is no `Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Npgsql` package, and there will not
+be one. Everything above is about the event-property filter, and the DCB store does not have one:
+tags select events directly, which is the job property filtering was doing.
+
+`jsonb` is still worth having there, for the same reason it is worth having here — your own queries
+and GIN indexes over the payload. It needs no package, only the same override in your own context:
+
+```C#
+public class BoxOfficeDbContext(
+    DbContextOptions<DcbDbContext> options,
+    TimeProvider timeProvider,
+    IHttpContextAccessor httpContextAccessor)
+    : DcbDbContext(options, timeProvider, httpContextAccessor)
+{
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<DcbEventEntity>().Property(@event => @event.Data).HasColumnType("jsonb");
+        modelBuilder.Entity<DcbSnapshotEntity>().Property(snapshot => snapshot.Data).HasColumnType("jsonb");
+    }
+}
+```
+
+A container test runs exactly this context against PostgreSQL and appends, folds and snapshots
+through it, so the override is verified rather than merely suggested.
+
+Note that `jsonb` normalises what it stores: key order is not preserved and whitespace is rewritten.
+Events still deserialise, because JSON objects are unordered, but the stored bytes are no longer the
+bytes the serializer produced. If you need an event payload preserved verbatim, leave the column as
+`text`.
+
 ## Related
 
 - [Configuration: Entity Framework Core](../reference/configuration/ef-core.md)

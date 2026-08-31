@@ -3,6 +3,7 @@ using FluentAssertions.Execution;
 using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Tests.Models.Events;
 using Xunit;
+using Memoria.EventSourcing.Tests;
 
 namespace Memoria.EventSourcing.Tests.Features;
 
@@ -16,6 +17,7 @@ namespace Memoria.EventSourcing.Tests.Features;
 /// cannot catch a stale inverted map because every one of them rebinds the same content, so
 /// re-registration is only actually covered here.
 /// </remarks>
+[Collection(TypeBindingsCollection.Name)]
 public class TypeBindingsTests : IDisposable
 {
     private readonly Dictionary<string, Type> _originalEventTypeBindings = TypeBindings.EventTypeBindings;

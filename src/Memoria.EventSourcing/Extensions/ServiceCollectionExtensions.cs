@@ -69,9 +69,14 @@ public static class ServiceCollectionExtensions
             }
         }
 
-        TypeBindings.EventTypeBindings = eventTypeBindings;
-        TypeBindings.AggregateTypeBindings = aggregateTypeBindings;
-        TypeBindings.ProjectionTypeBindings = projectionTypeBindings;
+        // Merged rather than assigned: another registration may already have bound its own types
+        // into the same process-wide maps. See TypeBindings.Merge.
+        TypeBindings.EventTypeBindings =
+            TypeBindings.Merge(TypeBindings.EventTypeBindings, eventTypeBindings, "Event");
+        TypeBindings.AggregateTypeBindings =
+            TypeBindings.Merge(TypeBindings.AggregateTypeBindings, aggregateTypeBindings, "Aggregate");
+        TypeBindings.ProjectionTypeBindings =
+            TypeBindings.Merge(TypeBindings.ProjectionTypeBindings, projectionTypeBindings, "Projection");
 
         services.AddScoped<IDomainService, DefaultDomainService>();
     }

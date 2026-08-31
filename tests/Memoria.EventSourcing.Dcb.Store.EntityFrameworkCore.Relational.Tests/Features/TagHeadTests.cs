@@ -96,7 +96,7 @@ public class TagHeadTests : RelationalTestBase
     {
         // The interleaving the pre-check cannot see: the boundary is still at the expected position
         // when the append reads it, and an overlapping append commits before it writes.
-        var interceptor = new StaleTagHeadInterceptor(SeatA1.ToString());
+        var interceptor = StaleTagHeadInterceptor.OnSameConnection(SeatA1.ToString());
         await using var racing = CreateContext(interceptor);
 
         var result = await racing.SaveEvents([Reserved("a1", "s7")],
@@ -110,7 +110,7 @@ public class TagHeadTests : RelationalTestBase
     [Fact]
     public async Task An_append_refused_by_a_moving_tag_head_writes_nothing()
     {
-        var interceptor = new StaleTagHeadInterceptor(SeatA1.ToString());
+        var interceptor = StaleTagHeadInterceptor.OnSameConnection(SeatA1.ToString());
         await using var racing = CreateContext(interceptor);
 
         await racing.SaveEvents([Reserved("a1", "s7")],
@@ -124,7 +124,7 @@ public class TagHeadTests : RelationalTestBase
     {
         // It read nothing, so there is nothing for a moved head to invalidate. Failing here would be
         // a conflict the caller never asked to be protected from.
-        var interceptor = new StaleTagHeadInterceptor(SeatA1.ToString());
+        var interceptor = StaleTagHeadInterceptor.OnSameConnection(SeatA1.ToString());
         await using var racing = CreateContext(interceptor);
 
         var result = await racing.SaveEvents([Reserved("a1", "s7")], condition: null);

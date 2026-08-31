@@ -27,6 +27,14 @@
       <ProjectReference Include="..\..\src\Memoria\Memoria.csproj" />
       <ProjectReference Include="..\Memoria.EventSourcing.Store.Tests\Memoria.EventSourcing.Store.Tests.csproj" />
       <ProjectReference Include="..\Memoria.EventSourcing.Store.EntityFrameworkCore.Relational.Tests\Memoria.EventSourcing.Store.EntityFrameworkCore.Relational.Tests.csproj" />
+      <!--
+        The DCB store's container-backed tests live here rather than in a project of their own so
+        that both stores share one set of engine containers and one CI job. A second assembly would
+        start its own SQL Server and PostgreSQL, which costs more per run than the naming mismatch
+        costs to read.
+      -->
+      <ProjectReference Include="..\..\src\Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore\Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.csproj" />
+      <ProjectReference Include="..\Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Relational.Tests\Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Relational.Tests.csproj" />
     </ItemGroup>
 
 </Project>

@@ -17,12 +17,14 @@ namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Relational.Tests;
 /// that.
 /// </para>
 /// <para>
-/// It replaces the token through the same context, so the statement runs on the connection and
-/// transaction the append already holds. Racing it from a second connection would deadlock against
-/// those locks rather than reproduce the interleaving.
+/// <em>How</em> the tag head is moved is left to the caller, because no single technique works
+/// everywhere. SQLite tolerates a second statement on the connection the append already holds;
+/// Npgsql rejects it outright, so the real engines move the row from a connection of their own —
+/// which is safe here only because the conditioned path holds no lock on that row until it writes.
 /// </para>
 /// </remarks>
-public class StaleTagHeadInterceptor(string tag) : SaveChangesInterceptor
+/// <param name="moveTagHead">Moves the tag head. Runs once, during the save that writes the events.</param>
+public class StaleTagHeadInterceptor(Func<DbContext, CancellationToken, Task> moveTagHead) : SaveChangesInterceptor
 {
     private bool _fired;
 
@@ -30,6 +32,16 @@ public class StaleTagHeadInterceptor(string tag) : SaveChangesInterceptor
     /// Gets whether the interceptor found the append's write and moved the tag head under it.
     /// </summary>
     public bool Fired => _fired;
+
+    /// <summary>
+    /// Gets the exception the simulation itself threw, if any.
+    /// </summary>
+    /// <remarks>
+    /// Surfaced so a test can assert the race was really reproduced. A simulation that throws would
+    /// otherwise be swallowed by the append's own exception handling and reported as a storage
+    /// failure, which looks like the production code misbehaving.
+    /// </remarks>
+    public Exception? SimulationFailure { get; private set; }
 
     /// <inheritdoc />
     public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
@@ -47,11 +59,27 @@ public class StaleTagHeadInterceptor(string tag) : SaveChangesInterceptor
         {
             _fired = true;
 
-            await context!.Database.ExecuteSqlRawAsync(
-                "UPDATE DcbTagHeads SET Token = {0} WHERE Tag = {1}",
-                [Guid.NewGuid(), tag], cancellationToken);
+            try
+            {
+                await moveTagHead(context!, cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                SimulationFailure = exception;
+                throw;
+            }
         }
 
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
+
+    /// <summary>
+    /// Moves the tag head through the context the append is already using.
+    /// </summary>
+    /// <remarks>
+    /// Correct on SQLite, which allows the extra statement on the open connection. Npgsql does not.
+    /// </remarks>
+    public static StaleTagHeadInterceptor OnSameConnection(string tag) =>
+        new((context, cancellationToken) => context.Database.ExecuteSqlRawAsync(
+            "UPDATE DcbTagHeads SET Token = {0} WHERE Tag = {1}", [Guid.NewGuid(), tag], cancellationToken));
 }

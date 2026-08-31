@@ -40,6 +40,24 @@ Azure Data Studio, or a plain `SqlCommand`.
 > exists. To move an existing database from an earlier version, use the scripts under
 > [`scripts/migrations`](../../scripts/migrations) and the matching upgrade guide.
 
+### The dynamic consistency boundary store
+
+`Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore` has four tables of its own — `DcbEvents`,
+`DcbEventTags`, `DcbTagHeads` and `DcbSnapshots` — and shares nothing with the tables above. If you
+use both consistency models, run its script *alongside* the one for your engine, not instead of it:
+
+- [`scripts/install/1.8.0-install-dcb-sqlserver.sql`](../../scripts/install/1.8.0-install-dcb-sqlserver.sql)
+- [`scripts/install/1.8.0-install-dcb-postgresql.sql`](../../scripts/install/1.8.0-install-dcb-postgresql.sql)
+
+If you use EF Core migrations, there is nothing to run: a `DbContext` deriving from `DcbDbContext`
+already carries these tables in its model.
+
+> **Do not relax the collation on the two `Tag` columns.** The scripts create them case-sensitively —
+> `SQL_Latin1_General_CP1_CS_AS` on SQL Server, `"C"` on PostgreSQL — because tags compare ordinally
+> in .NET. Under SQL Server's usual case-insensitive default, `seat:A1` and `seat:a1` become one row,
+> and every consistency boundary naming them is quietly wider than the code says. A container test
+> asserts the collation on both engines, and another proves the behaviour it protects.
+
 ## If you use EnsureCreated
 
 `context.Database.EnsureCreatedAsync()` creates the schema directly from the model and needs nothing
@@ -53,7 +71,8 @@ database the store then fails against for reasons nobody can see.
 
 So on every CI run, for each engine, the container suite builds one database from the script and
 another from the model, then compares every column with its engine type and every index including
-primary keys, across all three tables. Any divergence fails the build.
+primary keys, across every table. Any divergence fails the build. The DCB scripts are held to the
+same comparison, plus the collation of their two `Tag` columns.
 
 ## Related
 

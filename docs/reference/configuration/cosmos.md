@@ -75,13 +75,17 @@ that already holds data, do the replace during a quiet period.
 
 ## Write limits
 
-Cosmos DB commits at most 100 operations in one transactional batch, and the store writes more than
-one document per event. That turns into limits on how many events a single call can append:
+Cosmos DB commits at most 100 operations in one transactional batch. That turns into limits on how
+many events a single call can append:
 
 | Call | Maximum | Why |
 |---|---|---|
 | `SaveEvents` | 100 events | One event document each |
-| `SaveAggregate` | 49 uncommitted events | One event document and one aggregate-event link per event, plus the aggregate document |
+| `SaveAggregate` | 99 uncommitted events | One event document each, plus the aggregate document |
+
+> **Changed in 1.7.0.** `SaveAggregate` allowed 49 events before. Each event also wrote an
+> aggregate-event link document, so every event cost two batch operations. Those links are gone and
+> the limit doubled.
 
 Exceeding either is refused before anything is sent, with a
 [`memoria/batch-limit-exceeded`](../../concepts/result-pattern.md#failure-classification) failure

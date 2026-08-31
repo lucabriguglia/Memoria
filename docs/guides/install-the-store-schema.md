@@ -58,4 +58,5 @@ primary keys, across all three tables. Any divergence fails the build.
 ## Related
 
 - [Entity Framework Core configuration](../reference/configuration/ef-core.md)
+- [Upgrade to 1.7.0](upgrade-1.7.0.md)
 - [Upgrade to 1.5.0](upgrade-1.5.0.md)

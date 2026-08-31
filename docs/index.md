@@ -36,7 +36,7 @@ Memoria is a .NET framework that can be used as a simple mediator or as an Event
 - [Test without external dependencies](guides/test-without-external-deps.md)
 - [Install the store schema](guides/install-the-store-schema.md)
 - [Tune the Cosmos DB container](guides/tune-the-cosmos-container.md)
-- [Upgrade to 1.6.0](guides/upgrade-1.6.0.md) · [Upgrade to 1.5.0](guides/upgrade-1.5.0.md)
+- [Upgrade to 1.7.0](guides/upgrade-1.7.0.md) · [Upgrade to 1.6.0](guides/upgrade-1.6.0.md) · [Upgrade to 1.5.0](guides/upgrade-1.5.0.md)
 
 ### Reference
 

@@ -126,3 +126,14 @@ public class Order : AggregateRoot
     }
 }
 ```
+
+## When a stream is the wrong boundary
+
+A stream fixes a decision's consistency boundary when you design the aggregate. That is the right
+answer most of the time, and it is why this is the default model.
+
+It stops being the right answer when a single decision has to be consistent with facts from more than
+one aggregate — and no stream contains exactly those facts and nothing else. Memoria's other
+consistency model draws the boundary per decision instead:
+[Dynamic consistency boundaries](dynamic-consistency-boundaries.md), and
+[Streams or DCB?](../guides/choose-streams-or-dcb.md) for choosing between them.

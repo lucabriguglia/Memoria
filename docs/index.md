@@ -16,6 +16,7 @@ Memoria is a .NET framework that can be used as a simple mediator or as an Event
 
 - [Overview](concepts/overview.md) — mediator vs. event sourcing
 - [Aggregates and Streams](concepts/aggregates-and-streams.md)
+- [Dynamic Consistency Boundaries](concepts/dynamic-consistency-boundaries.md)
 - [Projections](concepts/projections.md)
 - [Read Modes](concepts/read-modes.md)
 - [Providers](concepts/providers.md)
@@ -30,13 +31,14 @@ Memoria is a .NET framework that can be used as a simple mediator or as an Event
 - [Publish to Service Bus](guides/publish-to-service-bus.md) · [Publish to RabbitMQ](guides/publish-to-rabbitmq.md)
 - [Cache query results](guides/cache-queries.md)
 - [Multiple aggregates per stream](guides/multiple-aggregates-per-stream.md)
+- [Streams or DCB?](guides/choose-streams-or-dcb.md)
 - [Replay events in memory](guides/replay-events-in-memory.md)
 - [Use PostgreSQL with jsonb](guides/use-postgres-jsonb.md)
 - [Integrate with ASP.NET Core Identity](guides/integrate-aspnet-identity.md)
 - [Test without external dependencies](guides/test-without-external-deps.md)
 - [Install the store schema](guides/install-the-store-schema.md)
 - [Tune the Cosmos DB container](guides/tune-the-cosmos-container.md)
-- [Upgrade to 1.7.0](guides/upgrade-1.7.0.md) · [Upgrade to 1.6.0](guides/upgrade-1.6.0.md) · [Upgrade to 1.5.0](guides/upgrade-1.5.0.md)
+- [Upgrade to 1.8.0](guides/upgrade-1.8.0.md) · [Upgrade to 1.7.0](guides/upgrade-1.7.0.md) · [Upgrade to 1.6.0](guides/upgrade-1.6.0.md) · [Upgrade to 1.5.0](guides/upgrade-1.5.0.md)
 
 ### Reference
 
@@ -49,6 +51,7 @@ Memoria is a .NET framework that can be used as a simple mediator or as an Event
     - [Entity Framework Core](reference/configuration/ef-core.md)
     - [+ ASP.NET Core Identity](reference/configuration/ef-core-identity.md)
     - [Cosmos DB](reference/configuration/cosmos.md)
+    - [Entity Framework Core (DCB)](reference/configuration/dcb-ef-core.md)
   - [Validation](reference/configuration/validation.md)
   - [Messaging: Service Bus](reference/configuration/messaging-servicebus.md)
   - [Messaging: RabbitMQ](reference/configuration/messaging-rabbitmq.md)

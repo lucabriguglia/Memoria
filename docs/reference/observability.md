@@ -65,6 +65,24 @@ Emitted from:
 
 Reading an aggregate with `ReadMode.SnapshotOnly` does not fold anything, so it emits nothing.
 
+#### From the DCB store
+
+The [DCB store](configuration/dcb-ef-core.md) emits the **same event name**, so one query finds folds
+in either consistency model. Three tags differ, because the concepts do:
+
+| Tag | Type | Meaning |
+|---|---|---|
+| `tagQuery` | string | The boundary the events were read from, canonical form — replaces `streamId` |
+| `aggregateId` | string | Model store id, as above |
+| `appliedFromPosition` | long | Global position of the first event folded — replaces `appliedFromSequence` |
+| `appliedToPosition` | long | Global position of the last event folded — replaces `appliedToSequence` |
+| `appliedCount` | int | As above |
+| `versionBefore` | int | As above |
+| `versionAfter` | int | As above |
+
+Emitted from `GetAggregate` (cold build) and from a snapshot refresh under
+`ReadMode.SnapshotWithNewEvents`.
+
 ### Concurrency Exception
 
 Emitted by both stores when a write's `expectedEventSequence` does not match the stream's current
@@ -75,6 +93,21 @@ sequence. The write is refused; see [Result pattern](../concepts/result-pattern.
 | `streamId` | string | The stream |
 | `expectedEventSequence` | int | The sequence the caller expected |
 | `latestEventSequence` | int | The sequence the stream is actually at |
+
+### Concurrency Conflict
+
+The DCB store's equivalent, emitted when an append's boundary moved between the decision reading it
+and the write. Named differently from `Concurrency Exception` on purpose: the two carry different
+tags, and merging them would make either name a lie about half its occurrences.
+
+| Tag | Type | Meaning |
+|---|---|---|
+| `tagQuery` | string | The boundary that was asserted over |
+| `expectedPosition` | long | The position the decision read |
+| `latestPosition` | long | The position the boundary is actually at |
+
+The refusal itself is `memoria/concurrency-conflict` — the same failure type a stream conflict
+produces, so a retry policy keyed on it works against both models.
 
 ### NoUncommittedEvents
 

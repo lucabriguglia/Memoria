@@ -20,6 +20,7 @@ If you're using this repository for your learning, samples, workshop, or your pr
 ## ⚡Main Features
 
 - Mediator with commands, queries, and notifications
+- Two consistency models: event streams, or dynamic consistency boundaries where the boundary is a tag query chosen per decision
 - Multiple aggregates per stream
 - Option to store the aggregate snapshot alongside events for fast reads and write model strongly consistent
 - Projections (read models) persisted and retrieved as snapshots via `SaveProjection` and `GetProjection`
@@ -42,6 +43,7 @@ If you're using this repository for your learning, samples, workshop, or your pr
 ## 🗺️ Roadmap
 
 ### ✅ Recently Completed
+- Dynamic consistency boundaries in their own packages, so a decision whose boundary spans more than one aggregate is expressible without serialising unrelated writes
 - New `Projection` read-model base class with `SaveProjection`/`GetProjection` snapshot persistence across all store providers (Entity Framework Core, Npgsql, Cosmos DB, and their in-memory variants)
 - New PostgreSQL companion package for the Entity Framework Core store provider that makes `eventPropertyFilter` work correctly against `jsonb` columns (uses the `@>` JSON-containment operator and is GIN-indexable)
 - New `IEventDataFilter` extension point in the Entity Framework Core store provider for plugging in provider-specific JSON filter strategies
@@ -67,6 +69,8 @@ If you're using this repository for your learning, samples, workshop, or your pr
 |-----------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [Memoria](https://www.nuget.org/packages/Memoria)                                                                                                   | [![Nuget Package](https://img.shields.io/badge/nuget-1.7.0-blue.svg)](https://www.nuget.org/packages/Memoria)                                                  |
 | [Memoria.EventSourcing](https://www.nuget.org/packages/Memoria.EventSourcing)                                                                       | [![Nuget Package](https://img.shields.io/badge/nuget-1.7.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing)                                    |
+| [Memoria.EventSourcing.Dcb](https://www.nuget.org/packages/Memoria.EventSourcing.Dcb)                                                                               | [![Nuget Package](https://img.shields.io/badge/nuget-1.8.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Dcb)                                |
+| [Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore](https://www.nuget.org/packages/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore)                           | [![Nuget Package](https://img.shields.io/badge/nuget-1.8.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore)      |
 | [Memoria.EventSourcing.Store.Cosmos](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos)                                             | [![Nuget Package](https://img.shields.io/badge/nuget-1.7.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos)                       |
 | [Memoria.EventSourcing.Store.Cosmos.InMemory](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos.InMemory)                           | [![Nuget Package](https://img.shields.io/badge/nuget-1.7.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.Cosmos.InMemory)              |
 | [Memoria.EventSourcing.Store.EntityFrameworkCore](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore)                   | [![Nuget Package](https://img.shields.io/badge/nuget-1.7.0-blue.svg)](https://www.nuget.org/packages/Memoria.EventSourcing.Store.EntityFrameworkCore)          |

@@ -82,15 +82,27 @@ conditioned appends over the same tags fail; it simply has nothing of its own to
 
 ## Reading the boundary
 
-Read the position separately from the fold:
+Read the position **before** the fold, and never after:
 
 ```C#
-var events = await dcb.GetEvents(boundary, model.EventTypeFilter);
 var position = await dcb.GetLatestPosition(boundary);
+var events = await dcb.GetEvents(boundary, model.EventTypeFilter);
 ```
 
-An event the model's `EventTypeFilter` ignores still moves the boundary. Conditioning on the last
-event the *fold* consumed would then fail every time something irrelevant was appended nearby.
+The order is not cosmetic. The position is a claim about what the decision saw, and an event landing
+between the two reads breaks that claim in one of two directions:
+
+| Order | An event lands in between | Outcome |
+|---|---|---|
+| Position, then fold | The fold sees more than the position admits | The append is **refused**; retry |
+| Fold, then position | The position admits more than the fold saw | The append is **accepted** on a decision that never read it |
+
+The second is a lost update, signed off by the very check meant to prevent it. Reading the position
+first is what makes the failure land on the safe side.
+
+The position cannot simply come from the fold instead. The fold stops at the last event the model's
+`EventTypeFilter` accepted, which can be behind the boundary's head with nothing else running at all
+— so conditioning on it would refuse every append that happened to follow an event the model ignores.
 
 `IDcbDomainService.UpdateAggregate` does the whole read-decide-append cycle in one call and gets this
 right for you. Reach for the explicit form when the model needs to know what it is about before it

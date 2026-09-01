@@ -34,19 +34,23 @@ public class SubscribeStudentCommandHandler(IDcbDomainService dcb) : ICommandHan
 
         var decision = new SubscriptionDecision().About(command.CourseId, command.StudentId);
 
-        // 2. Fold it, and read where the boundary stands. The position is read in its own right
-        //    rather than taken from the last folded event: an event this model's type filter ignores
-        //    still moves the boundary, and conditioning on the fold would then always fail.
-        var eventsResult = await dcb.GetEvents(boundary, decision.EventTypeFilter, cancellationToken);
-        if (eventsResult.IsNotSuccess)
-        {
-            return eventsResult.Failure!;
-        }
-
+        // 2. Read where the boundary stands, then fold it. The order matters: the position is a claim
+        //    about what this decision saw, so reading it after the fold would let an event slip in
+        //    between and be counted as seen when it was not — the append would then be accepted on a
+        //    decision that never read it. Reading first means such an event makes the append fail
+        //    instead, and the command is retried.
         var positionResult = await dcb.GetLatestPosition(boundary, cancellationToken: cancellationToken);
         if (positionResult.IsNotSuccess)
         {
             return positionResult.Failure!;
+        }
+
+        //    The position cannot come from the fold: it stops at the last event this model's type
+        //    filter accepted, which can be behind the boundary's head with nothing else running.
+        var eventsResult = await dcb.GetEvents(boundary, decision.EventTypeFilter, cancellationToken);
+        if (eventsResult.IsNotSuccess)
+        {
+            return eventsResult.Failure!;
         }
 
         decision.Apply(eventsResult.Value!);

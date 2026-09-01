@@ -78,6 +78,50 @@ public class UpdateAggregateTests : RelationalTestBase
     }
 
     [Fact]
+    public async Task An_update_is_refused_when_an_event_lands_between_its_two_reads()
+    {
+        // UpdateAggregate reads the boundary's position and then folds it. An event arriving between
+        // those two reads must make the append fail: the decision did not see it. Reading the
+        // position second instead would have it admit the event, and the append would be accepted on
+        // a decision that never read it — losing the update, with the condition signing it off.
+        await using var other = CreateContext();
+
+        var interceptor = new AppendsBetweenReadsInterceptor(
+            () => other.SaveEvents([new TaggedEvent(new SeatReservedEvent("a1", "s9"), [SeatA1])],
+                condition: null));
+
+        await using var updating = CreateContext(interceptor);
+
+        var result = await updating.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
+            aggregate => aggregate.Reserve("a1", "s7"));
+
+        interceptor.Fired.Should().BeTrue("the intruding writer must actually have committed");
+        result.IsNotSuccess.Should().BeTrue();
+        result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
+    }
+
+    [Fact]
+    public async Task An_update_refused_that_way_leaves_only_the_intruding_event()
+    {
+        await using var other = CreateContext();
+
+        var interceptor = new AppendsBetweenReadsInterceptor(
+            () => other.SaveEvents([new TaggedEvent(new SeatReservedEvent("a1", "s9"), [SeatA1])],
+                condition: null));
+
+        await using var updating = CreateContext(interceptor);
+
+        await updating.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
+            aggregate => aggregate.Reserve("a1", "s7"));
+
+        var events = await Context.GetEvents(TagQuery.AnyOf(SeatA1));
+
+        events.Should().ContainSingle("the refused update wrote nothing")
+            .Which.Should().BeOfType<SeatReservedEvent>()
+            .Which.StudentId.Should().Be("s9");
+    }
+
+    [Fact]
     public async Task An_update_that_stages_nothing_appends_nothing()
     {
         var result = await Context.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), _ => { });

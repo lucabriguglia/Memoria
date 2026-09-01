@@ -31,6 +31,18 @@ public static partial class DcbDbContextExtensions
     {
         ArgumentNullException.ThrowIfNull(update);
 
+        // Read before folding, never after. The position is a claim about what the decision saw, and
+        // an event landing between the two reads makes that claim false in one of two directions.
+        // Read first and the fold may see more than the position admits, so the append is refused and
+        // the caller retries. Read second and the position admits more than the fold saw, so the
+        // append is accepted on a decision that never read the intervening event — a lost update the
+        // condition exists to prevent and would have signed off on.
+        var latestPosition = await dcbDbContext.GetLatestPosition(query, cancellationToken: cancellationToken);
+
+        // It cannot come from the fold instead: the fold stops at the last event the aggregate's own
+        // type filter accepted, which may be behind the boundary's true head even with nothing else
+        // running, so conditioning on it would refuse every append that followed an event the
+        // aggregate ignores.
         var aggregateResult = await dcbDbContext.GetInMemoryAggregate(query, aggregateId, cancellationToken);
         if (aggregateResult.IsNotSuccess)
         {
@@ -38,12 +50,6 @@ public static partial class DcbDbContextExtensions
         }
 
         var aggregate = aggregateResult.Value!;
-
-        // The fold stops at the last event the aggregate's own type filter accepted, which may be
-        // behind the boundary's true head — an event the aggregate ignores still moves the boundary.
-        // Conditioning on the fold's position would then fail every time, so the boundary is read in
-        // its own right.
-        var latestPosition = await dcbDbContext.GetLatestPosition(query, cancellationToken: cancellationToken);
 
         update(aggregate);
 

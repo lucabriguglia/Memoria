@@ -61,7 +61,7 @@ public static partial class IDomainDbContextExtensions
         var currentProjectionVersion = projection.Version;
 
         var newEventEntities = await domainDbContext.GetEventEntitiesFromSequence(streamId,
-            fromSequence: projection.LatestEventSequence + 1, projection.EventTypeFilter,
+            fromSequence: projection.LatestEventSequence + 1, projection.EventTypeFilter, projectionId.EventPropertyFilter,
             cancellationToken: cancellationToken);
         if (newEventEntities.Count == 0)
         {

@@ -251,7 +251,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         var currentProjectionVersion = projection.Version;
 
         var newEventDocumentsResult = await GetEventDocumentsFromSequence(streamId,
-            fromSequence: projection.LatestEventSequence + 1, projection.EventTypeFilter,
+            fromSequence: projection.LatestEventSequence + 1, projection.EventTypeFilter, projectionId.EventPropertyFilter,
             cancellationToken: cancellationToken);
         if (newEventDocumentsResult.IsNotSuccess)
         {

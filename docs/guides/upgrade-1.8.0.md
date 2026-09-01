@@ -6,7 +6,11 @@ packages. To make room for it, two properties move one level down the model hier
 1. [**`StreamId` and `LatestEventSequence` move off
    `IEventSourcedModel`**](#streamid-and-latesteventsequence-move-off-ieventsourcedmodel) — only if
    you declare a variable, parameter or field as `IEventSourcedModel` and read either from it.
-2. [**Nothing else changes**](#nothing-else-changes) — DCB is additive and opt-in.
+2. [**`IProjectionId` gains `EventPropertyFilter`**](#iprojectionid-gains-eventpropertyfilter) — every
+   projection identifier needs one new member. One line each.
+3. [**`IDomainService` gains `UpdateProjection`**](#idomainservice-gains-updateprojection) — only if
+   you implement that interface yourself.
+4. [**Nothing else changes**](#nothing-else-changes) — DCB is additive and opt-in.
 
 No event, aggregate snapshot or projection is rewritten, no schema changes, and no data is migrated.
 If you do not use `IEventSourcedModel` by name, upgrading is a version bump.
@@ -78,6 +82,55 @@ IEventSourcedModel        Version, EventTypeFilter, Apply, IsEventHandled
  ├ IStreamedModel        + StreamId, LatestEventSequence   (int, within one stream)
  └ IDcbModel             + LatestPosition                  (long, across the whole log)
 ```
+
+<a name="iprojectionid-gains-eventpropertyfilter"></a>
+## `IProjectionId` gains `EventPropertyFilter`
+
+`IAggregateId` has carried an `EventPropertyFilter` since 1.2.0, to pick one aggregate's events out
+of a stream several models share. Projections had no equivalent, so a projection over a shared stream
+had no way to say which events were its own. It now has the same member:
+
+```csharp
+public class OrderSummaryId(Guid orderId) : IProjectionId<OrderSummary>
+{
+    public string Id { get; } = orderId.ToString();
+
+    // New. Return null when the stream holds only this projection's events.
+    public IDictionary<string, string>? EventPropertyFilter => null;
+}
+```
+
+**Every projection identifier needs the new member**, and the compiler names each one. Returning
+`null` preserves the previous behaviour exactly — no filtering — so the mechanical fix is correct and
+you only need to think about it where a stream really is shared.
+
+To narrow, return the key/value pairs the events carry, as an aggregate identifier does:
+
+```csharp
+public IDictionary<string, string>? EventPropertyFilter { get; } =
+    new Dictionary<string, string> { ["OrderId"] = orderId.ToString() };
+```
+
+The filter applies everywhere the projection is folded: the cold build, the refresh under
+`SnapshotWithNewEvents`, and all three `GetInMemoryProjection` overloads, on every store.
+
+> On PostgreSQL with `jsonb` event data, the same caveat applies as for aggregates — the default
+> substring filter does not match reformatted `jsonb`. See
+> [Use PostgreSQL with `jsonb`](use-postgres-jsonb.md).
+
+<a name="idomainservice-gains-updateprojection"></a>
+## `IDomainService` gains `UpdateProjection`
+
+The projection refresh already existed and already backed `ReadMode.SnapshotWithNewEvents`; it was
+just not reachable on its own, while `UpdateAggregate` was public on both `IDomainService` and the
+Entity Framework Core extensions.
+
+```csharp
+var result = await domainService.UpdateProjection(streamId, projectionId);
+```
+
+Every store Memoria ships implements it. **Only a hand-rolled `IDomainService` needs the new member**
+— deriving from a shipped store, or calling the extension methods, needs no change.
 
 <a name="nothing-else-changes"></a>
 ## Nothing else changes

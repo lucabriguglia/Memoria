@@ -55,7 +55,7 @@ public static partial class IDomainDbContextExtensions
         var projection = new T();
 
         var eventEntities = await domainDbContext.GetEventEntities(streamId, projection.EventTypeFilter,
-            cancellationToken: cancellationToken);
+            projectionId.EventPropertyFilter, cancellationToken: cancellationToken);
         if (eventEntities.Count == 0)
         {
             return default(T);

@@ -60,10 +60,32 @@ A Projection Id uniquely identifies a projection snapshot and serves as its pers
 public class OrderSummaryProjectionId(string customerId) : IProjectionId<OrderSummary>
 {
     public string Id => $"order-summary:{customerId}";
+
+    public IDictionary<string, string>? EventPropertyFilter => null;
 }
 
 var projectionId = new OrderSummaryProjectionId(customerId);
 ```
+
+### Event Property Filter
+
+Like an aggregate id, a projection id can declare an optional `EventPropertyFilter` made of key/value pairs. When the projection is built or refreshed, only the events whose properties match every entry in the filter are applied. Return `null` when the stream holds only this projection's events.
+
+A stream can hold events for several models, and a read model is no less likely to share a stream than a write model. The `EventTypeFilter` narrows by event type; this narrows by event content, which is what tells two projections of the same type apart when they read the same stream and the same event types.
+
+```C#
+public class OrderSummaryProjectionId(Guid orderId) : IProjectionId<OrderSummary>
+{
+    public string Id => $"order-summary:{orderId}";
+
+    public IDictionary<string, string>? EventPropertyFilter { get; } = new Dictionary<string, string>
+    {
+        ["OrderId"] = orderId.ToString()
+    };
+}
+```
+
+The filter is honoured everywhere the projection is folded: the initial build in `GetProjection`, the refresh under `ReadMode.SnapshotWithNewEvents`, `UpdateProjection`, and every `GetInMemoryProjection` overload.
 
 <a name="saving-and-retrieving"></a>
 ## Saving and retrieving

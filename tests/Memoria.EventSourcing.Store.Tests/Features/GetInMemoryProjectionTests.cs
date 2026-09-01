@@ -171,4 +171,93 @@ public abstract class GetInMemoryProjectionTests(IDomainServiceFactory domainSer
             snapshotResult.Value.Should().BeNull();
         }
     }
+
+    /// <summary>
+    /// The three in-memory overloads narrow by <see cref="IProjectionId.EventPropertyFilter"/> too,
+    /// exactly as the <c>GetInMemoryAggregate</c> overloads do. Without this, a projection sharing a
+    /// stream folds another model's events whenever it is read without a snapshot.
+    /// </summary>
+    [Fact]
+    public async Task GivenInMemoryProjectionFilteredByProperty_ThenOnlyItsOwnEventsAreApplied()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var projectionId = new TestProjectionIdWithPropertyFilter(id, "Mine");
+
+        var events = new IEvent[]
+        {
+            new TestAggregateCreatedEvent(id, "Mine", "Test Description"),
+            new TestAggregateUpdatedEvent(id, "Theirs", "Someone Else"),
+            new TestAggregateUpdatedEvent(id, "Mine", "Updated Description")
+        };
+        await DomainService.SaveEvents(streamId, events, expectedEventSequence: 0);
+
+        var result = await DomainService.GetInMemoryProjection(streamId, projectionId);
+
+        using (new AssertionScope())
+        {
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().NotBeNull();
+            result.Value.EventsApplied.Should().Be(2, "the event named Theirs is not this projection's");
+            result.Value.Description.Should().Be("Updated Description");
+        }
+    }
+
+    [Fact]
+    public async Task GivenInMemoryProjectionFilteredByPropertyUpToASequence_ThenOnlyItsOwnEventsAreApplied()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var projectionId = new TestProjectionIdWithPropertyFilter(id, "Mine");
+
+        var events = new IEvent[]
+        {
+            new TestAggregateCreatedEvent(id, "Mine", "Test Description"),
+            new TestAggregateUpdatedEvent(id, "Theirs", "Someone Else"),
+            new TestAggregateUpdatedEvent(id, "Mine", "Updated Description")
+        };
+        await DomainService.SaveEvents(streamId, events, expectedEventSequence: 0);
+
+        // The cut-off admits all three events; only the filter keeps the middle one out.
+        var result = await DomainService.GetInMemoryProjection(streamId, projectionId, upToSequence: 3);
+
+        using (new AssertionScope())
+        {
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().NotBeNull();
+            result.Value.EventsApplied.Should().Be(2, "the event named Theirs is not this projection's");
+            result.Value.Description.Should().Be("Updated Description");
+        }
+    }
+
+    [Fact]
+    public async Task GivenInMemoryProjectionFilteredByPropertyUpToADate_ThenOnlyItsOwnEventsAreApplied()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var projectionId = new TestProjectionIdWithPropertyFilter(id, "Mine");
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 10, 12, 10, 25));
+        await DomainService.SaveEvents(streamId, [
+            new TestAggregateCreatedEvent(id, "Mine", "Test Description")
+        ], expectedEventSequence: 0);
+
+        TimeProvider.SetUtcNow(new DateTime(2024, 6, 12, 9, 30, 0));
+        await DomainService.SaveEvents(streamId, [
+            new TestAggregateUpdatedEvent(id, "Theirs", "Someone Else"),
+            new TestAggregateUpdatedEvent(id, "Mine", "Updated Description")
+        ], expectedEventSequence: 1);
+
+        // The cut-off admits all three events; only the filter keeps the middle one out.
+        var result = await DomainService.GetInMemoryProjection(streamId, projectionId,
+            upToDate: new DateTimeOffset(new DateTime(2024, 6, 12, 9, 30, 0)));
+
+        using (new AssertionScope())
+        {
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().NotBeNull();
+            result.Value.EventsApplied.Should().Be(2, "the event named Theirs is not this projection's");
+            result.Value.Description.Should().Be("Updated Description");
+        }
+    }
 }

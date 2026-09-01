@@ -55,6 +55,8 @@ public class OrderAggregateId(Guid orderId) : IAggregateId<Order>
 
 The filter combines with the aggregate's `EventTypeFilter`: an event must match both to be applied.
 
+Projections narrow the same way. `IProjectionId<T>` declares the same `EventPropertyFilter`, applied wherever the projection is folded — the initial build, the refresh under `ReadMode.SnapshotWithNewEvents`, `UpdateProjection`, and the `GetInMemoryProjection` overloads. A read model is no less likely to share a stream than a write model. See [Projections](../concepts/projections.md#projection-id).
+
 ## Saving and loading
 
 Patterns below work with either `IDomainService` or the Entity Framework Core `IDomainDbContext` extensions, which expose `TrackAggregate` / `TrackEventEntities` for combining event-sourced writes with other EF Core changes in a single transaction.

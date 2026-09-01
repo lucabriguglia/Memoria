@@ -32,7 +32,7 @@ public static partial class IDomainDbContextExtensions
     {
         var projection = new T();
 
-        var eventEntities = await domainDbContext.GetEventEntities(streamId, projection.EventTypeFilter,
+        var eventEntities = await domainDbContext.GetEventEntities(streamId, projection.EventTypeFilter, projectionId.EventPropertyFilter,
             cancellationToken: cancellationToken);
         if (eventEntities.Count == 0)
         {
@@ -80,7 +80,7 @@ public static partial class IDomainDbContextExtensions
         var projection = new T();
 
         var eventEntities = await domainDbContext.GetEventEntitiesUpToSequence(streamId, upToSequence,
-            projection.EventTypeFilter, cancellationToken: cancellationToken);
+            projection.EventTypeFilter, projectionId.EventPropertyFilter, cancellationToken: cancellationToken);
         if (eventEntities.Count == 0)
         {
             return projection;
@@ -127,7 +127,7 @@ public static partial class IDomainDbContextExtensions
         var projection = new T();
 
         var eventEntities = await domainDbContext.GetEventEntitiesUpToDate(streamId, upToDate,
-            projection.EventTypeFilter, cancellationToken: cancellationToken);
+            projection.EventTypeFilter, projectionId.EventPropertyFilter, cancellationToken: cancellationToken);
         if (eventEntities.Count == 0)
         {
             return projection;

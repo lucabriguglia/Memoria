@@ -11,7 +11,25 @@ namespace Memoria.EventSourcing.Domain;
 /// public class OrderSummaryId : IProjectionId&lt;OrderSummary&gt;
 /// {
 ///     public string Id { get; }
+///     public IDictionary&lt;string, string&gt;? EventPropertyFilter =&gt; null;
 ///     public OrderSummaryId(Guid id) =&gt; Id = id.ToString();
+/// }
+/// </code>
+/// </example>
+/// <example>
+/// <code>
+/// // One projection per order, built from a stream the whole customer shares.
+/// public class OrderSummaryId : IProjectionId&lt;OrderSummary&gt;
+/// {
+///     public string Id { get; }
+///
+///     public IDictionary&lt;string, string&gt;? EventPropertyFilter { get; }
+///
+///     public OrderSummaryId(Guid orderId)
+///     {
+///         Id = orderId.ToString();
+///         EventPropertyFilter = new Dictionary&lt;string, string&gt; { ["OrderId"] = orderId.ToString() };
+///     }
 /// }
 /// </code>
 /// </example>
@@ -21,6 +39,17 @@ public interface IProjectionId
     /// Gets the unique string identifier.
     /// </summary>
     string Id { get; }
+
+    /// <summary>
+    /// Specifies a filter applied to properties of events.
+    /// </summary>
+    /// <remarks>
+    /// The same mechanism as <see cref="IAggregateId.EventPropertyFilter"/>, and needed for the same
+    /// reason: when several models share one stream, the stream alone does not say which events
+    /// belong to this one. A read model is no less likely to share a stream than a write model, so it
+    /// narrows the same way. Return null when the stream holds only this projection's events.
+    /// </remarks>
+    IDictionary<string, string>? EventPropertyFilter { get; }
 }
 
 /// <summary>

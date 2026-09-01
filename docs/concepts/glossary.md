@@ -40,7 +40,7 @@ A read model: a query-optimised view built by applying domain events. Inherits f
 
 ## Projection Id
 
-A unique identifier for a projection snapshot, serving as its persistence key. Implements `IProjectionId<TProjection>`. The projection type is given a stable, versioned logical name with `[ProjectionType("Name")]`.
+A unique identifier for a projection snapshot, serving as its persistence key. Implements `IProjectionId<TProjection>`. May declare an optional `EventPropertyFilter` to disambiguate when multiple projections share the same stream and the same event types. The projection type is given a stable, versioned logical name with `[ProjectionType("Name")]`.
 
 ## Read Mode
 

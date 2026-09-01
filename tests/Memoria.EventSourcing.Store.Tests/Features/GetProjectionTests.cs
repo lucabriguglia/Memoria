@@ -415,4 +415,62 @@ public abstract class GetProjectionTests(IDomainServiceFactory domainServiceFact
             getResult.Value.Name.Should().Be("Updated Name");
         }
     }
+
+    /// <summary>
+    /// A projection is no less likely to share a stream than an aggregate, so it narrows to its own
+    /// events the same way — through <see cref="IProjectionId.EventPropertyFilter"/>.
+    /// </summary>
+    [Fact]
+    public async Task GivenAProjectionIdWithAPropertyFilter_ThenOnlyItsOwnEventsAreFolded()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var projectionId = new TestProjectionIdWithPropertyFilter(id, "Mine");
+
+        // One stream, two projections' worth of events, told apart only by a payload property.
+        var events = new IEvent[]
+        {
+            new TestAggregateCreatedEvent(id, "Mine", "Test Description"),
+            new TestAggregateUpdatedEvent(id, "Theirs", "Someone Else"),
+            new TestAggregateUpdatedEvent(id, "Mine", "Updated Description")
+        };
+        await DomainService.SaveEvents(streamId, events, expectedEventSequence: 0);
+
+        var getResult = await DomainService.GetProjection(streamId, projectionId, ReadMode.SnapshotOrCreate);
+
+        using (new AssertionScope())
+        {
+            getResult.IsSuccess.Should().BeTrue();
+            getResult.Value.Should().NotBeNull();
+            getResult.Value!.EventsApplied.Should().Be(2, "the event named Theirs is not this projection's");
+            getResult.Value.Description.Should().Be("Updated Description");
+        }
+    }
+
+    [Fact]
+    public async Task GivenAProjectionIdWithAPropertyFilter_ThenARefreshHonoursItToo()
+    {
+        var id = Guid.NewGuid().ToString();
+        var streamId = new TestStreamId(id);
+        var projectionId = new TestProjectionIdWithPropertyFilter(id, "Mine");
+
+        await DomainService.SaveEvents(streamId,
+            [new TestAggregateCreatedEvent(id, "Mine", "Test Description")], expectedEventSequence: 0);
+        await DomainService.GetProjection(streamId, projectionId, ReadMode.SnapshotOrCreate);
+
+        await DomainService.SaveEvents(streamId,
+        [
+            new TestAggregateUpdatedEvent(id, "Theirs", "Someone Else"),
+            new TestAggregateUpdatedEvent(id, "Mine", "Updated Description")
+        ], expectedEventSequence: 1);
+
+        var getResult = await DomainService.GetProjection(streamId, projectionId, ReadMode.SnapshotWithNewEvents);
+
+        using (new AssertionScope())
+        {
+            getResult.IsSuccess.Should().BeTrue();
+            getResult.Value!.EventsApplied.Should().Be(2, "the refresh filters exactly as the cold build does");
+            getResult.Value.Description.Should().Be("Updated Description");
+        }
+    }
 }

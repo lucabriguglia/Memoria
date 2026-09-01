@@ -408,7 +408,7 @@ public class CosmosDomainService : IDomainService
     {
         var projection = new T();
 
-        var eventDocumentsResult = await _cosmosDataStore.GetEventDocuments(streamId, projection.EventTypeFilter,
+        var eventDocumentsResult = await _cosmosDataStore.GetEventDocuments(streamId, projection.EventTypeFilter, projectionId.EventPropertyFilter,
             cancellationToken: cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
@@ -450,7 +450,7 @@ public class CosmosDomainService : IDomainService
         var projection = new T();
 
         var eventDocumentsResult = await _cosmosDataStore.GetEventDocumentsUpToSequence(streamId, upToSequence,
-            projection.EventTypeFilter, cancellationToken: cancellationToken);
+            projection.EventTypeFilter, projectionId.EventPropertyFilter, cancellationToken: cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
@@ -491,7 +491,7 @@ public class CosmosDomainService : IDomainService
         var projection = new T();
 
         var eventDocumentsResult = await _cosmosDataStore.GetEventDocumentsUpToDate(streamId, upToDate,
-            projection.EventTypeFilter, cancellationToken: cancellationToken);
+            projection.EventTypeFilter, projectionId.EventPropertyFilter, cancellationToken: cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;
@@ -557,7 +557,7 @@ public class CosmosDomainService : IDomainService
         var projection = new T();
 
         var eventDocumentsResult =
-            await _cosmosDataStore.GetEventDocuments(streamId, projection.EventTypeFilter, cancellationToken: cancellationToken);
+            await _cosmosDataStore.GetEventDocuments(streamId, projection.EventTypeFilter, projectionId.EventPropertyFilter, cancellationToken: cancellationToken);
         if (eventDocumentsResult.IsNotSuccess)
         {
             return eventDocumentsResult.Failure!;

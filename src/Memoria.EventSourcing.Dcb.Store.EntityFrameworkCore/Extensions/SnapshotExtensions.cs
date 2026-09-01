@@ -11,10 +11,11 @@ public static class SnapshotExtensions
     /// <summary>
     /// Builds the snapshot row for an aggregate folded under a boundary.
     /// </summary>
-    public static DcbSnapshotEntity ToSnapshotEntity<T>(this T aggregate, TagQuery query,
-        IDcbAggregateId<T> aggregateId) where T : IDcbAggregateRoot
+    public static DcbSnapshotEntity ToSnapshotEntity<T>(this T aggregate, IDcbAggregateId<T> aggregateId)
+        where T : IDcbAggregateRoot
     {
         aggregate.AggregateId = aggregateId.ToStoreId();
+        var query = aggregateId.Boundary;
 
         return new DcbSnapshotEntity
         {
@@ -32,10 +33,11 @@ public static class SnapshotExtensions
     /// <summary>
     /// Builds the snapshot row for a projection folded under a boundary.
     /// </summary>
-    public static DcbSnapshotEntity ToSnapshotEntity<T>(this T projection, TagQuery query,
-        IDcbProjectionId<T> projectionId) where T : IDcbProjection
+    public static DcbSnapshotEntity ToSnapshotEntity<T>(this T projection, IDcbProjectionId<T> projectionId)
+        where T : IDcbProjection
     {
         projection.ProjectionId = projectionId.ToStoreId();
+        var query = projectionId.Boundary;
 
         return new DcbSnapshotEntity
         {

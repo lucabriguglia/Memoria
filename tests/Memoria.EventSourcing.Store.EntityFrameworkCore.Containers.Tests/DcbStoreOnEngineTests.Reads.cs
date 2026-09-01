@@ -119,7 +119,7 @@ public abstract partial class DcbStoreOnEngineTests
                 [Reserved("a1", "s7"), new TaggedEvent(new SeatReleasedEvent("a1"), [SeatA1])],
                 condition: null);
 
-            var result = await dbContext.GetInMemoryAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
+            var result = await dbContext.GetInMemoryAggregate(new SeatId("a1"));
 
             result.IsSuccess.Should().BeTrue();
             result.Value!.ReservedBy.Should().BeNull();
@@ -135,19 +135,19 @@ public abstract partial class DcbStoreOnEngineTests
 
             await dbContext.SaveEvents([Reserved("a1", "s7")], condition: null);
 
-            (await dbContext.GetAggregate(boundary, aggregateId, ReadMode.SnapshotOnly))
+            (await dbContext.GetAggregate(aggregateId, ReadMode.SnapshotOnly))
                 .Value.Should().BeNull("no snapshot exists yet and this mode builds none");
 
-            (await dbContext.GetAggregate(boundary, aggregateId, ReadMode.SnapshotOrCreate))
+            (await dbContext.GetAggregate(aggregateId, ReadMode.SnapshotOrCreate))
                 .Value!.ReservedBy.Should().Be("s7");
 
             await dbContext.SaveEvents(
                 [new TaggedEvent(new SeatReleasedEvent("a1"), [SeatA1])], condition: null);
 
-            (await dbContext.GetAggregate(boundary, aggregateId, ReadMode.SnapshotOnly))
+            (await dbContext.GetAggregate(aggregateId, ReadMode.SnapshotOnly))
                 .Value!.ReservedBy.Should().Be("s7", "this mode is deliberately stale");
 
-            (await dbContext.GetAggregate(boundary, aggregateId, ReadMode.SnapshotWithNewEvents))
+            (await dbContext.GetAggregate(aggregateId, ReadMode.SnapshotWithNewEvents))
                 .Value!.ReservedBy.Should().BeNull();
         });
 
@@ -158,9 +158,9 @@ public abstract partial class DcbStoreOnEngineTests
             // The lookup compares the stored boundary as a string. That comparison runs under the
             // engine's collation like any other, so it is worth proving where it ships.
             await dbContext.SaveEvents([Reserved("a1", "s7", SeatA1, StudentS7)], condition: null);
-            await dbContext.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), ReadMode.SnapshotOrCreate);
+            await dbContext.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
 
-            var wider = await dbContext.GetAggregate(TagQuery.AnyOf(SeatA1, StudentS7), new SeatId("a1"),
+            var wider = await dbContext.GetAggregate(new WideSeatId("a1"),
                 ReadMode.SnapshotOnly);
 
             wider.Value.Should().BeNull("that boundary has no snapshot of its own");
@@ -174,10 +174,10 @@ public abstract partial class DcbStoreOnEngineTests
             await dbContext.SaveEvents([Reserved("a1", "s7"), Reserved("a1", "s8")], condition: null);
             var boundary = TagQuery.AnyOf(SeatA1);
 
-            (await dbContext.GetProjection(boundary, new SeatSummaryId("a1"), ReadMode.SnapshotOrCreate))
+            (await dbContext.GetProjection(new SeatSummaryId("a1"), ReadMode.SnapshotOrCreate))
                 .Value!.Reservations.Should().Be(2);
 
-            (await dbContext.GetProjection(boundary, new SeatSummaryId("a1"), ReadMode.SnapshotOnly))
+            (await dbContext.GetProjection(new SeatSummaryId("a1"), ReadMode.SnapshotOnly))
                 .Value!.Reservations.Should().Be(2);
         });
 
@@ -191,17 +191,17 @@ public abstract partial class DcbStoreOnEngineTests
             var projectionId = new SeatSummaryId("a1");
 
             await dbContext.SaveEvents([Reserved("a1", "s7")], condition: null);
-            var first = (await dbContext.GetInMemoryProjection(boundary, projectionId)).Value!;
-            await dbContext.SaveProjection(boundary, projectionId, first);
+            var first = (await dbContext.GetInMemoryProjection(projectionId)).Value!;
+            await dbContext.SaveProjection(projectionId, first);
 
             await dbContext.SaveEvents([Reserved("a1", "s8")], condition: null);
-            var second = (await dbContext.GetInMemoryProjection(boundary, projectionId)).Value!;
-            var result = await dbContext.SaveProjection(boundary, projectionId, second);
+            var second = (await dbContext.GetInMemoryProjection(projectionId)).Value!;
+            var result = await dbContext.SaveProjection(projectionId, second);
 
             result.IsSuccess.Should().BeTrue(
                 result.Failure is null ? "the save should succeed" : result.Failure.Description);
             dbContext.DcbSnapshots.Count().Should().Be(1);
-            (await dbContext.GetProjection(boundary, projectionId, ReadMode.SnapshotOnly))
+            (await dbContext.GetProjection(projectionId, ReadMode.SnapshotOnly))
                 .Value!.Reservations.Should().Be(2);
         });
 }

@@ -41,9 +41,12 @@ public class DcbProjectionTests
     {
         var type = typeof(SeatProjection);
 
+        // Staging is the only difference between a read model and a write model, so it is the only
+        // thing missing here. Tags are not a write-model member: they record the boundary the model
+        // was folded from, which a read model has as much as a write model does.
         type.GetMethod("Add", AnyMember).Should().BeNull("projections are read models and never stage events");
         type.GetProperty("UncommittedEvents", AnyMember).Should().BeNull("projections have no uncommitted events");
-        type.GetProperty("Tags", AnyMember).Should().BeNull("only staged events carry tags, and projections stage none");
+        type.GetProperty("Tags", AnyMember).Should().NotBeNull("a read model still knows what built it");
     }
 
     [Fact]

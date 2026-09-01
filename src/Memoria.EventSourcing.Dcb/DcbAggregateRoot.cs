@@ -40,12 +40,6 @@ public abstract class DcbAggregateRoot : DcbModel, IDcbAggregateRoot
     public string AggregateId { get; set; } = null!;
 
     /// <summary>
-    /// Gets or sets the tags every event this aggregate stages carries by default.
-    /// </summary>
-    [JsonIgnore]
-    public IReadOnlyCollection<Tag> Tags { get; set; } = [];
-
-    /// <summary>
     /// Gets the events staged but not yet appended, with the tags they will be appended under.
     /// </summary>
     [JsonIgnore]

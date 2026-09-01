@@ -6,48 +6,61 @@ namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Extensions.DbConte
 public static partial class DcbDbContextExtensions
 {
     /// <summary>
-    /// Folds every event inside a boundary into a fresh aggregate, without persisting a snapshot.
+    /// Folds every event inside the identifier's boundary into a fresh aggregate, without persisting
+    /// a snapshot.
     /// </summary>
     public static async Task<Result<T>> GetInMemoryAggregate<T>(this IDcbDbContext dcbDbContext,
-        TagQuery query, IDcbAggregateId<T> aggregateId, CancellationToken cancellationToken = default)
+        IDcbAggregateId<T> aggregateId, CancellationToken cancellationToken = default)
         where T : IDcbAggregateRoot, new()
     {
-        var aggregate = new T();
+        var aggregate = NewAggregate(aggregateId);
 
-        var eventEntities = await dcbDbContext.GetEventEntities(query, aggregate.EventTypeFilter, cancellationToken);
+        var eventEntities = await dcbDbContext.GetEventEntities(aggregateId.Boundary, aggregate.EventTypeFilter,
+            cancellationToken);
 
         return Fold(aggregate, aggregateId, eventEntities);
     }
 
     /// <summary>
-    /// Folds the events inside a boundary up to a position into a fresh aggregate.
+    /// Folds the events inside the boundary up to a position into a fresh aggregate.
     /// </summary>
     public static async Task<Result<T>> GetInMemoryAggregate<T>(this IDcbDbContext dcbDbContext,
-        TagQuery query, IDcbAggregateId<T> aggregateId, long upToPosition,
-        CancellationToken cancellationToken = default) where T : IDcbAggregateRoot, new()
+        IDcbAggregateId<T> aggregateId, long upToPosition, CancellationToken cancellationToken = default)
+        where T : IDcbAggregateRoot, new()
     {
-        var aggregate = new T();
+        var aggregate = NewAggregate(aggregateId);
 
-        var eventEntities = await dcbDbContext.GetEventEntitiesUpToPosition(query, upToPosition,
+        var eventEntities = await dcbDbContext.GetEventEntitiesUpToPosition(aggregateId.Boundary, upToPosition,
             aggregate.EventTypeFilter, cancellationToken);
 
         return Fold(aggregate, aggregateId, eventEntities);
     }
 
     /// <summary>
-    /// Folds the events inside a boundary up to a date into a fresh aggregate.
+    /// Folds the events inside the boundary up to a date into a fresh aggregate.
     /// </summary>
     public static async Task<Result<T>> GetInMemoryAggregate<T>(this IDcbDbContext dcbDbContext,
-        TagQuery query, IDcbAggregateId<T> aggregateId, DateTimeOffset upToDate,
-        CancellationToken cancellationToken = default) where T : IDcbAggregateRoot, new()
+        IDcbAggregateId<T> aggregateId, DateTimeOffset upToDate, CancellationToken cancellationToken = default)
+        where T : IDcbAggregateRoot, new()
     {
-        var aggregate = new T();
+        var aggregate = NewAggregate(aggregateId);
 
-        var eventEntities = await dcbDbContext.GetEventEntitiesUpToDate(query, upToDate,
+        var eventEntities = await dcbDbContext.GetEventEntitiesUpToDate(aggregateId.Boundary, upToDate,
             aggregate.EventTypeFilter, cancellationToken);
 
         return Fold(aggregate, aggregateId, eventEntities);
     }
+
+    /// <summary>
+    /// Creates the model with its boundary already set, so <c>Apply</c> can read it.
+    /// </summary>
+    /// <remarks>
+    /// This is how a model spanning more than one entity learns which ones it is about. It also makes
+    /// <c>Add</c> without explicit tags append under the boundary the model was folded from, rather
+    /// than under whatever the caller remembered to assign.
+    /// </remarks>
+    private static T NewAggregate<T>(IDcbAggregateId<T> aggregateId) where T : IDcbAggregateRoot, new() =>
+        new() { Tags = aggregateId.Boundary.Tags };
 
     private static T Fold<T>(T aggregate, IDcbAggregateId<T> aggregateId, List<DcbEventEntity> eventEntities)
         where T : IDcbAggregateRoot

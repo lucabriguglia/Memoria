@@ -120,6 +120,11 @@ tracking, `EventTypeFilter`, `Apply`. They differ from `AggregateRoot` and `Proj
 two ways: they belong to no stream, and they record how far they folded as a `long LatestPosition`
 across the whole log rather than an `int` sequence within one stream.
 
+**A read model differs from a write model in one thing only: it never produces events.** Everything
+else is the same and is offered on both — identity, `LatestPosition`, the boundary in `Tags`, all
+four read modes, `GetInMemory…`, `Get…`, `Update…`, and the same `Aggregate Folded` diagnostics. Only
+`Add`, `UncommittedEvents` and `SaveAggregate`'s append belong to the write model.
+
 ```
 IEventSourcedModel        Version, EventTypeFilter, Apply, IsEventHandled
  ├ IStreamedModel        + StreamId, LatestEventSequence   (int, within one stream)
@@ -129,6 +134,41 @@ IEventSourcedModel        Version, EventTypeFilter, Apply, IsEventHandled
      ├ IDcbAggregateRoot + AggregateId, Tags, UncommittedEvents
      └ IDcbProjection    + ProjectionId
 ```
+
+## Identifiers carry their boundary
+
+`IDcbAggregateId` and `IDcbProjectionId` expose a `TagQuery Boundary` alongside `Id`. It is the DCB
+answer to `IAggregateId.EventPropertyFilter` — how this model's events are selected — except that
+tags select on their own, so it is the whole boundary rather than a narrowing inside a stream:
+
+```C#
+public class SubscriptionDecisionId(string courseId, string studentId)
+    : IDcbAggregateId<SubscriptionDecision>
+{
+    public string Id { get; } = $"{courseId}-{studentId}";
+
+    public TagQuery Boundary { get; } =
+        TagQuery.AnyOf(new Tag("course", courseId), new Tag("student", studentId));
+}
+
+// Everything aggregate-scoped then needs only the identifier
+var decision = await dcb.GetAggregate(new SubscriptionDecisionId("maths", "alice"));
+```
+
+Binding them makes it impossible for a model and the events it may read to disagree. It does not fix
+a boundary at design time the way a stream does — the identifier is constructed per decision, so its
+boundary varies with it.
+
+The boundary must be stable for a given `Id`. A snapshot is keyed by the boundary that produced it,
+so an identifier whose boundary changes — because you edited it and redeployed — misses its own
+snapshots and rebuilds them. Wasteful, never wrong.
+
+The event-level methods (`GetEvents`, `GetLatestPosition`, `SaveEvents`) still take a `TagQuery`
+directly. They are not aggregate-scoped, so there is no identifier to carry one.
+
+Once the model has been loaded, its own `Tags` are set from that boundary. A model spanning more than
+one entity can read them in `Apply` to know which ones it is about, and `Add` without explicit tags
+appends under the boundary the model was folded from.
 
 ## Snapshots
 

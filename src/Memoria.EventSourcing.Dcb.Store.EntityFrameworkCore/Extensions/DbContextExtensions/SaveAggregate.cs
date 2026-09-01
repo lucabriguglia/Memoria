@@ -11,8 +11,7 @@ public static partial class DcbDbContextExtensions
     /// </summary>
     /// <typeparam name="T">The aggregate type.</typeparam>
     /// <param name="dcbDbContext">The context.</param>
-    /// <param name="query">The consistency boundary. Part of the snapshot's identity.</param>
-    /// <param name="aggregateId">The aggregate identifier.</param>
+    /// <param name="aggregateId">The aggregate identifier, which carries the boundary.</param>
     /// <param name="aggregate">The aggregate whose staged events are appended.</param>
     /// <param name="condition">The concurrency check, or null to append unconditionally.</param>
     /// <param name="maxEventsPerAppend">The batch limit.</param>
@@ -34,7 +33,7 @@ public static partial class DcbDbContextExtensions
     /// <see cref="ReadMode.SnapshotWithNewEvents"/> would then skip.
     /// </para>
     /// </remarks>
-    public static async Task<Result> SaveAggregate<T>(this IDcbDbContext dcbDbContext, TagQuery query,
+    public static async Task<Result> SaveAggregate<T>(this IDcbDbContext dcbDbContext,
         IDcbAggregateId<T> aggregateId, T aggregate, AppendCondition? condition,
         int maxEventsPerAppend = DefaultMaxEventsPerAppend, CancellationToken cancellationToken = default)
         where T : IDcbAggregateRoot
@@ -85,8 +84,7 @@ public static partial class DcbDbContextExtensions
                 // when the aggregate handled nothing it just wrote.
                 aggregate.LatestPosition = Math.Max(aggregate.LatestPosition, lastPosition);
 
-                await dcbDbContext.WriteSnapshot(aggregate.ToSnapshotEntity(query, aggregateId),
-                    cancellationToken);
+                await dcbDbContext.WriteSnapshot(aggregate.ToSnapshotEntity(aggregateId), cancellationToken);
             }
 
             await transaction.CommitAsync(cancellationToken);
@@ -96,7 +94,7 @@ public static partial class DcbDbContextExtensions
         catch (Exception exception)
         {
             return await dcbDbContext.AppendFailure(exception, operation, condition, affectedTags,
-                cancellationToken, query);
+                cancellationToken, aggregateId.Boundary);
         }
     }
 }

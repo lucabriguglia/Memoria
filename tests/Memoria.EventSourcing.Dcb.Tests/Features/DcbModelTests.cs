@@ -46,6 +46,20 @@ public class DcbModelTests
     }
 
     [Fact]
+    public void Both_dcb_models_carry_the_boundary_they_were_folded_from()
+    {
+        // Tags are on the shared base, not on the write model alone. A read model differs from a
+        // write model only in never producing events; what it was built from is not a write concern.
+        typeof(IDcbModel).GetProperty("Tags", AnyMember).Should().NotBeNull();
+
+        new SeatAggregate().Should().BeAssignableTo<IDcbModel>();
+        new SeatProjection().Should().BeAssignableTo<IDcbModel>();
+
+        var projection = new SeatProjection { Tags = [new Tag("seat", "a1")] };
+        ((IDcbModel)projection).Tags.Should().ContainSingle();
+    }
+
+    [Fact]
     public void The_position_round_trips_through_the_dcb_model()
     {
         var aggregate = new SeatAggregate { LatestPosition = 9_000_000_000L };

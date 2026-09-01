@@ -26,7 +26,7 @@ public class SnapshotTests : RelationalTestBase
     {
         await Append(Reserved("a1", "s7"));
 
-        var result = await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), ReadMode.SnapshotOnly);
+        var result = await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOnly);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeNull("the events exist but no snapshot does, and this mode builds none");
@@ -37,7 +37,7 @@ public class SnapshotTests : RelationalTestBase
     {
         await Append(Reserved("a1", "s7"));
 
-        var result = await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
+        var result = await Context.GetAggregate(new SeatId("a1"),
             ReadMode.SnapshotOrCreate);
 
         result.Value!.ReservedBy.Should().Be("s7");
@@ -48,9 +48,9 @@ public class SnapshotTests : RelationalTestBase
     public async Task SnapshotOnly_returns_the_snapshot_once_one_exists()
     {
         await Append(Reserved("a1", "s7"));
-        await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), ReadMode.SnapshotOrCreate);
+        await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
 
-        var result = await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), ReadMode.SnapshotOnly);
+        var result = await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOnly);
 
         result.Value!.ReservedBy.Should().Be("s7");
     }
@@ -59,10 +59,10 @@ public class SnapshotTests : RelationalTestBase
     public async Task SnapshotOnly_does_not_see_events_appended_after_the_snapshot()
     {
         await Append(Reserved("a1", "s7"));
-        await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), ReadMode.SnapshotOrCreate);
+        await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
         await Context.SaveEvents([new TaggedEvent(new SeatReleasedEvent("a1"), [SeatA1])], condition: null);
 
-        var result = await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), ReadMode.SnapshotOnly);
+        var result = await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOnly);
 
         result.Value!.ReservedBy.Should().Be("s7", "this mode is deliberately stale");
     }
@@ -71,10 +71,10 @@ public class SnapshotTests : RelationalTestBase
     public async Task SnapshotWithNewEvents_applies_what_arrived_after_the_snapshot()
     {
         await Append(Reserved("a1", "s7"));
-        await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), ReadMode.SnapshotOrCreate);
+        await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
         await Context.SaveEvents([new TaggedEvent(new SeatReleasedEvent("a1"), [SeatA1])], condition: null);
 
-        var result = await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
+        var result = await Context.GetAggregate(new SeatId("a1"),
             ReadMode.SnapshotWithNewEvents);
 
         result.Value!.ReservedBy.Should().BeNull();
@@ -84,11 +84,11 @@ public class SnapshotTests : RelationalTestBase
     public async Task SnapshotWithNewEvents_refreshes_the_stored_snapshot()
     {
         await Append(Reserved("a1", "s7"));
-        await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), ReadMode.SnapshotOrCreate);
+        await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
         await Context.SaveEvents([new TaggedEvent(new SeatReleasedEvent("a1"), [SeatA1])], condition: null);
-        await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), ReadMode.SnapshotWithNewEvents);
+        await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotWithNewEvents);
 
-        var afterRefresh = await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
+        var afterRefresh = await Context.GetAggregate(new SeatId("a1"),
             ReadMode.SnapshotOnly);
 
         afterRefresh.Value!.ReservedBy.Should().BeNull("the refreshed snapshot was written back");
@@ -100,7 +100,7 @@ public class SnapshotTests : RelationalTestBase
     {
         await Append(Reserved("a1", "s7"));
 
-        var result = await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
+        var result = await Context.GetAggregate(new SeatId("a1"),
             ReadMode.SnapshotWithNewEvents);
 
         result.Value.Should().BeNull();
@@ -111,13 +111,13 @@ public class SnapshotTests : RelationalTestBase
     {
         await Append(Reserved("a1", "s7"));
 
-        var built = await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
+        var built = await Context.GetAggregate(new SeatId("a1"),
             ReadMode.SnapshotWithNewEventsOrCreate);
         built.Value!.ReservedBy.Should().Be("s7");
 
         await Context.SaveEvents([new TaggedEvent(new SeatReleasedEvent("a1"), [SeatA1])], condition: null);
 
-        var refreshed = await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
+        var refreshed = await Context.GetAggregate(new SeatId("a1"),
             ReadMode.SnapshotWithNewEventsOrCreate);
         refreshed.Value!.ReservedBy.Should().BeNull();
     }
@@ -125,7 +125,7 @@ public class SnapshotTests : RelationalTestBase
     [Fact]
     public async Task A_boundary_with_no_events_yields_no_aggregate_even_when_asked_to_create()
     {
-        var result = await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
+        var result = await Context.GetAggregate(new SeatId("a1"),
             ReadMode.SnapshotOrCreate);
 
         result.IsSuccess.Should().BeTrue();
@@ -141,9 +141,9 @@ public class SnapshotTests : RelationalTestBase
         // The same aggregate id folded over a wider boundary is a different state. Returning the
         // narrow fold for the wide query would be silently wrong.
         await Append(Reserved("a1", "s7", SeatA1, StudentS7));
-        await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), ReadMode.SnapshotOrCreate);
+        await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
 
-        var otherBoundary = await Context.GetAggregate(TagQuery.AnyOf(SeatA1, StudentS7), new SeatId("a1"),
+        var otherBoundary = await Context.GetAggregate(new WideSeatId("a1"),
             ReadMode.SnapshotOnly);
 
         otherBoundary.Value.Should().BeNull("that boundary has no snapshot of its own");
@@ -154,8 +154,8 @@ public class SnapshotTests : RelationalTestBase
     {
         await Append(Reserved("a1", "s7", SeatA1, StudentS7));
 
-        await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), ReadMode.SnapshotOrCreate);
-        await Context.GetAggregate(TagQuery.AnyOf(SeatA1, StudentS7), new SeatId("a1"),
+        await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
+        await Context.GetAggregate(new WideSeatId("a1"),
             ReadMode.SnapshotOrCreate);
 
         Context.DcbSnapshots.Count().Should().Be(2);
@@ -170,12 +170,12 @@ public class SnapshotTests : RelationalTestBase
         // format would leave behind.
         await Append(Reserved("a1", "s7"));
         var boundary = TagQuery.AnyOf(SeatA1);
-        await Context.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotOrCreate);
+        await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
 
         await Context.Database.ExecuteSqlRawAsync(
             "UPDATE DcbSnapshots SET TagQuery = {0}", "seat:somewhere-else");
 
-        var result = await Context.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotOnly);
+        var result = await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOnly);
 
         result.Value.Should().BeNull("the row is not a fold of the boundary that was asked for");
     }
@@ -186,8 +186,8 @@ public class SnapshotTests : RelationalTestBase
         await Append(Reserved("a1", "s7"));
         var boundary = TagQuery.AnyOf(SeatA1);
 
-        await Context.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotOrCreate);
-        await Context.GetProjection(boundary, new SeatSummaryId("a1"), ReadMode.SnapshotOrCreate);
+        await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
+        await Context.GetProjection(new SeatSummaryId("a1"), ReadMode.SnapshotOrCreate);
 
         Context.DcbSnapshots.Count().Should().Be(2, "the kind is part of the identity");
     }
@@ -200,10 +200,10 @@ public class SnapshotTests : RelationalTestBase
         await Append(Reserved("a1", "s7"), Reserved("a1", "s8"));
         var boundary = TagQuery.AnyOf(SeatA1);
 
-        var built = await Context.GetProjection(boundary, new SeatSummaryId("a1"), ReadMode.SnapshotOrCreate);
+        var built = await Context.GetProjection(new SeatSummaryId("a1"), ReadMode.SnapshotOrCreate);
         built.Value!.Reservations.Should().Be(2);
 
-        var read = await Context.GetProjection(boundary, new SeatSummaryId("a1"), ReadMode.SnapshotOnly);
+        var read = await Context.GetProjection(new SeatSummaryId("a1"), ReadMode.SnapshotOnly);
         read.Value!.Reservations.Should().Be(2);
     }
 
@@ -211,9 +211,9 @@ public class SnapshotTests : RelationalTestBase
     public async Task A_projection_can_be_saved_explicitly_and_read_back()
     {
         var boundary = TagQuery.AnyOf(SeatA1);
-        var projection = (await Context.GetInMemoryProjection(boundary, new SeatSummaryId("a1"))).Value!;
+        var projection = (await Context.GetInMemoryProjection(new SeatSummaryId("a1"))).Value!;
 
-        var saveResult = await Context.SaveProjection(boundary, new SeatSummaryId("a1"), projection);
+        var saveResult = await Context.SaveProjection(new SeatSummaryId("a1"), projection);
 
         saveResult.IsSuccess.Should().BeTrue();
         Context.DcbSnapshots.Count().Should().Be(1);
@@ -226,15 +226,15 @@ public class SnapshotTests : RelationalTestBase
         var boundary = TagQuery.AnyOf(SeatA1);
         var projectionId = new SeatSummaryId("a1");
 
-        var first = (await Context.GetInMemoryProjection(boundary, projectionId)).Value!;
-        await Context.SaveProjection(boundary, projectionId, first);
+        var first = (await Context.GetInMemoryProjection(projectionId)).Value!;
+        await Context.SaveProjection(projectionId, first);
 
         await Append(Reserved("a1", "s8"));
-        var second = (await Context.GetInMemoryProjection(boundary, projectionId)).Value!;
-        await Context.SaveProjection(boundary, projectionId, second);
+        var second = (await Context.GetInMemoryProjection(projectionId)).Value!;
+        await Context.SaveProjection(projectionId, second);
 
         Context.DcbSnapshots.Count().Should().Be(1);
-        (await Context.GetProjection(boundary, projectionId, ReadMode.SnapshotOnly))
+        (await Context.GetProjection(projectionId, ReadMode.SnapshotOnly))
             .Value!.Reservations.Should().Be(2);
     }
 
@@ -247,9 +247,9 @@ public class SnapshotTests : RelationalTestBase
         var aggregate = new SeatAggregate();
         aggregate.Reserve("a1", "s7");
 
-        await Context.SaveAggregate(boundary, new SeatId("a1"), aggregate, condition: null);
+        await Context.SaveAggregate(new SeatId("a1"), aggregate, condition: null);
 
-        var read = await Context.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotOnly);
+        var read = await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOnly);
         read.Value!.ReservedBy.Should().Be("s7", "the append wrote a snapshot, so SnapshotOnly finds one");
     }
 
@@ -266,7 +266,7 @@ public class SnapshotTests : RelationalTestBase
 
         await Context.Database.ExecuteSqlRawAsync("DROP TABLE DcbSnapshots;");
 
-        var result = await Context.SaveAggregate(boundary, new SeatId("a1"), aggregate, condition: null);
+        var result = await Context.SaveAggregate(new SeatId("a1"), aggregate, condition: null);
 
         result.IsNotSuccess.Should().BeTrue("a snapshot that cannot be written is a failed save");
         result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.StorageFailureType);
@@ -281,12 +281,12 @@ public class SnapshotTests : RelationalTestBase
         var aggregate = new SeatAggregate();
         aggregate.Reserve("a1", "s7");
 
-        var result = await Context.SaveAggregate(boundary, new SeatId("a1"), aggregate, condition: null);
+        var result = await Context.SaveAggregate(new SeatId("a1"), aggregate, condition: null);
 
         result.IsSuccess.Should().BeTrue();
-        (await Context.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotOnly))
+        (await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOnly))
             .Value.Should().NotBeNull();
-        (await Context.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotWithNewEvents))
+        (await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotWithNewEvents))
             .Value.Should().NotBeNull();
     }
 
@@ -299,7 +299,7 @@ public class SnapshotTests : RelationalTestBase
         var aggregate = new SeatAggregate();
         aggregate.Reserve("a1", "s7");
 
-        await Context.SaveAggregate(boundary, new SeatId("a1"), aggregate, condition: null);
+        await Context.SaveAggregate(new SeatId("a1"), aggregate, condition: null);
 
         var appended = Context.DcbEvents.Max(@event => @event.Position);
         Context.DcbSnapshots.Single().LatestPosition.Should().Be(appended);
@@ -324,7 +324,7 @@ public class SnapshotTests : RelationalTestBase
         var aggregate = new SeatAggregate();
         aggregate.Reserve("a1", "s7");
 
-        await saving.SaveAggregate(boundary, new SeatId("a1"), aggregate, condition: null);
+        await saving.SaveAggregate(new SeatId("a1"), aggregate, condition: null);
 
         interceptor.Fired.Should().BeTrue("the intruding writer must actually have committed");
 
@@ -342,7 +342,7 @@ public class SnapshotTests : RelationalTestBase
         var boundary = TagQuery.AnyOf(SeatA1);
         var latest = await Context.GetLatestPosition(boundary);
 
-        await Context.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotOrCreate);
+        await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
 
         Context.DcbSnapshots.Single().LatestPosition.Should().Be(latest);
     }
@@ -350,12 +350,13 @@ public class SnapshotTests : RelationalTestBase
     [Fact]
     public async Task A_stored_snapshot_records_the_boundary_in_full()
     {
+        // A two-tag boundary, so this shows the whole thing is stored rather than a first tag.
         await Append(Reserved("a1", "s7", SeatA1, StudentS7));
-        var boundary = TagQuery.AnyOf(SeatA1, StudentS7);
+        var aggregateId = new WideSeatId("a1");
 
-        await Context.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotOrCreate);
+        await Context.GetAggregate(aggregateId, ReadMode.SnapshotOrCreate);
 
-        Context.DcbSnapshots.Single().TagQuery.Should().Be(boundary.ToString());
+        Context.DcbSnapshots.Single().TagQuery.Should().Be(aggregateId.Boundary.ToString());
     }
 
     [Fact]
@@ -363,7 +364,7 @@ public class SnapshotTests : RelationalTestBase
     {
         await Context.Database.ExecuteSqlRawAsync("DROP TABLE DcbSnapshots;");
 
-        var result = await Context.GetAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), ReadMode.SnapshotOnly);
+        var result = await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOnly);
 
         result.IsNotSuccess.Should().BeTrue();
         result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.StorageFailureType);

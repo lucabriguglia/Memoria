@@ -41,9 +41,11 @@ public class SeatAggregate : DcbAggregateRoot
     }
 }
 
-public class SeatId(string id) : IDcbAggregateId<SeatAggregate>
+public class SeatId(string seatId) : IDcbAggregateId<SeatAggregate>
 {
-    public string Id { get; } = id;
+    public string Id { get; } = seatId;
+
+    public TagQuery Boundary { get; } = TagQuery.AnyOf(new Tag("seat", seatId));
 }
 
 [ProjectionType("SeatSummary")]
@@ -65,7 +67,9 @@ public class SeatSummaryProjection : DcbProjection
     }
 }
 
-public class SeatSummaryId(string id) : IDcbProjectionId<SeatSummaryProjection>
+public class SeatSummaryId(string seatId) : IDcbProjectionId<SeatSummaryProjection>
 {
-    public string Id { get; } = id;
+    public string Id { get; } = seatId;
+
+    public TagQuery Boundary { get; } = TagQuery.AnyOf(new Tag("seat", seatId));
 }

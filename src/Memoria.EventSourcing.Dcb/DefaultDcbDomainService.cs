@@ -14,7 +14,7 @@ public class DefaultDcbDomainService : IDcbDomainService
         "No DCB store provider has been configured. Please register one, such as Entity Framework Core via AddMemoriaDcbEntityFrameworkCore.";
 
     /// <inheritdoc />
-    public Task<Result<T?>> GetAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId, ReadMode readMode,
+    public Task<Result<T?>> GetAggregate<T>(IDcbAggregateId<T> aggregateId, ReadMode readMode,
         CancellationToken cancellationToken = default) where T : IDcbAggregateRoot, new() =>
         throw new NotImplementedException(NotImplementedMessage);
 
@@ -59,48 +59,48 @@ public class DefaultDcbDomainService : IDcbDomainService
         throw new NotImplementedException(NotImplementedMessage);
 
     /// <inheritdoc />
-    public Task<Result<T>> GetInMemoryAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId,
+    public Task<Result<T>> GetInMemoryAggregate<T>(IDcbAggregateId<T> aggregateId,
         CancellationToken cancellationToken = default) where T : IDcbAggregateRoot, new() =>
         throw new NotImplementedException(NotImplementedMessage);
 
     /// <inheritdoc />
-    public Task<Result<T>> GetInMemoryAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId, long upToPosition,
+    public Task<Result<T>> GetInMemoryAggregate<T>(IDcbAggregateId<T> aggregateId, long upToPosition,
         CancellationToken cancellationToken = default) where T : IDcbAggregateRoot, new() =>
         throw new NotImplementedException(NotImplementedMessage);
 
     /// <inheritdoc />
-    public Task<Result<T>> GetInMemoryAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId,
+    public Task<Result<T>> GetInMemoryAggregate<T>(IDcbAggregateId<T> aggregateId,
         DateTimeOffset upToDate, CancellationToken cancellationToken = default)
         where T : IDcbAggregateRoot, new() =>
         throw new NotImplementedException(NotImplementedMessage);
 
     /// <inheritdoc />
-    public Task<Result<T>> GetInMemoryProjection<T>(TagQuery query, IDcbProjectionId<T> projectionId,
+    public Task<Result<T>> GetInMemoryProjection<T>(IDcbProjectionId<T> projectionId,
         CancellationToken cancellationToken = default) where T : IDcbProjection, new() =>
         throw new NotImplementedException(NotImplementedMessage);
 
     /// <inheritdoc />
-    public Task<Result<T>> GetInMemoryProjection<T>(TagQuery query, IDcbProjectionId<T> projectionId,
+    public Task<Result<T>> GetInMemoryProjection<T>(IDcbProjectionId<T> projectionId,
         long upToPosition, CancellationToken cancellationToken = default) where T : IDcbProjection, new() =>
         throw new NotImplementedException(NotImplementedMessage);
 
     /// <inheritdoc />
-    public Task<Result<T>> GetInMemoryProjection<T>(TagQuery query, IDcbProjectionId<T> projectionId,
+    public Task<Result<T>> GetInMemoryProjection<T>(IDcbProjectionId<T> projectionId,
         DateTimeOffset upToDate, CancellationToken cancellationToken = default) where T : IDcbProjection, new() =>
         throw new NotImplementedException(NotImplementedMessage);
 
     /// <inheritdoc />
-    public Task<Result<T?>> GetProjection<T>(TagQuery query, IDcbProjectionId<T> projectionId, ReadMode readMode,
+    public Task<Result<T?>> GetProjection<T>(IDcbProjectionId<T> projectionId, ReadMode readMode,
         CancellationToken cancellationToken = default) where T : IDcbProjection, new() =>
         throw new NotImplementedException(NotImplementedMessage);
 
     /// <inheritdoc />
-    public Task<Result> SaveProjection<T>(TagQuery query, IDcbProjectionId<T> projectionId, T projection,
+    public Task<Result> SaveProjection<T>(IDcbProjectionId<T> projectionId, T projection,
         CancellationToken cancellationToken = default) where T : IDcbProjection =>
         throw new NotImplementedException(NotImplementedMessage);
 
     /// <inheritdoc />
-    public Task<Result> SaveAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId, T aggregate,
+    public Task<Result> SaveAggregate<T>(IDcbAggregateId<T> aggregateId, T aggregate,
         AppendCondition? condition, CancellationToken cancellationToken = default) where T : IDcbAggregateRoot =>
         throw new NotImplementedException(NotImplementedMessage);
 
@@ -110,8 +110,13 @@ public class DefaultDcbDomainService : IDcbDomainService
         throw new NotImplementedException(NotImplementedMessage);
 
     /// <inheritdoc />
-    public Task<Result<T?>> UpdateAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId,
+    public Task<Result<T?>> UpdateAggregate<T>(IDcbAggregateId<T> aggregateId,
         CancellationToken cancellationToken = default) where T : IDcbAggregateRoot, new() =>
+        throw new NotImplementedException(NotImplementedMessage);
+
+    /// <inheritdoc />
+    public Task<Result<T?>> UpdateProjection<T>(IDcbProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IDcbProjection, new() =>
         throw new NotImplementedException(NotImplementedMessage);
 
     /// <inheritdoc />

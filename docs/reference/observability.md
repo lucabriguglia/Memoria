@@ -66,6 +66,11 @@ Emitted from:
 
 Reading an aggregate with `ReadMode.SnapshotOnly` does not fold anything, so it emits nothing.
 
+> **Projections emit nothing in the streamed stores.** `GetProjection` and the projection refresh
+> fold events exactly as their aggregate counterparts do, but record none of it, so a projection in
+> an unexpected state cannot be explained the way an aggregate can. The DCB store treats the two
+> alike; the streamed stores are due the same alignment.
+
 #### From the DCB store
 
 The [DCB store](configuration/dcb-ef-core.md) emits the **same event name**, so one query finds folds
@@ -83,6 +88,12 @@ in either consistency model. Three tags differ, because the concepts do:
 
 Emitted from `GetAggregate` (cold build), from `UpdateAggregate`, and from the snapshot refresh under
 `ReadMode.SnapshotWithNewEvents` — which is the same refresh `UpdateAggregate` performs.
+
+**And from the projection equivalents.** `GetProjection`, `UpdateProjection` and a projection's
+refresh emit the same event, with the projection's store id in `aggregateId`. A read model differs
+from a write model only in never producing events, so folding one is worth exactly as much to a trace
+as folding the other. The streamed stores do not do this yet — see the note under
+[Aggregate Folded](#aggregate-folded) above for what they cover.
 
 ### Concurrency Exception
 

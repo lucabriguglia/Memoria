@@ -9,12 +9,12 @@ public static partial class DcbDbContextExtensions
     /// Folds every event inside a boundary into a fresh projection, without persisting a snapshot.
     /// </summary>
     public static async Task<Result<T>> GetInMemoryProjection<T>(this IDcbDbContext dcbDbContext,
-        TagQuery query, IDcbProjectionId<T> projectionId, CancellationToken cancellationToken = default)
+        IDcbProjectionId<T> projectionId, CancellationToken cancellationToken = default)
         where T : IDcbProjection, new()
     {
-        var projection = new T();
+        var projection = NewProjection(projectionId);
 
-        var eventEntities = await dcbDbContext.GetEventEntities(query, projection.EventTypeFilter, cancellationToken);
+        var eventEntities = await dcbDbContext.GetEventEntities(projectionId.Boundary, projection.EventTypeFilter, cancellationToken);
 
         return Fold(projection, projectionId, eventEntities);
     }
@@ -23,12 +23,12 @@ public static partial class DcbDbContextExtensions
     /// Folds the events inside a boundary up to a position into a fresh projection.
     /// </summary>
     public static async Task<Result<T>> GetInMemoryProjection<T>(this IDcbDbContext dcbDbContext,
-        TagQuery query, IDcbProjectionId<T> projectionId, long upToPosition,
+        IDcbProjectionId<T> projectionId, long upToPosition,
         CancellationToken cancellationToken = default) where T : IDcbProjection, new()
     {
-        var projection = new T();
+        var projection = NewProjection(projectionId);
 
-        var eventEntities = await dcbDbContext.GetEventEntitiesUpToPosition(query, upToPosition,
+        var eventEntities = await dcbDbContext.GetEventEntitiesUpToPosition(projectionId.Boundary, upToPosition,
             projection.EventTypeFilter, cancellationToken);
 
         return Fold(projection, projectionId, eventEntities);
@@ -38,16 +38,23 @@ public static partial class DcbDbContextExtensions
     /// Folds the events inside a boundary up to a date into a fresh projection.
     /// </summary>
     public static async Task<Result<T>> GetInMemoryProjection<T>(this IDcbDbContext dcbDbContext,
-        TagQuery query, IDcbProjectionId<T> projectionId, DateTimeOffset upToDate,
+        IDcbProjectionId<T> projectionId, DateTimeOffset upToDate,
         CancellationToken cancellationToken = default) where T : IDcbProjection, new()
     {
-        var projection = new T();
+        var projection = NewProjection(projectionId);
 
-        var eventEntities = await dcbDbContext.GetEventEntitiesUpToDate(query, upToDate,
+        var eventEntities = await dcbDbContext.GetEventEntitiesUpToDate(projectionId.Boundary, upToDate,
             projection.EventTypeFilter, cancellationToken);
 
         return Fold(projection, projectionId, eventEntities);
     }
+
+    /// <summary>
+    /// Creates the model with its boundary already set, so <c>Apply</c> can read it. The mirror of
+    /// <see cref="NewAggregate{T}"/>: a read model is folded exactly as a write model is.
+    /// </summary>
+    private static T NewProjection<T>(IDcbProjectionId<T> projectionId) where T : IDcbProjection, new() =>
+        new() { Tags = projectionId.Boundary.Tags };
 
     private static T Fold<T>(T projection, IDcbProjectionId<T> projectionId, List<DcbEventEntity> eventEntities)
         where T : IDcbProjection

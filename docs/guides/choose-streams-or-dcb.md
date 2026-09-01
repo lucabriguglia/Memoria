@@ -53,8 +53,10 @@ be renamed.
 on a property inside the payload. DCB has no equivalent and does not need one — put the value in a
 tag and query it directly:
 
+Both live on the identifier, so the two models line up almost exactly:
+
 ```C#
-// Streams: pick this order's events out of the customer's stream
+// Streams: the stream is passed in, and the id narrows to this aggregate's events inside it
 public class OrderId(Guid id) : IAggregateId<Order>
 {
     public string Id { get; } = id.ToString();
@@ -64,11 +66,17 @@ public class OrderId(Guid id) : IAggregateId<Order>
     };
 }
 
-// DCB: the boundary says it
-var boundary = TagQuery.AnyOf(new Tag("order", orderId.ToString()));
+// DCB: the id carries the whole boundary, because tags select on their own
+public class OrderId(Guid id) : IDcbAggregateId<Order>
+{
+    public string Id { get; } = id.ToString();
+    public TagQuery Boundary { get; } = TagQuery.AnyOf(new Tag("order", id.ToString()));
+}
 ```
 
-Tags are indexed; the substring match a property filter compiles to on most providers is not.
+The difference is that a stream still has to be passed alongside the streamed id, while a DCB
+identifier is self-contained — `dcb.GetAggregate(new OrderId(id))` needs nothing else. Tags are also
+indexed, where the substring match a property filter compiles to on most providers is not.
 
 **A stream id usually becomes one tag.** `customer-42` becomes `customer:42`, and the events that
 were in that stream carry that tag. The difference is that they can carry others too.

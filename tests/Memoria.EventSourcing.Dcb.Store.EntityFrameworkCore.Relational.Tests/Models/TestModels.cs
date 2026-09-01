@@ -34,9 +34,11 @@ public class SeatAggregate : DcbAggregateRoot
     }
 }
 
-public class SeatId(string id) : IDcbAggregateId<SeatAggregate>
+public class SeatId(string seatId) : IDcbAggregateId<SeatAggregate>
 {
-    public string Id { get; } = id;
+    public string Id { get; } = seatId;
+
+    public TagQuery Boundary { get; } = TagQuery.AnyOf(new Tag("seat", seatId));
 }
 
 [ProjectionType("SeatSummary")]
@@ -58,7 +60,25 @@ public class SeatSummaryProjection : DcbProjection
     }
 }
 
-public class SeatSummaryId(string id) : IDcbProjectionId<SeatSummaryProjection>
+public class SeatSummaryId(string seatId) : IDcbProjectionId<SeatSummaryProjection>
 {
-    public string Id { get; } = id;
+    public string Id { get; } = seatId;
+
+    public TagQuery Boundary { get; } = TagQuery.AnyOf(new Tag("seat", seatId));
+}
+
+/// <summary>
+/// The same seat aggregate after its boundary was widened to include the student.
+/// </summary>
+/// <remarks>
+/// Stands for a redeploy in which an identifier's boundary changed. Snapshots are keyed by the
+/// boundary that produced them, so the ones written under the narrower boundary become unreachable
+/// and are rebuilt rather than returned as if they were folds of the wider one.
+/// </remarks>
+public class WideSeatId(string seatId) : IDcbAggregateId<SeatAggregate>
+{
+    public string Id { get; } = seatId;
+
+    public TagQuery Boundary { get; } =
+        TagQuery.AnyOf(new Tag("seat", seatId), new Tag("student", "s7"));
 }

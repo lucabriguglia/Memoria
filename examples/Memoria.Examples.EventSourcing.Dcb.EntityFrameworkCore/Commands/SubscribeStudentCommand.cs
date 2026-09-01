@@ -27,11 +27,11 @@ public class SubscribeStudentCommandHandler(IDcbDomainService dcb) : ICommandHan
 {
     public async Task<Result> Handle(SubscribeStudentCommand command, CancellationToken cancellationToken = default)
     {
-        // 1. The boundary: everything the decision reads and nothing else, so a subscription to a
+        // 1. The identifier carries the boundary, so the decision and the events it may read cannot
+        //    disagree: everything it reads and nothing else, which is why a subscription to a
         //    different course by a different student never contends with this one.
-        var boundary = TagQuery.AnyOf(
-            new Tag("course", command.CourseId),
-            new Tag("student", command.StudentId));
+        var decisionId = new SubscriptionDecisionId(command.CourseId, command.StudentId);
+        var boundary = decisionId.Boundary;
 
         var decision = new SubscriptionDecision().About(command.CourseId, command.StudentId);
 

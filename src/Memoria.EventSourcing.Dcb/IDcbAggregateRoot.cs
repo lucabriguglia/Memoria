@@ -20,14 +20,6 @@ public interface IDcbAggregateRoot : IDcbModel
     string AggregateId { get; set; }
 
     /// <summary>
-    /// Gets or sets the tags every event this aggregate stages carries by default.
-    /// </summary>
-    /// <value>
-    /// The things this aggregate concerns. An event staged without explicit tags inherits these.
-    /// </value>
-    IReadOnlyCollection<Tag> Tags { get; set; }
-
-    /// <summary>
     /// Gets the events that have been staged but not yet appended, with the tags they will be
     /// appended under.
     /// </summary>

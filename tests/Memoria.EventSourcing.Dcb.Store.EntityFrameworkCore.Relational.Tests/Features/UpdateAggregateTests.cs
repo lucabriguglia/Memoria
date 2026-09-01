@@ -32,7 +32,7 @@ public class UpdateAggregateTests : RelationalTestBase
         var aggregate = new SeatAggregate();
         aggregate.Reserve("a1", "s7");
 
-        var result = await Context.SaveAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), aggregate,
+        var result = await Context.SaveAggregate(new SeatId("a1"), aggregate,
             condition: null);
 
         result.IsSuccess.Should().BeTrue();
@@ -42,8 +42,7 @@ public class UpdateAggregateTests : RelationalTestBase
     [Fact]
     public async Task Saving_an_aggregate_that_staged_nothing_succeeds_and_writes_nothing()
     {
-        var result = await Context.SaveAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
-            new SeatAggregate(), condition: null);
+        var result = await Context.SaveAggregate(new SeatId("a1"), new SeatAggregate(), condition: null);
 
         result.IsSuccess.Should().BeTrue();
         Context.DcbEvents.Count().Should().Be(0);
@@ -59,12 +58,12 @@ public class UpdateAggregateTests : RelationalTestBase
         await using var other = CreateContext();
 
         var position = await Context.GetLatestPosition(boundary);
-        var aggregate = (await Context.GetInMemoryAggregate(boundary, new SeatId("a1"))).Value!;
+        var aggregate = (await Context.GetInMemoryAggregate(new SeatId("a1"))).Value!;
 
         await other.SaveEvents([Reserved("s8")], condition: null);
 
         aggregate.Reserve("a1", "s7");
-        var result = await Context.SaveAggregate(boundary, new SeatId("a1"), aggregate,
+        var result = await Context.SaveAggregate(new SeatId("a1"), aggregate,
             new AppendCondition(boundary, position));
 
         result.IsNotSuccess.Should().BeTrue("the boundary moved between the fold and the append");
@@ -78,7 +77,7 @@ public class UpdateAggregateTests : RelationalTestBase
     {
         await Append(Reserved("s7"));
 
-        var result = await Context.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
+        var result = await Context.UpdateAggregate(new SeatId("a1"));
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.ReservedBy.Should().Be("s7");
@@ -90,11 +89,11 @@ public class UpdateAggregateTests : RelationalTestBase
     {
         var boundary = TagQuery.AnyOf(SeatA1);
         await Append(Reserved("s7"));
-        await Context.UpdateAggregate(boundary, new SeatId("a1"));
+        await Context.UpdateAggregate(new SeatId("a1"));
 
         await Append(new TaggedEvent(new SeatReleasedEvent("a1"), [SeatA1]));
 
-        var result = await Context.UpdateAggregate(boundary, new SeatId("a1"));
+        var result = await Context.UpdateAggregate(new SeatId("a1"));
 
         result.Value!.ReservedBy.Should().BeNull();
         Context.DcbSnapshots.Count().Should().Be(1, "refreshing replaces rather than accumulates");
@@ -105,19 +104,19 @@ public class UpdateAggregateTests : RelationalTestBase
     {
         var boundary = TagQuery.AnyOf(SeatA1);
         await Append(Reserved("s7"));
-        await Context.UpdateAggregate(boundary, new SeatId("a1"));
+        await Context.UpdateAggregate(new SeatId("a1"));
         await Append(new TaggedEvent(new SeatReleasedEvent("a1"), [SeatA1]));
 
-        await Context.UpdateAggregate(boundary, new SeatId("a1"));
+        await Context.UpdateAggregate(new SeatId("a1"));
 
-        (await Context.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotOnly))
+        (await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOnly))
             .Value!.ReservedBy.Should().BeNull("the refresh was written back");
     }
 
     [Fact]
     public async Task Updating_an_empty_boundary_yields_nothing()
     {
-        var result = await Context.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
+        var result = await Context.UpdateAggregate(new SeatId("a1"));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeNull("there is no snapshot and no event to build one from");
@@ -131,7 +130,7 @@ public class UpdateAggregateTests : RelationalTestBase
         // read path that happens to write a cache, not a way to record a decision.
         await Append(Reserved("s7"));
 
-        await Context.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
+        await Context.UpdateAggregate(new SeatId("a1"));
 
         Context.DcbEvents.Count().Should().Be(1);
     }
@@ -141,14 +140,75 @@ public class UpdateAggregateTests : RelationalTestBase
     {
         var boundary = TagQuery.AnyOf(SeatA1);
         await Append(Reserved("s7"));
-        await Context.UpdateAggregate(boundary, new SeatId("a1"));
+        await Context.UpdateAggregate(new SeatId("a1"));
 
         var before = Context.DcbSnapshots.Single().LatestPosition;
 
-        var result = await Context.UpdateAggregate(boundary, new SeatId("a1"));
+        var result = await Context.UpdateAggregate(new SeatId("a1"));
 
         result.Value!.ReservedBy.Should().Be("s7");
         Context.DcbSnapshots.Single().LatestPosition.Should().Be(before);
+    }
+
+    // -- projections refresh exactly as aggregates do ------------------------------------------
+
+    [Fact]
+    public async Task Updating_a_projection_folds_the_boundary_and_writes_a_snapshot_when_there_is_none()
+    {
+        await Append(Reserved("s7"));
+
+        var result = await Context.UpdateProjection(new SeatSummaryId("a1"));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Reservations.Should().Be(1);
+        Context.DcbSnapshots.Count().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Updating_a_projection_applies_only_what_arrived_after_the_snapshot()
+    {
+        var projectionId = new SeatSummaryId("a1");
+        await Append(Reserved("s7"));
+        await Context.UpdateProjection(projectionId);
+
+        await Append(Reserved("s8"));
+
+        var result = await Context.UpdateProjection(projectionId);
+
+        result.Value!.Reservations.Should().Be(2);
+        Context.DcbSnapshots.Count().Should().Be(1, "refreshing replaces rather than accumulates");
+    }
+
+    [Fact]
+    public async Task Updating_an_empty_boundary_yields_no_projection()
+    {
+        var result = await Context.UpdateProjection(new SeatSummaryId("a1"));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeNull("there is no snapshot and no event to build one from");
+        Context.DcbSnapshots.Count().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Updating_a_projection_appends_nothing()
+    {
+        await Append(Reserved("s7"));
+
+        await Context.UpdateProjection(new SeatSummaryId("a1"));
+
+        Context.DcbEvents.Count().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task A_projection_knows_the_boundary_it_was_folded_from()
+    {
+        // Tags live on the shared base, so a read model records what built it exactly as a write
+        // model does — it simply never uses them to stage anything.
+        await Append(Reserved("s7"));
+
+        var result = await Context.UpdateProjection(new SeatSummaryId("a1"));
+
+        result.Value!.Tags.Should().BeEquivalentTo([SeatA1]);
     }
 
     [Fact]
@@ -156,7 +216,7 @@ public class UpdateAggregateTests : RelationalTestBase
     {
         await Context.Database.ExecuteSqlRawAsync("DROP TABLE DcbSnapshots;");
 
-        var result = await Context.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
+        var result = await Context.UpdateAggregate(new SeatId("a1"));
 
         result.IsNotSuccess.Should().BeTrue();
         result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.StorageFailureType);

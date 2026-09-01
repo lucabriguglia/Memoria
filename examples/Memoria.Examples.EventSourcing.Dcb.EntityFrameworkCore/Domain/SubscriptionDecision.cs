@@ -130,4 +130,11 @@ public class SubscriptionDecisionId(string courseId, string studentId)
     : IDcbAggregateId<SubscriptionDecision>
 {
     public string Id { get; } = $"{courseId}-{studentId}";
+
+    /// <summary>
+    /// Everything the decision reads, and nothing else — so a subscription to a different course by
+    /// a different student never contends with this one.
+    /// </summary>
+    public TagQuery Boundary { get; } =
+        TagQuery.AnyOf(new Tag("course", courseId), new Tag("student", studentId));
 }

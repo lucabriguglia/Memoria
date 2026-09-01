@@ -89,10 +89,10 @@ public class PostgreSqlDcbJsonbTests(PostgreSqlFixture fixture)
                 .Which.Should().BeOfType<SeatReservedEvent>()
                 .Which.StudentId.Should().Be("s7");
 
-            var aggregate = await dbContext.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotOrCreate);
+            var aggregate = await dbContext.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
             aggregate.Value!.ReservedBy.Should().Be("s7");
 
-            var fromSnapshot = await dbContext.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotOnly);
+            var fromSnapshot = await dbContext.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOnly);
             fromSnapshot.Value!.ReservedBy.Should().Be("s7", "the snapshot round-tripped through jsonb too");
         }
         finally

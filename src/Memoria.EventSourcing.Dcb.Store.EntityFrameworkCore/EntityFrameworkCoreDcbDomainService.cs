@@ -24,10 +24,10 @@ public class EntityFrameworkCoreDcbDomainService(
     : IDcbDomainService
 {
     /// <inheritdoc />
-    public Task<Result<T?>> GetAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId,
+    public Task<Result<T?>> GetAggregate<T>(IDcbAggregateId<T> aggregateId,
         ReadMode readMode = ReadMode.SnapshotOnly, CancellationToken cancellationToken = default)
         where T : IDcbAggregateRoot, new() =>
-        dcbDbContext.GetAggregate(query, aggregateId, readMode, cancellationToken);
+        dcbDbContext.GetAggregate(aggregateId, readMode, cancellationToken);
 
     /// <inheritdoc />
     public async Task<Result<List<IEvent>>> GetEvents(TagQuery query, Type[]? eventTypeFilter = null,
@@ -78,54 +78,53 @@ public class EntityFrameworkCoreDcbDomainService(
             () => dcbDbContext.GetLatestPosition(query, eventTypeFilter, cancellationToken));
 
     /// <inheritdoc />
-    public Task<Result<T>> GetInMemoryAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId,
+    public Task<Result<T>> GetInMemoryAggregate<T>(IDcbAggregateId<T> aggregateId,
         CancellationToken cancellationToken = default) where T : IDcbAggregateRoot, new() =>
-        dcbDbContext.GetInMemoryAggregate(query, aggregateId, cancellationToken);
+        dcbDbContext.GetInMemoryAggregate(aggregateId, cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<T>> GetInMemoryAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId,
+    public Task<Result<T>> GetInMemoryAggregate<T>(IDcbAggregateId<T> aggregateId,
         long upToPosition, CancellationToken cancellationToken = default) where T : IDcbAggregateRoot, new() =>
-        dcbDbContext.GetInMemoryAggregate(query, aggregateId, upToPosition, cancellationToken);
+        dcbDbContext.GetInMemoryAggregate(aggregateId, upToPosition, cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<T>> GetInMemoryAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId,
+    public Task<Result<T>> GetInMemoryAggregate<T>(IDcbAggregateId<T> aggregateId,
         DateTimeOffset upToDate, CancellationToken cancellationToken = default)
         where T : IDcbAggregateRoot, new() =>
-        dcbDbContext.GetInMemoryAggregate(query, aggregateId, upToDate, cancellationToken);
+        dcbDbContext.GetInMemoryAggregate(aggregateId, upToDate, cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<T>> GetInMemoryProjection<T>(TagQuery query, IDcbProjectionId<T> projectionId,
+    public Task<Result<T>> GetInMemoryProjection<T>(IDcbProjectionId<T> projectionId,
         CancellationToken cancellationToken = default) where T : IDcbProjection, new() =>
-        dcbDbContext.GetInMemoryProjection(query, projectionId, cancellationToken);
+        dcbDbContext.GetInMemoryProjection(projectionId, cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<T>> GetInMemoryProjection<T>(TagQuery query, IDcbProjectionId<T> projectionId,
+    public Task<Result<T>> GetInMemoryProjection<T>(IDcbProjectionId<T> projectionId,
         long upToPosition, CancellationToken cancellationToken = default) where T : IDcbProjection, new() =>
-        dcbDbContext.GetInMemoryProjection(query, projectionId, upToPosition, cancellationToken);
+        dcbDbContext.GetInMemoryProjection(projectionId, upToPosition, cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<T>> GetInMemoryProjection<T>(TagQuery query, IDcbProjectionId<T> projectionId,
+    public Task<Result<T>> GetInMemoryProjection<T>(IDcbProjectionId<T> projectionId,
         DateTimeOffset upToDate, CancellationToken cancellationToken = default)
         where T : IDcbProjection, new() =>
-        dcbDbContext.GetInMemoryProjection(query, projectionId, upToDate, cancellationToken);
+        dcbDbContext.GetInMemoryProjection(projectionId, upToDate, cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<T?>> GetProjection<T>(TagQuery query, IDcbProjectionId<T> projectionId,
+    public Task<Result<T?>> GetProjection<T>(IDcbProjectionId<T> projectionId,
         ReadMode readMode = ReadMode.SnapshotOnly, CancellationToken cancellationToken = default)
         where T : IDcbProjection, new() =>
-        dcbDbContext.GetProjection(query, projectionId, readMode, cancellationToken);
+        dcbDbContext.GetProjection(projectionId, readMode, cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result> SaveProjection<T>(TagQuery query, IDcbProjectionId<T> projectionId, T projection,
+    public Task<Result> SaveProjection<T>(IDcbProjectionId<T> projectionId, T projection,
         CancellationToken cancellationToken = default) where T : IDcbProjection =>
-        dcbDbContext.SaveProjection(query, projectionId, projection, cancellationToken);
+        dcbDbContext.SaveProjection(projectionId, projection, cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result> SaveAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId, T aggregate,
+    public Task<Result> SaveAggregate<T>(IDcbAggregateId<T> aggregateId, T aggregate,
         AppendCondition? condition, CancellationToken cancellationToken = default)
         where T : IDcbAggregateRoot =>
-        dcbDbContext.SaveAggregate(query, aggregateId, aggregate, condition, maxEventsPerAppend,
-            cancellationToken);
+        dcbDbContext.SaveAggregate(aggregateId, aggregate, condition, maxEventsPerAppend, cancellationToken);
 
     /// <inheritdoc />
     public Task<Result> SaveEvents(TaggedEvent[] events, AppendCondition? condition,
@@ -133,9 +132,14 @@ public class EntityFrameworkCoreDcbDomainService(
         dcbDbContext.SaveEvents(events, condition, maxEventsPerAppend, cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<T?>> UpdateAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId,
+    public Task<Result<T?>> UpdateAggregate<T>(IDcbAggregateId<T> aggregateId,
         CancellationToken cancellationToken = default) where T : IDcbAggregateRoot, new() =>
-        dcbDbContext.UpdateAggregate(query, aggregateId, cancellationToken);
+        dcbDbContext.UpdateAggregate(aggregateId, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<Result<T?>> UpdateProjection<T>(IDcbProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IDcbProjection, new() =>
+        dcbDbContext.UpdateProjection(projectionId, cancellationToken);
 
     /// <summary>
     /// Maps an unhandled provider exception onto a storage failure.

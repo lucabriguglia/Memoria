@@ -11,8 +11,7 @@ public static partial class DcbDbContextExtensions
     /// </summary>
     /// <typeparam name="T">The aggregate type.</typeparam>
     /// <param name="dcbDbContext">The context.</param>
-    /// <param name="query">The consistency boundary. Part of the snapshot's identity.</param>
-    /// <param name="aggregateId">The aggregate identifier.</param>
+    /// <param name="aggregateId">The aggregate identifier, which carries the boundary.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>
     /// The refreshed aggregate, or null when there is nothing to refresh — no snapshot and no events
@@ -25,7 +24,7 @@ public static partial class DcbDbContextExtensions
     /// <see cref="AppendCondition"/> — for a decision that produces events, read the boundary, fold
     /// it, and call <c>SaveAggregate</c> or <c>SaveEvents</c> with a condition.
     /// </remarks>
-    public static async Task<Result<T?>> UpdateAggregate<T>(this IDcbDbContext dcbDbContext, TagQuery query,
+    public static async Task<Result<T?>> UpdateAggregate<T>(this IDcbDbContext dcbDbContext,
         IDcbAggregateId<T> aggregateId, CancellationToken cancellationToken = default)
         where T : IDcbAggregateRoot, new()
     {
@@ -34,19 +33,20 @@ public static partial class DcbDbContextExtensions
         try
         {
             var snapshot = await dcbDbContext.GetSnapshotEntity(DcbSnapshotEntity.AggregateKind,
-                aggregateId.ToStoreId(), query, cancellationToken);
+                aggregateId.ToStoreId(), aggregateId.Boundary, cancellationToken);
 
             // Starting from a fresh model when there is no snapshot is what lets this build one, and
             // is what the streamed store does.
             var aggregate = snapshot is null ? new T() : snapshot.ToAggregate<T>();
+            aggregate.Tags = aggregateId.Boundary.Tags;
 
-            return await dcbDbContext.RefreshAggregate(query, aggregateId, aggregate, cancellationToken);
+            return await dcbDbContext.RefreshAggregate(aggregateId, aggregate, cancellationToken);
         }
         catch (Exception exception)
         {
             dcbDbContext.ChangeTracker.Clear();
-            DcbDiagnostics.AddException(exception, operation, query);
-            return DcbStoreFailures.StorageFailure(operation, query);
+            DcbDiagnostics.AddException(exception, operation, aggregateId.Boundary);
+            return DcbStoreFailures.StorageFailure(operation, aggregateId.Boundary);
         }
     }
 }

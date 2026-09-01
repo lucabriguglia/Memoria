@@ -9,9 +9,10 @@ namespace Memoria.EventSourcing.Dcb;
 /// </summary>
 /// <example>
 /// <code>
-/// public class SeatSummaryId(string id) : IDcbProjectionId&lt;SeatSummaryProjection&gt;
+/// public class SeatSummaryId(string seatId) : IDcbProjectionId&lt;SeatSummaryProjection&gt;
 /// {
-///     public string Id { get; } = id;
+///     public string Id { get; } = seatId;
+///     public TagQuery Boundary { get; } = TagQuery.AnyOf(new Tag("seat", seatId));
 /// }
 /// </code>
 /// </example>
@@ -21,6 +22,15 @@ public interface IDcbProjectionId
     /// Gets the unique string identifier.
     /// </summary>
     string Id { get; }
+
+    /// <summary>
+    /// Gets the consistency boundary this projection is folded from.
+    /// </summary>
+    /// <remarks>
+    /// Must be stable for a given <see cref="Id"/>, for the reason given on
+    /// <see cref="IDcbAggregateId.Boundary"/>.
+    /// </remarks>
+    TagQuery Boundary { get; }
 }
 
 /// <summary>

@@ -19,7 +19,7 @@ public class GetInMemoryModelsTests : TestBase
         await Seed(1, new SeatReservedEvent("a1", "s7"), SeatA1.ToString());
         await Seed(2, new SeatReleasedEvent("a1"), SeatA1.ToString());
 
-        var result = await Context.GetInMemoryAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
+        var result = await Context.GetInMemoryAggregate(new SeatId("a1"));
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.ReservedBy.Should().BeNull();
@@ -32,7 +32,7 @@ public class GetInMemoryModelsTests : TestBase
     {
         await Seed(4, new SeatReservedEvent("a1", "s7"), SeatA1.ToString());
 
-        var result = await Context.GetInMemoryAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
+        var result = await Context.GetInMemoryAggregate(new SeatId("a1"));
 
         result.Value!.AggregateId.Should().Be("a1:1", "the store id carries the [AggregateType] version");
         result.Value.LatestPosition.Should().Be(4, "the fold reached position 4");
@@ -41,7 +41,7 @@ public class GetInMemoryModelsTests : TestBase
     [Fact]
     public async Task An_empty_boundary_folds_into_an_untouched_aggregate()
     {
-        var result = await Context.GetInMemoryAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
+        var result = await Context.GetInMemoryAggregate(new SeatId("a1"));
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Version.Should().Be(0);
@@ -55,7 +55,7 @@ public class GetInMemoryModelsTests : TestBase
         await Seed(1, new SeatReservedEvent("a1", "s7"), SeatA1.ToString());
         await Seed(2, new CourseRenamedEvent("c1", "Renamed"), SeatA1.ToString());
 
-        var result = await Context.GetInMemoryAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
+        var result = await Context.GetInMemoryAggregate(new SeatId("a1"));
 
         result.Value!.Version.Should().Be(1);
     }
@@ -66,7 +66,7 @@ public class GetInMemoryModelsTests : TestBase
         await Seed(1, new SeatReservedEvent("a1", "s7"), SeatA1.ToString());
         await Seed(2, new SeatReservedEvent("a2", "s8"), SeatA2.ToString());
 
-        var result = await Context.GetInMemoryAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
+        var result = await Context.GetInMemoryAggregate(new SeatId("a1"));
 
         result.Value!.Reservations.Should().Be(1);
     }
@@ -77,7 +77,7 @@ public class GetInMemoryModelsTests : TestBase
         await Seed(1, new SeatReservedEvent("a1", "s7"), SeatA1.ToString());
         await Seed(2, new SeatReleasedEvent("a1"), SeatA1.ToString());
 
-        var result = await Context.GetInMemoryAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), upToPosition: 1);
+        var result = await Context.GetInMemoryAggregate(new SeatId("a1"), upToPosition: 1);
 
         result.Value!.ReservedBy.Should().Be("s7", "the release at position 2 is excluded");
     }
@@ -89,7 +89,7 @@ public class GetInMemoryModelsTests : TestBase
         await Seed(1, new SeatReservedEvent("a1", "s7"), day, SeatA1.ToString());
         await Seed(2, new SeatReleasedEvent("a1"), day.AddDays(2), SeatA1.ToString());
 
-        var result = await Context.GetInMemoryAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
+        var result = await Context.GetInMemoryAggregate(new SeatId("a1"),
             upToDate: day.AddDays(1));
 
         result.Value!.ReservedBy.Should().Be("s7");
@@ -101,7 +101,7 @@ public class GetInMemoryModelsTests : TestBase
         await Seed(1, new SeatReservedEvent("a1", "s7"), SeatA1.ToString());
         await Seed(2, new SeatReleasedEvent("a1"), SeatA1.ToString());
 
-        var result = await Context.GetInMemoryProjection(TagQuery.AnyOf(SeatA1), new SeatSummaryId("a1"));
+        var result = await Context.GetInMemoryProjection(new SeatSummaryId("a1"));
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Reservations.Should().Be(1, "the projection filters to reservations only");
@@ -115,12 +115,10 @@ public class GetInMemoryModelsTests : TestBase
         await Seed(1, new SeatReservedEvent("a1", "s7"), day, SeatA1.ToString());
         await Seed(2, new SeatReservedEvent("a1", "s8"), day.AddDays(2), SeatA1.ToString());
 
-        var query = TagQuery.AnyOf(SeatA1);
-
-        (await Context.GetInMemoryProjection(query, new SeatSummaryId("a1"), upToPosition: 1))
+        (await Context.GetInMemoryProjection(new SeatSummaryId("a1"), upToPosition: 1))
             .Value!.Reservations.Should().Be(1);
 
-        (await Context.GetInMemoryProjection(query, new SeatSummaryId("a1"), upToDate: day.AddDays(1)))
+        (await Context.GetInMemoryProjection(new SeatSummaryId("a1"), upToDate: day.AddDays(1)))
             .Value!.Reservations.Should().Be(1);
     }
 }

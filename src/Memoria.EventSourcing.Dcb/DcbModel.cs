@@ -20,4 +20,10 @@ public abstract class DcbModel : EventSourcedModel, IDcbModel
     /// </summary>
     [JsonIgnore]
     public long LatestPosition { get; set; }
+
+    /// <summary>
+    /// Gets or sets the tags of the boundary this model was folded from.
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyCollection<Tag> Tags { get; set; } = [];
 }

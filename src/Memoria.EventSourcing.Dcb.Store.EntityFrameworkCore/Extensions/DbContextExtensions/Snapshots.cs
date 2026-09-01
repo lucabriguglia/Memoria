@@ -126,27 +126,41 @@ public static partial class DcbDbContextExtensions
     }
 
     /// <summary>
-    /// Applies events appended since the snapshot was written, and refreshes it when there are any.
+    /// Applies the events appended inside the boundary since this model was folded, and writes the
+    /// result back when any of them changed it.
     /// </summary>
+    /// <returns>
+    /// The refreshed aggregate, or null when it has no state — nothing was folded into it and
+    /// nothing new applied, so there is nothing to distinguish it from an aggregate that was never
+    /// created. Mirrors the streamed store's equivalent.
+    /// </returns>
     private static async Task<Result<T?>> RefreshAggregate<T>(this IDcbDbContext dcbDbContext, TagQuery query,
         IDcbAggregateId<T> aggregateId, T aggregate, CancellationToken cancellationToken)
         where T : IDcbAggregateRoot
     {
+        var versionBefore = aggregate.Version;
+
         var newEventEntities = await dcbDbContext.GetEventEntitiesFromPosition(query,
             aggregate.LatestPosition + 1, aggregate.EventTypeFilter, cancellationToken);
 
         if (newEventEntities.Count == 0)
         {
-            return aggregate;
+            return aggregate.Version > 0 ? aggregate : default(T);
         }
 
-        var versionBefore = aggregate.Version;
         aggregate.Apply(newEventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
 
         DcbDiagnostics.AddModelFoldedEvent(query, aggregateId.ToStoreId(),
             appliedFromPosition: newEventEntities[0].Position,
             appliedToPosition: newEventEntities[^1].Position,
             appliedCount: newEventEntities.Count, versionBefore: versionBefore, versionAfter: aggregate.Version);
+
+        // Every new event matched the type filter and was then ignored by Apply, so the state is the
+        // one already stored and rewriting it would buy nothing.
+        if (aggregate.Version == versionBefore)
+        {
+            return aggregate.Version > 0 ? aggregate : default(T);
+        }
 
         aggregate.LatestPosition = newEventEntities[^1].Position;
 

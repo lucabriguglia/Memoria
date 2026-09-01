@@ -12,8 +12,9 @@ public record SubscribeStudentCommand(string StudentId, string CourseId) : IComm
 /// </summary>
 /// <remarks>
 /// <para>
-/// The three steps are the whole idea: choose a boundary, fold it and remember where it stood, then
-/// append on condition that it has not moved.
+/// The three steps are the whole idea: choose a boundary, read where it stands and fold it, then
+/// append on condition that it has not moved. There is no one-call form — <c>UpdateAggregate</c>
+/// only refreshes a snapshot and appends nothing, exactly as it does in the streamed store.
 /// </para>
 /// <para>
 /// The fold is done by hand rather than through <c>GetInMemoryAggregate</c>, because this decision

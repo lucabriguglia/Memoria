@@ -1,3 +1,4 @@
+using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Entities;
 using Memoria.Results;
 
 namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
@@ -5,57 +6,47 @@ namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Extensions.DbConte
 public static partial class DcbDbContextExtensions
 {
     /// <summary>
-    /// Folds a boundary into an aggregate, applies a change to it, and appends whatever it staged —
-    /// conditioned on the boundary not having moved in between.
+    /// Brings an aggregate's snapshot up to date with the events appended inside its boundary since
+    /// it was written, and persists the result.
     /// </summary>
     /// <typeparam name="T">The aggregate type.</typeparam>
     /// <param name="dcbDbContext">The context.</param>
-    /// <param name="query">The consistency boundary.</param>
+    /// <param name="query">The consistency boundary. Part of the snapshot's identity.</param>
     /// <param name="aggregateId">The aggregate identifier.</param>
-    /// <param name="update">The change to apply.</param>
-    /// <param name="maxEventsPerAppend">The batch limit.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>
-    /// The updated aggregate, or a failure. A boundary that moved between the read and the append
-    /// fails with <c>memoria/concurrency-conflict</c>; the caller retries by calling this again.
+    /// The refreshed aggregate, or null when there is nothing to refresh — no snapshot and no events
+    /// inside the boundary that this aggregate applies.
     /// </returns>
     /// <remarks>
-    /// This is the whole read-decide-append cycle in one call, and the shape most decisions want:
-    /// the position the fold reached becomes the append condition, so the decision is guarded by
-    /// exactly the events it was made from.
+    /// The counterpart of the streamed store's <c>UpdateAggregate</c>, and the same operation
+    /// <see cref="ReadMode.SnapshotWithNewEvents"/> performs: read the latest snapshot, fold the
+    /// events that arrived after it, write it back. It appends nothing and takes no
+    /// <see cref="AppendCondition"/> — for a decision that produces events, read the boundary, fold
+    /// it, and call <c>SaveAggregate</c> or <c>SaveEvents</c> with a condition.
     /// </remarks>
-    public static async Task<Result<T>> UpdateAggregate<T>(this IDcbDbContext dcbDbContext,
-        TagQuery query, IDcbAggregateId<T> aggregateId, Action<T> update,
-        int maxEventsPerAppend = DefaultMaxEventsPerAppend, CancellationToken cancellationToken = default)
+    public static async Task<Result<T?>> UpdateAggregate<T>(this IDcbDbContext dcbDbContext, TagQuery query,
+        IDcbAggregateId<T> aggregateId, CancellationToken cancellationToken = default)
         where T : IDcbAggregateRoot, new()
     {
-        ArgumentNullException.ThrowIfNull(update);
+        const string operation = "Update Aggregate";
 
-        // Read before folding, never after. The position is a claim about what the decision saw, and
-        // an event landing between the two reads makes that claim false in one of two directions.
-        // Read first and the fold may see more than the position admits, so the append is refused and
-        // the caller retries. Read second and the position admits more than the fold saw, so the
-        // append is accepted on a decision that never read the intervening event — a lost update the
-        // condition exists to prevent and would have signed off on.
-        var latestPosition = await dcbDbContext.GetLatestPosition(query, cancellationToken: cancellationToken);
-
-        // It cannot come from the fold instead: the fold stops at the last event the aggregate's own
-        // type filter accepted, which may be behind the boundary's true head even with nothing else
-        // running, so conditioning on it would refuse every append that followed an event the
-        // aggregate ignores.
-        var aggregateResult = await dcbDbContext.GetInMemoryAggregate(query, aggregateId, cancellationToken);
-        if (aggregateResult.IsNotSuccess)
+        try
         {
-            return aggregateResult.Failure!;
+            var snapshot = await dcbDbContext.GetSnapshotEntity(DcbSnapshotEntity.AggregateKind,
+                aggregateId.ToStoreId(), query, cancellationToken);
+
+            // Starting from a fresh model when there is no snapshot is what lets this build one, and
+            // is what the streamed store does.
+            var aggregate = snapshot is null ? new T() : snapshot.ToAggregate<T>();
+
+            return await dcbDbContext.RefreshAggregate(query, aggregateId, aggregate, cancellationToken);
         }
-
-        var aggregate = aggregateResult.Value!;
-
-        update(aggregate);
-
-        var saveResult = await dcbDbContext.SaveAggregate(query, aggregateId, aggregate,
-            new AppendCondition(query, latestPosition), maxEventsPerAppend, cancellationToken);
-
-        return saveResult.IsNotSuccess ? saveResult.Failure! : aggregate;
+        catch (Exception exception)
+        {
+            dcbDbContext.ChangeTracker.Clear();
+            DcbDiagnostics.AddException(exception, operation, query);
+            return DcbStoreFailures.StorageFailure(operation, query);
+        }
     }
 }

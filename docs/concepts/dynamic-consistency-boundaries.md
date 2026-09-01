@@ -104,10 +104,14 @@ The position cannot simply come from the fold instead. The fold stops at the las
 `EventTypeFilter` accepted, which can be behind the boundary's head with nothing else running at all
 — so conditioning on it would refuse every append that happened to follow an event the model ignores.
 
-`IDcbDomainService.UpdateAggregate` does the whole read-decide-append cycle in one call and gets this
-right for you. Reach for the explicit form when the model needs to know what it is about before it
-folds — a decision model spanning two entities cannot be constructed by `GetInMemoryAggregate`, which
-builds the model itself.
+There is no one-call form of this cycle, and that is deliberate: the position, the fold and the
+append belong to the decision, and a helper that hid them would hide the ordering above with them.
+`UpdateAggregate` is *not* it — like its streamed counterpart it only refreshes a snapshot and
+appends nothing.
+
+Note also that `GetInMemoryAggregate` constructs the model itself, so a decision model that must know
+what it is about before it folds — one spanning two entities, say — reads with `GetEvents` and folds
+by hand instead.
 
 ## Models
 

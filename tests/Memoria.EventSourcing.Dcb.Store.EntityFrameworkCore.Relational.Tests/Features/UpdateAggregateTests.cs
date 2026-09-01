@@ -1,16 +1,30 @@
 using FluentAssertions;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Relational.Tests.Models;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Relational.Tests.Features;
 
 /// <summary>
-/// Saving and updating aggregates over a boundary.
+/// Saving aggregates, and refreshing their snapshots.
 /// </summary>
+/// <remarks>
+/// <c>UpdateAggregate</c> is the snapshot refresh, matching the streamed store: read the latest
+/// snapshot, fold what arrived after it, write it back. It appends nothing. A decision that produces
+/// events reads the boundary, folds it, and calls <c>SaveAggregate</c> with a condition — spelled out
+/// in <c>Saving_an_aggregate_is_guarded_by_the_boundary_it_read</c> below.
+/// </remarks>
 public class UpdateAggregateTests : RelationalTestBase
 {
     private static readonly Tag SeatA1 = new("seat", "a1");
+
+    private Task Append(params TaggedEvent[] events) => Context.SaveEvents(events, condition: null);
+
+    private static TaggedEvent Reserved(string student) =>
+        new(new SeatReservedEvent("a1", student), [SeatA1]);
+
+    // -- saving --------------------------------------------------------------------------------
 
     [Fact]
     public async Task Saving_an_aggregate_appends_its_staged_events()
@@ -18,7 +32,8 @@ public class UpdateAggregateTests : RelationalTestBase
         var aggregate = new SeatAggregate();
         aggregate.Reserve("a1", "s7");
 
-        var result = await Context.SaveAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), aggregate, condition: null);
+        var result = await Context.SaveAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), aggregate,
+            condition: null);
 
         result.IsSuccess.Should().BeTrue();
         Context.DcbEvents.Count().Should().Be(1);
@@ -27,106 +42,124 @@ public class UpdateAggregateTests : RelationalTestBase
     [Fact]
     public async Task Saving_an_aggregate_that_staged_nothing_succeeds_and_writes_nothing()
     {
-        var result = await Context.SaveAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), new SeatAggregate(), condition: null);
+        var result = await Context.SaveAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
+            new SeatAggregate(), condition: null);
 
         result.IsSuccess.Should().BeTrue();
         Context.DcbEvents.Count().Should().Be(0);
     }
 
     [Fact]
-    public async Task Updating_an_aggregate_folds_decides_and_appends()
+    public async Task Saving_an_aggregate_is_guarded_by_the_boundary_it_read()
     {
-        var boundary = TagQuery.AnyOf(SeatA1);
-
-        var result = await Context.UpdateAggregate(boundary, new SeatId("a1"),
-            aggregate => aggregate.Reserve("a1", "s7"));
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value!.ReservedBy.Should().Be("s7");
-        Context.DcbEvents.Count().Should().Be(1);
-    }
-
-    [Fact]
-    public async Task Updating_an_aggregate_sees_what_was_already_appended()
-    {
-        var boundary = TagQuery.AnyOf(SeatA1);
-        await Context.UpdateAggregate(boundary, new SeatId("a1"), aggregate => aggregate.Reserve("a1", "s7"));
-
-        var result = await Context.UpdateAggregate(boundary, new SeatId("a1"),
-            aggregate => aggregate.ReservedBy.Should().Be("s7", "the first reservation was folded in"));
-
-        result.IsSuccess.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task Updating_an_aggregate_is_guarded_by_the_boundary_it_read()
-    {
+        // The read-decide-append cycle a decision performs, written out. The position is read before
+        // the fold: an event arriving between the two then makes the append fail rather than being
+        // counted as seen by a decision that never read it.
         var boundary = TagQuery.AnyOf(SeatA1);
         await using var other = CreateContext();
 
-        // Interleave by hand: fold, then let another decision commit, then apply and append.
         var position = await Context.GetLatestPosition(boundary);
         var aggregate = (await Context.GetInMemoryAggregate(boundary, new SeatId("a1"))).Value!;
 
-        await other.UpdateAggregate(boundary, new SeatId("a1"), other => other.Reserve("a1", "s8"));
+        await other.SaveEvents([Reserved("s8")], condition: null);
 
         aggregate.Reserve("a1", "s7");
-        var result = await Context.SaveAggregate(boundary, new SeatId("a1"), aggregate, new AppendCondition(boundary, position));
+        var result = await Context.SaveAggregate(boundary, new SeatId("a1"), aggregate,
+            new AppendCondition(boundary, position));
 
         result.IsNotSuccess.Should().BeTrue("the boundary moved between the fold and the append");
         result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
     }
 
-    [Fact]
-    public async Task An_update_is_refused_when_an_event_lands_between_its_two_reads()
-    {
-        // UpdateAggregate reads the boundary's position and then folds it. An event arriving between
-        // those two reads must make the append fail: the decision did not see it. Reading the
-        // position second instead would have it admit the event, and the append would be accepted on
-        // a decision that never read it — losing the update, with the condition signing it off.
-        await using var other = CreateContext();
-
-        var interceptor = new AppendsBetweenReadsInterceptor(
-            () => other.SaveEvents([new TaggedEvent(new SeatReservedEvent("a1", "s9"), [SeatA1])],
-                condition: null));
-
-        await using var updating = CreateContext(interceptor);
-
-        var result = await updating.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
-            aggregate => aggregate.Reserve("a1", "s7"));
-
-        interceptor.Fired.Should().BeTrue("the intruding writer must actually have committed");
-        result.IsNotSuccess.Should().BeTrue();
-        result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
-    }
+    // -- refreshing ----------------------------------------------------------------------------
 
     [Fact]
-    public async Task An_update_refused_that_way_leaves_only_the_intruding_event()
+    public async Task Updating_folds_the_boundary_and_writes_a_snapshot_when_there_is_none()
     {
-        await using var other = CreateContext();
+        await Append(Reserved("s7"));
 
-        var interceptor = new AppendsBetweenReadsInterceptor(
-            () => other.SaveEvents([new TaggedEvent(new SeatReservedEvent("a1", "s9"), [SeatA1])],
-                condition: null));
-
-        await using var updating = CreateContext(interceptor);
-
-        await updating.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"),
-            aggregate => aggregate.Reserve("a1", "s7"));
-
-        var events = await Context.GetEvents(TagQuery.AnyOf(SeatA1));
-
-        events.Should().ContainSingle("the refused update wrote nothing")
-            .Which.Should().BeOfType<SeatReservedEvent>()
-            .Which.StudentId.Should().Be("s9");
-    }
-
-    [Fact]
-    public async Task An_update_that_stages_nothing_appends_nothing()
-    {
-        var result = await Context.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"), _ => { });
+        var result = await Context.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
 
         result.IsSuccess.Should().BeTrue();
-        Context.DcbEvents.Count().Should().Be(0);
+        result.Value!.ReservedBy.Should().Be("s7");
+        Context.DcbSnapshots.Count().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Updating_applies_only_what_arrived_after_the_snapshot()
+    {
+        var boundary = TagQuery.AnyOf(SeatA1);
+        await Append(Reserved("s7"));
+        await Context.UpdateAggregate(boundary, new SeatId("a1"));
+
+        await Append(new TaggedEvent(new SeatReleasedEvent("a1"), [SeatA1]));
+
+        var result = await Context.UpdateAggregate(boundary, new SeatId("a1"));
+
+        result.Value!.ReservedBy.Should().BeNull();
+        Context.DcbSnapshots.Count().Should().Be(1, "refreshing replaces rather than accumulates");
+    }
+
+    [Fact]
+    public async Task Updating_makes_the_refreshed_state_visible_to_a_snapshot_only_read()
+    {
+        var boundary = TagQuery.AnyOf(SeatA1);
+        await Append(Reserved("s7"));
+        await Context.UpdateAggregate(boundary, new SeatId("a1"));
+        await Append(new TaggedEvent(new SeatReleasedEvent("a1"), [SeatA1]));
+
+        await Context.UpdateAggregate(boundary, new SeatId("a1"));
+
+        (await Context.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotOnly))
+            .Value!.ReservedBy.Should().BeNull("the refresh was written back");
+    }
+
+    [Fact]
+    public async Task Updating_an_empty_boundary_yields_nothing()
+    {
+        var result = await Context.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeNull("there is no snapshot and no event to build one from");
+        Context.DcbSnapshots.Count().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Updating_appends_nothing()
+    {
+        // The distinction from the streamed store's UpdateAggregate that matters most: this is a
+        // read path that happens to write a cache, not a way to record a decision.
+        await Append(Reserved("s7"));
+
+        await Context.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
+
+        Context.DcbEvents.Count().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Updating_with_nothing_new_leaves_the_snapshot_alone()
+    {
+        var boundary = TagQuery.AnyOf(SeatA1);
+        await Append(Reserved("s7"));
+        await Context.UpdateAggregate(boundary, new SeatId("a1"));
+
+        var before = Context.DcbSnapshots.Single().LatestPosition;
+
+        var result = await Context.UpdateAggregate(boundary, new SeatId("a1"));
+
+        result.Value!.ReservedBy.Should().Be("s7");
+        Context.DcbSnapshots.Single().LatestPosition.Should().Be(before);
+    }
+
+    [Fact]
+    public async Task A_storage_failure_while_updating_is_classified()
+    {
+        await Context.Database.ExecuteSqlRawAsync("DROP TABLE DcbSnapshots;");
+
+        var result = await Context.UpdateAggregate(TagQuery.AnyOf(SeatA1), new SeatId("a1"));
+
+        result.IsNotSuccess.Should().BeTrue();
+        result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.StorageFailureType);
+        result.Failure.Description.Should().NotContain("DcbSnapshots");
     }
 }

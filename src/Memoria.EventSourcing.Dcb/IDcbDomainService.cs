@@ -258,14 +258,24 @@ public interface IDcbDomainService : IDisposable
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Reads an aggregate, applies a change to it, and appends whatever it staged.
+    /// Brings an aggregate's snapshot up to date with the events appended inside its boundary since
+    /// it was written, and persists the result.
     /// </summary>
     /// <typeparam name="T">The aggregate type.</typeparam>
     /// <param name="query">The consistency boundary.</param>
     /// <param name="aggregateId">The aggregate identifier.</param>
-    /// <param name="update">The change to apply.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <returns>The updated aggregate, or null when it does not exist.</returns>
-    Task<Result<T?>> UpdateAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId, Action<T> update,
+    /// <returns>
+    /// The refreshed aggregate, or null when there is nothing to refresh — no snapshot and no events
+    /// inside the boundary that this aggregate applies.
+    /// </returns>
+    /// <remarks>
+    /// The same shape as <see cref="IDomainService.UpdateAggregate{T}"/>: read the latest snapshot,
+    /// fold what arrived after it, write it back. It appends nothing and takes no
+    /// <see cref="AppendCondition"/> — a decision that produces events reads the boundary with
+    /// <see cref="GetLatestPosition"/>, folds it, and calls <see cref="SaveAggregate{T}"/> or
+    /// <see cref="SaveEvents"/> with a condition built from that position.
+    /// </remarks>
+    Task<Result<T?>> UpdateAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId,
         CancellationToken cancellationToken = default) where T : IDcbAggregateRoot, new();
 }

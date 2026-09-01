@@ -133,14 +133,9 @@ public class EntityFrameworkCoreDcbDomainService(
         dcbDbContext.SaveEvents(events, condition, maxEventsPerAppend, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<Result<T?>> UpdateAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId,
-        Action<T> update, CancellationToken cancellationToken = default) where T : IDcbAggregateRoot, new()
-    {
-        var result = await dcbDbContext.UpdateAggregate(query, aggregateId, update, maxEventsPerAppend,
-            cancellationToken);
-
-        return result.IsNotSuccess ? result.Failure! : result.Value;
-    }
+    public Task<Result<T?>> UpdateAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId,
+        CancellationToken cancellationToken = default) where T : IDcbAggregateRoot, new() =>
+        dcbDbContext.UpdateAggregate(query, aggregateId, cancellationToken);
 
     /// <summary>
     /// Maps an unhandled provider exception onto a storage failure.

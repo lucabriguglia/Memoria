@@ -110,7 +110,7 @@ public class DefaultDcbDomainService : IDcbDomainService
         throw new NotImplementedException(NotImplementedMessage);
 
     /// <inheritdoc />
-    public Task<Result<T?>> UpdateAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId, Action<T> update,
+    public Task<Result<T?>> UpdateAggregate<T>(TagQuery query, IDcbAggregateId<T> aggregateId,
         CancellationToken cancellationToken = default) where T : IDcbAggregateRoot, new() =>
         throw new NotImplementedException(NotImplementedMessage);
 

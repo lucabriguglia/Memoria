@@ -62,6 +62,7 @@ Emitted from:
 | Entity Framework Core | `GetAggregate` (cold build), `UpdateAggregate`, `SaveAggregate`, `TrackEventEntities` |
 | Cosmos DB | `GetAggregate` (cold build), `UpdateAggregate`, `SaveAggregate` |
 | Cosmos DB InMemory | `GetAggregate` (cold build), `UpdateAggregate`, `SaveAggregate` |
+| Entity Framework Core (DCB) | `GetAggregate` (cold build), `UpdateAggregate` |
 
 Reading an aggregate with `ReadMode.SnapshotOnly` does not fold anything, so it emits nothing.
 
@@ -80,8 +81,8 @@ in either consistency model. Three tags differ, because the concepts do:
 | `versionBefore` | int | As above |
 | `versionAfter` | int | As above |
 
-Emitted from `GetAggregate` (cold build) and from a snapshot refresh under
-`ReadMode.SnapshotWithNewEvents`.
+Emitted from `GetAggregate` (cold build), from `UpdateAggregate`, and from the snapshot refresh under
+`ReadMode.SnapshotWithNewEvents` — which is the same refresh `UpdateAggregate` performs.
 
 ### Concurrency Exception
 

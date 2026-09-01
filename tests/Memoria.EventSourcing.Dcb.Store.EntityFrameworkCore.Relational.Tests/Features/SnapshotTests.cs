@@ -254,6 +254,88 @@ public class SnapshotTests : RelationalTestBase
     }
 
     [Fact]
+    public async Task A_failed_snapshot_write_takes_the_events_with_it()
+    {
+        // The events and the snapshot are one transaction. Committing the events and reporting
+        // success while the snapshot is missing would leave the aggregate invisible to SnapshotOnly
+        // and SnapshotWithNewEvents, with nothing telling the caller and nothing able to fix it: the
+        // events are durable, so a retry is refused by its own condition.
+        var boundary = TagQuery.AnyOf(SeatA1);
+        var aggregate = new SeatAggregate();
+        aggregate.Reserve("a1", "s7");
+
+        await Context.Database.ExecuteSqlRawAsync("DROP TABLE DcbSnapshots;");
+
+        var result = await Context.SaveAggregate(boundary, new SeatId("a1"), aggregate, condition: null);
+
+        result.IsNotSuccess.Should().BeTrue("a snapshot that cannot be written is a failed save");
+        result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.StorageFailureType);
+        Context.DcbEvents.Count().Should().Be(0, "the append rolled back with it");
+    }
+
+    [Fact]
+    public async Task A_successful_save_is_always_visible_to_snapshot_only()
+    {
+        // The property the shared transaction buys: after Ok, every read mode can see it.
+        var boundary = TagQuery.AnyOf(SeatA1);
+        var aggregate = new SeatAggregate();
+        aggregate.Reserve("a1", "s7");
+
+        var result = await Context.SaveAggregate(boundary, new SeatId("a1"), aggregate, condition: null);
+
+        result.IsSuccess.Should().BeTrue();
+        (await Context.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotOnly))
+            .Value.Should().NotBeNull();
+        (await Context.GetAggregate(boundary, new SeatId("a1"), ReadMode.SnapshotWithNewEvents))
+            .Value.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task A_saved_snapshot_records_the_position_of_the_events_it_appended()
+    {
+        // Not a re-read of the boundary: that runs after the commit and could pick up somebody
+        // else's append, stamping the snapshot as having consumed an event it never applied.
+        var boundary = TagQuery.AnyOf(SeatA1);
+        var aggregate = new SeatAggregate();
+        aggregate.Reserve("a1", "s7");
+
+        await Context.SaveAggregate(boundary, new SeatId("a1"), aggregate, condition: null);
+
+        var appended = Context.DcbEvents.Max(@event => @event.Position);
+        Context.DcbSnapshots.Single().LatestPosition.Should().Be(appended);
+    }
+
+    [Fact]
+    public async Task A_snapshot_is_not_stamped_with_a_position_belonging_to_another_writer()
+    {
+        // The window a re-read of MAX(Position) would fall into: another writer commits between this
+        // append and the snapshot being stamped. Recording that position would claim the snapshot had
+        // consumed an event it never applied, and a later SnapshotWithNewEvents would start past it.
+        await using var other = CreateContext();
+
+        var interceptor = new AppendsAfterCommitInterceptor(
+            appendFromAnotherConnection: () => other.SaveEvents(
+                [new TaggedEvent(new SeatReleasedEvent("a1"), [SeatA1])], condition: null),
+            countEvents: () => Task.FromResult(other.DcbEvents.Count()));
+
+        await using var saving = CreateContext(interceptor);
+
+        var boundary = TagQuery.AnyOf(SeatA1);
+        var aggregate = new SeatAggregate();
+        aggregate.Reserve("a1", "s7");
+
+        await saving.SaveAggregate(boundary, new SeatId("a1"), aggregate, condition: null);
+
+        interceptor.Fired.Should().BeTrue("the intruding writer must actually have committed");
+
+        var snapshot = Context.DcbSnapshots.Single();
+        var ownEvent = Context.DcbEvents.OrderBy(@event => @event.Position).First().Position;
+
+        snapshot.LatestPosition.Should().Be(ownEvent,
+            "the snapshot folded its own event and nothing after it");
+    }
+
+    [Fact]
     public async Task A_stored_snapshot_records_the_position_it_folded_to()
     {
         await Append(Reserved("a1", "s7"));

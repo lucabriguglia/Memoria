@@ -1,4 +1,5 @@
 using FluentAssertions;
+using FluentAssertions.Execution;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Entities;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Relational.Tests.Models;
@@ -131,5 +132,43 @@ public class TagHeadTests : RelationalTestBase
 
         interceptor.Fired.Should().BeTrue();
         result.IsSuccess.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// The companion to <see cref="The_token_is_declared_as_a_concurrency_token"/>. That one covers
+    /// the model declaration; this one covers the other half the declaration needs to do anything —
+    /// that the head rows are read into the change tracker, so Entity Framework Core has an original
+    /// token to guard the update with.
+    /// </summary>
+    /// <remarks>
+    /// Adding <c>AsNoTracking()</c> to that read looks like a free optimisation on rows the append is
+    /// about to overwrite anyway. It emits no UPDATE at all: the assignment mutates a detached
+    /// object, the check disappears, and the heads stop moving for every other append too. Verified
+    /// by doing exactly that.
+    /// </remarks>
+    [Fact]
+    public async Task A_conditioned_append_guards_its_tag_head_update_on_the_token_it_read()
+    {
+        var interceptor = new CapturingCommandInterceptor();
+        await using var capturing = CreateContext(interceptor);
+
+        var result = await capturing.SaveEvents([Reserved("a1", "s7")],
+            AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+        result.IsSuccess.Should().BeTrue("the append itself is uncontended");
+
+        using (new AssertionScope())
+        {
+            var update = interceptor.TagHeadUpdates.Should()
+                .ContainSingle("the one tag in the boundary is claimed exactly once")
+                .Subject;
+
+            var where = update.IndexOf("WHERE", StringComparison.Ordinal);
+            where.Should().BeGreaterThan(-1, "an unguarded update would claim the row unconditionally");
+
+            update[where..].Should().Contain(nameof(DcbTagHeadEntity.Token),
+                "the token read before the write is what the update matches on — without it in the "
+                + "WHERE clause the append cannot detect an overlapping one");
+        }
     }
 }

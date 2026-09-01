@@ -144,6 +144,12 @@ public class DefaultDomainService : IDomainService
         throw new NotImplementedException(NotImplementedMessage);
     }
 
+    public Task<Result<T?>> UpdateProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        throw new NotImplementedException(NotImplementedMessage);
+    }
+
     public void Dispose()
     {
         throw new NotImplementedException(NotImplementedMessage);

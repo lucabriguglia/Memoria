@@ -327,6 +327,20 @@ public class EntityFrameworkCoreDomainService(IDomainDbContext domainDbContext, 
     }
 
     /// <summary>
+    /// Updates a projection with the events appended since its snapshot.
+    /// </summary>
+    /// <typeparam name="T">The type of projection to update.</typeparam>
+    /// <param name="streamId">The stream identifier.</param>
+    /// <param name="projectionId">The projection identifier.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A result containing the updated projection.</returns>
+    public async Task<Result<T?>> UpdateProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        return await domainDbContext.UpdateProjection(streamId, projectionId, cancellationToken);
+    }
+
+    /// <summary>
     /// Disposes the domain service and its underlying database context.
     /// </summary>
     public void Dispose() => domainDbContext.Dispose();

@@ -434,4 +434,28 @@ public interface IDomainService : IDisposable
     /// </example>
     Task<Result<T?>> UpdateAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId,
         CancellationToken cancellationToken = default) where T : IAggregateRoot, new();
+
+    /// <summary>
+    /// Updates a projection of the specified type with the events appended since its snapshot.
+    /// </summary>
+    /// <typeparam name="T">The type of the projection to update.</typeparam>
+    /// <param name="streamId">The unique identifier of the stream the projection is built from.</param>
+    /// <param name="projectionId">The unique identifier of the projection to update.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the updated projection wrapped in a <see cref="Result{TValue}"/>.</returns>
+    /// <remarks>
+    /// The counterpart of <see cref="UpdateAggregate{T}"/>. The refresh already backed
+    /// <see cref="ReadMode.SnapshotWithNewEvents"/>; it is offered directly because a read model
+    /// differs from a write model only in never producing events.
+    /// </remarks>
+    /// <example>
+    /// var result = await domainService.UpdateProjection&lt;T&gt;(streamId, projectionId);
+    /// if (!result.IsSuccess)
+    /// {
+    ///     return result.Failure;
+    /// }
+    /// var projection = result.Value;
+    /// </example>
+    Task<Result<T?>> UpdateProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new();
 }

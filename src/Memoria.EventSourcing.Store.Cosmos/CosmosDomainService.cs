@@ -570,7 +570,14 @@ public class CosmosDomainService : IDomainService
         }
 
         var events = eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        var versionBefore = projection.Version;
         projection.Apply(events);
+
+        ProjectionDiagnostics.AddProjectionFoldedEvent(streamId, projectionId,
+            appliedFromSequence: eventDocuments[0].Sequence, appliedToSequence: eventDocuments[^1].Sequence,
+            appliedCount: eventDocuments.Count, versionBefore: versionBefore,
+            versionAfter: projection.Version);
+
         if (projection.Version == 0)
         {
             return default(T);
@@ -895,6 +902,22 @@ public class CosmosDomainService : IDomainService
 
         var aggregateDocument = aggregateDocumentResult.Value;
         return await _cosmosDataStore.UpdateAggregateDocument(streamId, aggregateId, aggregateDocument,
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<T?>> UpdateProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        var projectionDocumentResult =
+            await _cosmosDataStore.GetProjectionDocument(streamId, projectionId, cancellationToken);
+        if (projectionDocumentResult.IsNotSuccess)
+        {
+            return projectionDocumentResult.Failure!;
+        }
+
+        var projectionDocument = projectionDocumentResult.Value;
+        return await _cosmosDataStore.UpdateProjectionDocument(streamId, projectionId, projectionDocument,
             cancellationToken);
     }
 

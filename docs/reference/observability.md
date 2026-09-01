@@ -66,11 +66,6 @@ Emitted from:
 
 Reading an aggregate with `ReadMode.SnapshotOnly` does not fold anything, so it emits nothing.
 
-> **Projections emit nothing in the streamed stores.** `GetProjection` and the projection refresh
-> fold events exactly as their aggregate counterparts do, but record none of it, so a projection in
-> an unexpected state cannot be explained the way an aggregate can. The DCB store treats the two
-> alike; the streamed stores are due the same alignment.
-
 #### From the DCB store
 
 The [DCB store](configuration/dcb-ef-core.md) emits the **same event name**, so one query finds folds
@@ -89,11 +84,41 @@ in either consistency model. Three tags differ, because the concepts do:
 Emitted from `GetAggregate` (cold build), from `UpdateAggregate`, and from the snapshot refresh under
 `ReadMode.SnapshotWithNewEvents` — which is the same refresh `UpdateAggregate` performs.
 
-**And from the projection equivalents.** `GetProjection`, `UpdateProjection` and a projection's
-refresh emit the same event, with the projection's store id in `aggregateId`. A read model differs
-from a write model only in never producing events, so folding one is worth exactly as much to a trace
-as folding the other. The streamed stores do not do this yet — see the note under
-[Aggregate Folded](#aggregate-folded) above for what they cover.
+### Projection Folded
+
+Emitted by every store whenever it folds events into a projection and writes the resulting snapshot.
+A read model differs from a write model only in never producing events, so folding one is worth
+exactly as much to a trace as folding the other, and it is recorded the same way.
+
+| Tag | Type | Meaning |
+|---|---|---|
+| `streamId` | string | The stream the events were read from |
+| `projectionId` | string | Projection store id, `{IProjectionId.Id}:{[ProjectionType] version}` |
+| `appliedFromSequence` | int | Sequence of the first event folded |
+| `appliedToSequence` | int | Sequence of the last event folded |
+| `appliedCount` | int | How many events were folded |
+| `versionBefore` | int | The projection's version before the fold |
+| `versionAfter` | int | The projection's version after the fold |
+
+`appliedCount` against `versionAfter - versionBefore` reads exactly as it does above.
+
+Emitted from:
+
+| Store | Operations |
+|---|---|
+| Entity Framework Core | `GetProjection` (cold build), `UpdateProjection` |
+| Cosmos DB | `GetProjection` (cold build), `UpdateProjection` |
+| Cosmos DB InMemory | `GetProjection` (cold build), `UpdateProjection` |
+| Entity Framework Core (DCB) | `GetProjection` (cold build), `UpdateProjection` |
+
+The DCB store substitutes `tagQuery` for `streamId` and positions for sequences, as it does for
+aggregate folds.
+
+> **Why a separate event name.** The tag shapes match apart from the identifier, so a query across
+> both models is a two-name filter. Calling a projection fold `Aggregate Folded` would have avoided
+> that at the cost of making the name wrong about half its occurrences — the same reasoning that
+> keeps [Concurrency Conflict](#concurrency-conflict) apart from
+> [Concurrency Exception](#concurrency-exception).
 
 ### Concurrency Exception
 

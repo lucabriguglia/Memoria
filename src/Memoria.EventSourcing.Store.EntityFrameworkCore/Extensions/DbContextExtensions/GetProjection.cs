@@ -62,7 +62,13 @@ public static partial class IDomainDbContextExtensions
         }
 
         var events = eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
+        var versionBefore = projection.Version;
         projection.Apply(events);
+
+        ProjectionDiagnostics.AddProjectionFoldedEvent(streamId, projectionId,
+            appliedFromSequence: eventEntities[0].Sequence, appliedToSequence: eventEntities[^1].Sequence,
+            appliedCount: eventEntities.Count, versionBefore: versionBefore,
+            versionAfter: projection.Version);
 
         if (projection.Version == 0)
         {

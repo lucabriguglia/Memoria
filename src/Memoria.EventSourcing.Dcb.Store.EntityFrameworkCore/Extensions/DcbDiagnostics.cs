@@ -43,14 +43,39 @@ public static class DcbDiagnostics
     /// </para>
     /// </remarks>
     /// <param name="query">The boundary the events were read from.</param>
-    /// <param name="storeId">The model the events were folded into.</param>
+    /// <param name="storeId">The aggregate the events were folded into.</param>
     /// <param name="appliedFromPosition">Position of the first event folded.</param>
     /// <param name="appliedToPosition">Position of the last event folded.</param>
     /// <param name="appliedCount">How many events were folded.</param>
     /// <param name="versionBefore">The model's version before the fold.</param>
     /// <param name="versionAfter">The model's version after the fold.</param>
-    public static void AddModelFoldedEvent(TagQuery query, string storeId, long appliedFromPosition,
-        long appliedToPosition, int appliedCount, int versionBefore, int versionAfter)
+    public static void AddAggregateFoldedEvent(TagQuery query, string storeId, long appliedFromPosition,
+        long appliedToPosition, int appliedCount, int versionBefore, int versionAfter) =>
+        AddFoldedEvent(AggregateDiagnostics.AggregateFoldedEventName, "aggregateId", query, storeId,
+            appliedFromPosition, appliedToPosition, appliedCount, versionBefore, versionAfter);
+
+    /// <summary>
+    /// Records what a projection snapshot write folded, on the current activity.
+    /// </summary>
+    /// <remarks>
+    /// Emitted under <see cref="ProjectionDiagnostics.ProjectionFoldedEventName"/>, for the reason
+    /// that name exists at all: a projection fold is not an aggregate fold, and reporting it as one
+    /// would make the name wrong about half the time.
+    /// </remarks>
+    /// <param name="query">The boundary the events were read from.</param>
+    /// <param name="storeId">The projection the events were folded into.</param>
+    /// <param name="appliedFromPosition">Position of the first event folded.</param>
+    /// <param name="appliedToPosition">Position of the last event folded.</param>
+    /// <param name="appliedCount">How many events were folded.</param>
+    /// <param name="versionBefore">The model's version before the fold.</param>
+    /// <param name="versionAfter">The model's version after the fold.</param>
+    public static void AddProjectionFoldedEvent(TagQuery query, string storeId, long appliedFromPosition,
+        long appliedToPosition, int appliedCount, int versionBefore, int versionAfter) =>
+        AddFoldedEvent(ProjectionDiagnostics.ProjectionFoldedEventName, "projectionId", query, storeId,
+            appliedFromPosition, appliedToPosition, appliedCount, versionBefore, versionAfter);
+
+    private static void AddFoldedEvent(string eventName, string idTagName, TagQuery query, string storeId,
+        long appliedFromPosition, long appliedToPosition, int appliedCount, int versionBefore, int versionAfter)
     {
         var activity = Activity.Current;
         if (activity is null)
@@ -58,11 +83,11 @@ public static class DcbDiagnostics
             return;
         }
 
-        activity.AddEvent(new ActivityEvent(AggregateDiagnostics.AggregateFoldedEventName, timestamp: default,
+        activity.AddEvent(new ActivityEvent(eventName, timestamp: default,
             tags: new ActivityTagsCollection
             {
                 { "tagQuery", query.ToString() },
-                { "aggregateId", storeId },
+                { idTagName, storeId },
                 { "appliedFromPosition", appliedFromPosition },
                 { "appliedToPosition", appliedToPosition },
                 { "appliedCount", appliedCount },

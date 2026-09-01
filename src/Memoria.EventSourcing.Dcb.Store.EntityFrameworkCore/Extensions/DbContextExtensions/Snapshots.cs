@@ -108,7 +108,7 @@ public static partial class DcbDbContextExtensions
             var versionBefore = aggregate.Version;
             aggregate.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
 
-            DcbDiagnostics.AddModelFoldedEvent(query, storeId,
+            DcbDiagnostics.AddAggregateFoldedEvent(query, storeId,
                 appliedFromPosition: eventEntities[0].Position, appliedToPosition: eventEntities[^1].Position,
                 appliedCount: eventEntities.Count, versionBefore: versionBefore, versionAfter: aggregate.Version);
 
@@ -159,7 +159,7 @@ public static partial class DcbDbContextExtensions
 
         aggregate.Apply(newEventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
 
-        DcbDiagnostics.AddModelFoldedEvent(query, aggregateId.ToStoreId(),
+        DcbDiagnostics.AddAggregateFoldedEvent(query, aggregateId.ToStoreId(),
             appliedFromPosition: newEventEntities[0].Position,
             appliedToPosition: newEventEntities[^1].Position,
             appliedCount: newEventEntities.Count, versionBefore: versionBefore, versionAfter: aggregate.Version);
@@ -234,7 +234,7 @@ public static partial class DcbDbContextExtensions
             var versionBefore = projection.Version;
             projection.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
 
-            DcbDiagnostics.AddModelFoldedEvent(query, storeId,
+            DcbDiagnostics.AddProjectionFoldedEvent(query, storeId,
                 appliedFromPosition: eventEntities[0].Position, appliedToPosition: eventEntities[^1].Position,
                 appliedCount: eventEntities.Count, versionBefore: versionBefore,
                 versionAfter: projection.Version);
@@ -284,7 +284,7 @@ public static partial class DcbDbContextExtensions
 
         projection.Apply(newEventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
 
-        DcbDiagnostics.AddModelFoldedEvent(query, projectionId.ToStoreId(),
+        DcbDiagnostics.AddProjectionFoldedEvent(query, projectionId.ToStoreId(),
             appliedFromPosition: newEventEntities[0].Position,
             appliedToPosition: newEventEntities[^1].Position,
             appliedCount: newEventEntities.Count, versionBefore: versionBefore,

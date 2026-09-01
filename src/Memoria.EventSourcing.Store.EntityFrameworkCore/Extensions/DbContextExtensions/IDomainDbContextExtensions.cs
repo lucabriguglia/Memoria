@@ -71,6 +71,11 @@ public static partial class IDomainDbContextExtensions
         var newEvents = newEventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
         projection.Apply(newEvents);
 
+        ProjectionDiagnostics.AddProjectionFoldedEvent(streamId, projectionId,
+            appliedFromSequence: newEventEntities[0].Sequence, appliedToSequence: newEventEntities[^1].Sequence,
+            appliedCount: newEventEntities.Count, versionBefore: currentProjectionVersion,
+            versionAfter: projection.Version);
+
         if (projection.Version == currentProjectionVersion)
         {
             return projection.Version > 0 ? projection : default;

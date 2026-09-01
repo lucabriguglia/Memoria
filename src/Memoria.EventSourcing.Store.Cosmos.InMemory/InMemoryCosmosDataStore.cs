@@ -266,6 +266,13 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
 
         var newEvents = newEventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
         projection.Apply(newEvents);
+
+        var foldedSequences = newEventDocuments.Select(eventDocument => eventDocument.Sequence).ToList();
+        ProjectionDiagnostics.AddProjectionFoldedEvent(streamId, projectionId,
+            appliedFromSequence: foldedSequences.Min(), appliedToSequence: foldedSequences.Max(),
+            appliedCount: newEventDocuments.Count, versionBefore: currentProjectionVersion,
+            versionAfter: projection.Version);
+
         if (projection.Version == currentProjectionVersion)
         {
             return projection.Version > 0 ? projection : default;

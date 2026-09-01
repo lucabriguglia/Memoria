@@ -416,7 +416,15 @@ public class InMemoryCosmosDomainService(
         }
 
         var events = eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        var versionBefore = projection.Version;
         projection.Apply(events);
+
+        var foldedSequences = eventDocuments.Select(eventDocument => eventDocument.Sequence).ToList();
+        ProjectionDiagnostics.AddProjectionFoldedEvent(streamId, projectionId,
+            appliedFromSequence: foldedSequences.Min(), appliedToSequence: foldedSequences.Max(),
+            appliedCount: eventDocuments.Count, versionBefore: versionBefore,
+            versionAfter: projection.Version);
+
         if (projection.Version == 0)
         {
             return default(T);
@@ -664,6 +672,19 @@ public class InMemoryCosmosDomainService(
 
         var aggregateDocument = aggregateDocumentResult.Value;
         return await _dataStore.UpdateAggregateDocument(streamId, aggregateId, aggregateDocument, cancellationToken);
+    }
+
+    public async Task<Result<T?>> UpdateProjection<T>(IStreamId streamId, IProjectionId<T> projectionId,
+        CancellationToken cancellationToken = default) where T : IProjection, new()
+    {
+        var projectionDocumentResult = await _dataStore.GetProjectionDocument(streamId, projectionId, cancellationToken);
+        if (projectionDocumentResult.IsNotSuccess)
+        {
+            return projectionDocumentResult.Failure!;
+        }
+
+        var projectionDocument = projectionDocumentResult.Value;
+        return await _dataStore.UpdateProjectionDocument(streamId, projectionId, projectionDocument, cancellationToken);
     }
 
     public void Dispose()

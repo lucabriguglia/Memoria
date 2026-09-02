@@ -52,6 +52,7 @@ public class SubscriptionDecision : DcbAggregateRoot
     public override Type[]? EventTypeFilter { get; } =
     [
         typeof(CourseDefinedEvent),
+        typeof(CourseCapacityChangedEvent),
         typeof(StudentRegisteredEvent),
         typeof(StudentSubscribedEvent),
         typeof(StudentUnsubscribedEvent)
@@ -98,6 +99,13 @@ public class SubscriptionDecision : DcbAggregateRoot
             case CourseDefinedEvent defined when defined.CourseId == CourseId:
                 CourseExists = true;
                 Capacity = defined.Capacity;
+                return true;
+
+            // A capacity change is as much a fact about the course as its definition. Adding an
+            // event type is never only about the model that emits it: every model whose decision
+            // depends on it has to filter and apply it too, or it silently decides on stale facts.
+            case CourseCapacityChangedEvent changed when changed.CourseId == CourseId:
+                Capacity = changed.Capacity;
                 return true;
 
             case StudentRegisteredEvent registered when registered.StudentId == StudentId:

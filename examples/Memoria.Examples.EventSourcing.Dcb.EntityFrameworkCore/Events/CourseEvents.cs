@@ -13,3 +13,6 @@ public record StudentSubscribedEvent(string StudentId, string CourseId) : IEvent
 
 [EventType("StudentUnsubscribed")]
 public record StudentUnsubscribedEvent(string StudentId, string CourseId) : IEvent;
+
+[EventType("CourseCapacityChanged")]
+public record CourseCapacityChangedEvent(string CourseId, int Capacity) : IEvent;

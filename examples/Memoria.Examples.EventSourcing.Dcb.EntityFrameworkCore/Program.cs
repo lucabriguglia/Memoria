@@ -1,10 +1,12 @@
 using Memoria;
+using Memoria.EventSourcing;
 using Memoria.EventSourcing.Dcb;
 using Memoria.EventSourcing.Dcb.Extensions;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Extensions;
 using Memoria.Examples.EventSourcing.Dcb.EntityFrameworkCore.Commands;
 using Memoria.Examples.EventSourcing.Dcb.EntityFrameworkCore.Data;
+using Memoria.Examples.EventSourcing.Dcb.EntityFrameworkCore.Domain;
 using Memoria.Examples.EventSourcing.Dcb.EntityFrameworkCore.Events;
 using Memoria.Extensions;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +49,18 @@ Console.WriteLine();
 Console.WriteLine("--- a stale decision ---");
 await ShowStaleDecisionRefused(dcb);
 
+Console.WriteLine();
+Console.WriteLine("--- an aggregate the store folds and snapshots ---");
+Console.WriteLine("latin filled at one seat. Raising its capacity reads course:latin and nothing else,");
+Console.WriteLine("so the store can build the model, fold it and keep a snapshot of it.");
+await ChangeCapacity("latin", 3);
+await ShowSnapshot(dcb, "latin");
+await Subscribe("carol", "latin");
+
+Console.WriteLine();
+Console.WriteLine("--- two different decisions contending on one tag ---");
+await ShowCapacityChangeRefusedBySubscription(dcb);
+
 return;
 
 async Task Subscribe(string studentId, string courseId)
@@ -80,6 +94,50 @@ async Task ShowStaleDecisionRefused(IDcbDomainService service)
           $"{result.Failure.Tags!["latestPosition"]}, decision read {result.Failure.Tags["expectedPosition"]})");
 }
 
+async Task ChangeCapacity(string courseId, int capacity)
+{
+    var result = await dispatcher.Send(new ChangeCourseCapacityCommand(courseId, capacity));
+
+    Console.WriteLine(result.IsSuccess
+        ? $"  {courseId} capacity -> {capacity}: changed"
+        : $"  {courseId} capacity -> {capacity}: refused — {result.Failure!.Description}");
+}
+
+// SnapshotOnly reads the snapshot and no events at all, so it returns something only because
+// SaveAggregate wrote one alongside the event it appended.
+async Task ShowSnapshot(IDcbDomainService service, string courseId)
+{
+    var course = (await service.GetAggregate(new CourseId(courseId), ReadMode.SnapshotOnly)).Value;
+
+    Console.WriteLine(course is null
+        ? $"  no snapshot for {courseId}"
+        : $"  snapshot: {course.SeatsTaken} of {course.Capacity} seats taken, folded to position " +
+          $"{course.LatestPosition}");
+}
+
+// A capacity change and a subscription are different decisions about different things, but both are
+// written under course:latin — so they contend, and the one that read first is the one refused.
+async Task ShowCapacityChangeRefusedBySubscription(IDcbDomainService service)
+{
+    var courseId = new CourseId("latin");
+
+    var positionBefore = (await service.GetLatestPosition(courseId.Boundary)).Value;
+    Console.WriteLine($"  a capacity change read course:latin at position {positionBefore}.");
+
+    var course = (await service.GetAggregate(courseId, ReadMode.SnapshotWithNewEventsOrCreate)).Value!;
+    course.ChangeCapacityTo(10);
+
+    await Subscribe("henry", "latin");
+
+    var result = await service.SaveAggregate(courseId, course,
+        new AppendCondition(courseId.Boundary, positionBefore));
+
+    Console.WriteLine(result.IsSuccess
+        ? "  latin capacity -> 10: changed"
+        : $"  latin capacity -> 10: refused — {result.Failure!.Type} (boundary now at " +
+          $"{result.Failure.Tags!["latestPosition"]}, decision read {result.Failure.Tags["expectedPosition"]})");
+}
+
 async Task Seed(IDcbDomainService service)
 {
     // Courses and students are appended unconditionally: nothing was read to make them, so there is
@@ -95,7 +153,7 @@ async Task Seed(IDcbDomainService service)
         Course("maths", 30), Course("latin", 1), Course("greek", 30),
         Student("alice", "Alice"), Student("bob", "Bob"), Student("carol", "Carol"),
         Student("dave", "Dave"), Student("erin", "Erin"), Student("frank", "Frank"),
-        Student("gina", "Gina")
+        Student("gina", "Gina"), Student("henry", "Henry")
     ], condition: null);
 }
 

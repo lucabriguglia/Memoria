@@ -50,6 +50,17 @@ public class CosmosDataStore : ICosmosDataStore
         {
             var response = await _container.ReadItemAsync<AggregateDocument>(aggregateDocumentId, new PartitionKey(streamId.Id), cancellationToken: cancellationToken);
             DiagnosticsExtensions.AddActivityEvent(response, streamId, aggregateId, operation: "Get Aggregate Document");
+
+            // A point read returns whatever holds that id in that partition, and events,
+            // aggregates and projections share both. Reported rather than treated as absent:
+            // rebuilding from events and upserting the snapshot would overwrite the colliding
+            // document.
+            if (response.Resource.DocumentType != DocumentType.Aggregate)
+            {
+                return CosmosStoreFailures.DocumentIdCollision("Get Aggregate Document", streamId,
+                    aggregateDocumentId, DocumentType.Aggregate, response.Resource.DocumentType);
+            }
+
             return response.Resource;
         }
         catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -327,9 +338,18 @@ public class CosmosDataStore : ICosmosDataStore
     {
         try
         {
-            var response = await _container.ReadItemAsync<ProjectionDocument>(projectionId.ToStoreId(),
+            var projectionDocumentId = projectionId.ToStoreId();
+
+            var response = await _container.ReadItemAsync<ProjectionDocument>(projectionDocumentId,
                 new PartitionKey(streamId.Id), cancellationToken: cancellationToken);
             DiagnosticsExtensions.AddActivityEvent(response, streamId, operation: "Get Projection Document");
+
+            if (response.Resource.DocumentType != DocumentType.Projection)
+            {
+                return CosmosStoreFailures.DocumentIdCollision("Get Projection Document", streamId,
+                    projectionDocumentId, DocumentType.Projection, response.Resource.DocumentType);
+            }
+
             return response.Resource;
         }
         catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)

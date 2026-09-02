@@ -21,7 +21,13 @@ public class EventDocument
     /// This is used to differentiate between various document types within the Cosmos DB Event Sourcing store.
     /// </summary>
     [JsonProperty("documentType")]
-    public static string DocumentType => Documents.DocumentType.Event;
+    /// <remarks>
+    /// An instance property, not a static one, so the value round-trips. All three document types
+    /// share one container and one partition key, and their ids are built from different things, so
+    /// a point read by id can return a document of the wrong kind. Reading this back is what makes
+    /// that detectable rather than a null field somewhere further down.
+    /// </remarks>
+    public string DocumentType { get; set; } = Documents.DocumentType.Event;
 
     /// <summary>
     /// Gets or sets the type name of the event.

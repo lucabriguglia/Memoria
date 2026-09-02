@@ -73,6 +73,49 @@ Applying the same policy twice is a no-op, so both are safe from a deployment st
 that already holds data, do the replace during a quiet period.
 
 
+## Identifiers must not collide
+
+Events, aggregates and projections all live in one container, partitioned by stream id, and their
+document ids are built from different things:
+
+| Document   | Id                             |
+|------------|--------------------------------|
+| Event      | `{streamId}:{sequence}`        |
+| Aggregate  | `{aggregateId}:{typeVersion}`  |
+| Projection | `{projectionId}:{typeVersion}` |
+
+So an aggregate whose id renders the same string as its stream id puts its version 1 snapshot on the
+id of the event at sequence 1:
+
+```C#
+// Collides. The snapshot's document id is "order-42:1", and so is the first event's.
+public class OrderStreamId(string orderId) : IStreamId
+{
+    public string Id => $"order-42";
+}
+
+public class OrderAggregateId(string orderId) : IAggregateId<Order>
+{
+    public string Id => $"order-42";
+}
+```
+
+Give the aggregate or the projection an identifier that differs from the stream's — a prefix is
+enough, and it is what the framework's own examples do:
+
+```C#
+public string Id => $"order:{orderId}";        // stream
+public string Id => $"order-aggregate:{orderId}";  // aggregate
+```
+
+The store detects a collision rather than writing through it. A read of the wrong kind of document
+returns `memoria/document-id-collision` naming both types, and a save that would have overwritten the
+colliding document is refused, so the event survives. This is not retryable: it is a modelling
+mistake, and it fails identically until the identifier changes.
+
+> The InMemory Cosmos provider keeps each kind of document in its own dictionary, so it cannot
+> reproduce a collision. Test identifier schemes against the emulator.
+
 ## Write limits
 
 Cosmos DB commits at most 100 operations in one transactional batch. That turns into limits on how

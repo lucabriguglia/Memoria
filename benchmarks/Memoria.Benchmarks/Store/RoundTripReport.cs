@@ -19,9 +19,9 @@ namespace Memoria.Benchmarks.Store;
 /// </remarks>
 public static class RoundTripReport
 {
-    public static async Task Run(int events = 100, bool verbose = false)
+    public static async Task Run(int events = 100, bool verbose = false, StoreEngine engine = StoreEngine.Sqlite)
     {
-        await using var harness = new StoreBenchmarkHarness();
+        await using var harness = new StoreBenchmarkHarness(engine);
 
         await harness.Seed(events);
         await harness.WriteSnapshots();
@@ -52,7 +52,7 @@ public static class RoundTripReport
             await PrintCommands(harness, events);
         }
 
-        Print(rows, events);
+        Print(rows, events, engine);
     }
 
     private static async Task<Row> Measure(StoreBenchmarkHarness harness, string operation,
@@ -93,11 +93,11 @@ public static class RoundTripReport
             new AppendCondition(boundary, position));
     }
 
-    private static void Print(List<Row> rows, int events)
+    private static void Print(List<Row> rows, int events, StoreEngine engine)
     {
         Console.WriteLine();
-        Console.WriteLine($"Database commands per operation, over {events} events. Exact, and the same");
-        Console.WriteLine("on every engine — unlike the timings, which are SQLite's.");
+        Console.WriteLine($"Database commands per operation, over {events} events, on {engine}.");
+
         Console.WriteLine();
 
         var width = rows.Max(row => row.Operation.Length);

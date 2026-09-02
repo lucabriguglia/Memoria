@@ -15,36 +15,60 @@ side over `GetEvents`, `GetAggregate` and `SaveAggregate`. The event type, the m
 and the payloads are identical on both sides — only the identity and the boundary differ — so what is
 left is the store.
 
-Both run on in-memory SQLite. That is a deliberate trade: it needs nothing installed, so anyone can
-reproduce the numbers, and the relative query-shape costs are real.
+Both run on **two engines**, as a BenchmarkDotNet parameter: in-memory SQLite, which needs nothing
+installed, and SQL Server 2022 in a container via Testcontainers. The SQL Server container starts
+once per benchmark process, lazily, on the first case that needs it; Docker must be running or those
+cases fail with a message saying so.
 
-### What SQLite hides, and what to read instead
+### Round trips
 
-A round trip inside this process costs almost nothing. Against a networked engine it is a real
-millisecond, and the two stores do not issue the same number of them:
+A round trip inside this process costs almost nothing. Against a real engine it costs real
+milliseconds, and the two stores do not issue the same number of them:
 
 ```bash
 dotnet run -c Release --project benchmarks/Memoria.Benchmarks -- --round-trips --verbose
+dotnet run -c Release --project benchmarks/Memoria.Benchmarks -- --round-trips --sqlserver --verbose
 ```
 
-```
-| Operation                    | Streams | DCB |
-|------------------------------|---------|-----|
-| GetEvents(100)               |       1 |   1 |
-| GetAggregate (snapshot only) |       1 |   1 |
-| GetAggregate (folded)        |       1 |   1 |
-| SaveAggregate (guarded)      |       3 |   8 |
-```
+| Operation                    | Streams (SQLite) | DCB (SQLite) | Streams (SQL Server) | DCB (SQL Server) |
+|------------------------------|------------------|--------------|----------------------|------------------|
+| GetEvents(100)               |                1 |            1 |                    1 |                1 |
+| GetAggregate (snapshot only) |                1 |            1 |                    1 |                1 |
+| GetAggregate (folded)        |                1 |            1 |                    1 |                1 |
+| SaveAggregate (guarded)      |                3 |            8 |                    2 |                7 |
 
-This is not a BenchmarkDotNet benchmark and needs no statistics: the count is exact, identical on
-every run, and — unlike a timing — identical on every engine. **Reads cost DCB nothing in round
-trips. Appends cost it five more**, and `--verbose` prints the statements so you can see which five.
-On a networked engine that gap, not the timings below, is what you will feel.
+This is not a BenchmarkDotNet benchmark and needs no statistics: the count is exact and identical on
+every run. **Reads cost DCB nothing in round trips. Appends cost it five more**, and `--verbose`
+prints the statements so you can see which five.
+
+The absolute counts differ by engine because Entity Framework Core batches more aggressively on SQL
+Server — it folds the tag head `UPDATE` into the command that inserts the events, and the streamed
+snapshot `UPDATE` into the one that inserts the event. **The gap does not move: five extra commands
+on both.**
+
+### What the two engines actually showed
+
+The reason for running both was a prediction: that SQLite would understate DCB's append cost, because
+five extra round trips are nearly free in process and expensive over a wire. **The prediction was
+wrong, and the measurement is the reason we know.**
+
+| `SaveAggregate`, median | Streams  | DCB      | Ratio |
+|-------------------------|----------|----------|-------|
+| SQLite, in memory       | ~0.95 ms | ~2.1 ms  | ~2.1× |
+| SQL Server, container   | ~7.4 ms  | ~14.5 ms | ~2.0× |
+
+Absolute cost rose about sevenfold on both sides and the ratio stayed put, because a streamed append
+pays transaction and commit costs that scale the same way. Reads showed no systematic difference on
+either engine.
+
+What the container cannot answer is distance: it runs on the same machine, so a round trip is
+loopback, not a network hop. The further the database, the more the five extra commands cost, and the
+ratio is the first thing that will move. Keep the round-trip table for that case.
 
 ### Reading the timings
 
-Report medians rather than means for the write benchmarks. SQLite commit spikes skew the mean badly
-enough that BenchmarkDotNet's own `RatioSD` column exceeds 0.8; the medians are stable across runs.
+Report medians rather than means for the write benchmarks. Commit spikes skew the mean badly enough
+that BenchmarkDotNet's own `RatioSD` column exceeds 0.8 on SQLite; the medians are stable across runs.
 
 The write benchmarks use `RunStrategy.Monitoring` with one invocation per iteration, because every
 append has a side effect: it moves the sequence and the position the next append is guarded against.

@@ -16,52 +16,50 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 namespace Memoria.Benchmarks.Store;
 
 /// <summary>
-/// One SQLite database per store, seeded with the same events, so a benchmark can put the streamed
-/// store and the DCB store side by side.
+/// A database per store on a chosen engine, seeded with the same events, so a benchmark can put the
+/// streamed store and the DCB store side by side.
 /// </summary>
 /// <remarks>
 /// <para>
-/// SQLite in memory, for the reason the benchmarks are worth having at all: it needs nothing
-/// installed, so the numbers are reproducible by anyone reading them. Read the timings as relative
-/// query-shape costs, not as production latency.
+/// Two engines. In-memory SQLite needs nothing installed, so its numbers are reproducible by anyone
+/// reading them; SQL Server in a container is a real engine paying real per-command costs. Both are
+/// run, because the whole question was whether the SQLite answer survives the move.
 /// </para>
 /// <para>
-/// <strong>What SQLite hides.</strong> A streamed append is three round trips; a DCB append is eight.
-/// In this process a round trip costs almost nothing, so the DCB append looks far cheaper here than
-/// it will against a networked engine, where each one is a real millisecond. That is why
-/// <see cref="RoundTripReport"/> exists alongside the timings: the command count is exact, is
-/// unaffected by the engine, and is what predicts behaviour on a server the timings cannot reach.
+/// It did: appends cost about 2x on both, though the absolute cost is roughly sevenfold higher on
+/// SQL Server. What neither engine can answer is distance — the container is on this machine, so a
+/// round trip is loopback rather than a network hop. <see cref="RoundTripReport"/> exists for that
+/// case: a DCB append issues five more commands than a streamed one, on both engines, and that count
+/// is what a remote database charges for.
 /// </para>
 /// </remarks>
 public sealed class StoreBenchmarkHarness : IAsyncDisposable
 {
-    private readonly SqliteConnection _streamedConnection;
-    private readonly SqliteConnection _dcbConnection;
+    private readonly IDisposable? _streamedConnection;
+    private readonly IDisposable? _dcbConnection;
     private readonly BenchmarkDbContext _streamedContext;
     private readonly BenchmarkDcbDbContext _dcbContext;
 
-    public StoreBenchmarkHarness()
+    public StoreBenchmarkHarness(StoreEngine engine = StoreEngine.Sqlite)
     {
         ConfigureTypeBindings();
 
         // A database each. One EnsureCreated on a database that already has tables does
         // nothing, so putting both schemas in one database silently leaves the second store
         // without its tables.
-        _streamedConnection = Open("streamed");
-        _dcbConnection = Open("dcb");
 
         Commands = new CommandCountingInterceptor();
 
         _streamedContext = new BenchmarkDbContext(
             new DbContextOptionsBuilder<DomainDbContext>()
-                .UseSqlite(_streamedConnection)
+                .UseEngine(engine, "streamed", out _streamedConnection)
                 .AddInterceptors(Commands)
                 .Options,
             TimeProvider.System, HttpContextAccessor());
 
         _dcbContext = new BenchmarkDcbDbContext(
             new DbContextOptionsBuilder<DcbDbContext>()
-                .UseSqlite(_dcbConnection)
+                .UseEngine(engine, "dcb", out _dcbConnection)
                 .AddInterceptors(Commands)
                 .Options,
             TimeProvider.System, HttpContextAccessor());
@@ -123,8 +121,8 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
     {
         await _streamedContext.DisposeAsync();
         await _dcbContext.DisposeAsync();
-        await _streamedConnection.DisposeAsync();
-        await _dcbConnection.DisposeAsync();
+        _streamedConnection?.Dispose();
+        _dcbConnection?.Dispose();
     }
 
 
@@ -143,13 +141,6 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
         {
             throw new InvalidOperationException($"Benchmark setup failed: {result.Failure!.Description}");
         }
-    }
-
-    private static SqliteConnection Open(string name)
-    {
-        var connection = new SqliteConnection($"DataSource={name}-{Guid.NewGuid()};Mode=Memory;Cache=Shared");
-        connection.Open();
-        return connection;
     }
 
     private static void ConfigureTypeBindings()

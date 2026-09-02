@@ -15,10 +15,11 @@ namespace Memoria.Benchmarks.Store;
 /// most of what it does.
 /// </para>
 /// <para>
-/// <strong>This is the measurement SQLite is least able to make.</strong> The streamed append is three
-/// round trips; the DCB append is eight. In this process each one costs almost nothing, so the gap here
-/// is a floor. Against a networked engine every one of those five extra commands is a real
-/// millisecond, and <see cref="RoundTripReport"/> is the number to reason with.
+/// A streamed append is 2 database commands on SQL Server and a DCB append is 7. The expectation was
+/// that those five extra round trips would widen the gap once each crossed a wire; measured, they did
+/// not — about 2x on SQLite and about 2x on SQL Server, with the absolute cost roughly sevenfold
+/// higher. A streamed append pays transaction and commit costs that scale the same way. The gap that
+/// remains unmeasured is distance, and <see cref="RoundTripReport"/> is the number for it.
 /// </para>
 /// <para>
 /// <see cref="RunStrategy.Monitoring"/> with one invocation per iteration, because every append has a
@@ -37,13 +38,17 @@ public class StoreWriteBenchmarks
     private int _seat;
 
     /// <summary>How many events the stream and the boundary already hold before the append.</summary>
+    /// <summary>The database to run against. SQLite hides the cost of a round trip; SQL Server does not.</summary>
+    [Params(StoreEngine.Sqlite, StoreEngine.SqlServer)]
+    public StoreEngine Engine { get; set; }
+
     [Params(10, 100, 1000)]
     public int Events { get; set; }
 
     [GlobalSetup]
     public void Setup()
     {
-        _harness = new StoreBenchmarkHarness();
+        _harness = new StoreBenchmarkHarness(Engine);
         _harness.Seed(Events).GetAwaiter().GetResult();
         _harness.WriteSnapshots().GetAwaiter().GetResult();
 

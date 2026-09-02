@@ -12,6 +12,8 @@
         <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
         <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.7" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.7" />
+        <PackageReference Include="Testcontainers.MsSql" Version="4.14.0" />
     </ItemGroup>
 
     <ItemGroup>

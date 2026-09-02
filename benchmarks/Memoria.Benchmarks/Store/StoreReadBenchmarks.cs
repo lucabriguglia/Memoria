@@ -30,13 +30,17 @@ public class StoreReadBenchmarks
     private StoreBenchmarkHarness _harness = null!;
 
     /// <summary>How many events sit inside the stream and inside the boundary.</summary>
+    /// <summary>The database to run against. SQLite hides the cost of a round trip; SQL Server does not.</summary>
+    [Params(StoreEngine.Sqlite, StoreEngine.SqlServer)]
+    public StoreEngine Engine { get; set; }
+
     [Params(10, 100, 1000)]
     public int Events { get; set; }
 
     [GlobalSetup]
     public void Setup()
     {
-        _harness = new StoreBenchmarkHarness();
+        _harness = new StoreBenchmarkHarness(Engine);
         _harness.Seed(Events).GetAwaiter().GetResult();
         _harness.WriteSnapshots().GetAwaiter().GetResult();
     }

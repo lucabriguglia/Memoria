@@ -8,6 +8,7 @@ using Memoria.Examples.EventSourcing.Dcb.EntityFrameworkCore.Commands;
 using Memoria.Examples.EventSourcing.Dcb.EntityFrameworkCore.Data;
 using Memoria.Examples.EventSourcing.Dcb.EntityFrameworkCore.Domain;
 using Memoria.Examples.EventSourcing.Dcb.EntityFrameworkCore.Events;
+using Memoria.Examples.EventSourcing.Dcb.EntityFrameworkCore.Queries;
 using Memoria.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -60,6 +61,15 @@ await Subscribe("carol", "latin");
 Console.WriteLine();
 Console.WriteLine("--- two different decisions contending on one tag ---");
 await ShowCapacityChangeRefusedBySubscription(dcb);
+
+
+Console.WriteLine();
+Console.WriteLine("--- a projection, read through a query ---");
+Console.WriteLine("A read model over student:alice, saved as a snapshot on the way out.");
+await ShowTranscript("alice");
+await Subscribe("alice", "greek");
+await ShowStaleSnapshot(dcb, "alice");
+await ShowTranscript("alice");
 
 return;
 
@@ -137,6 +147,43 @@ async Task ShowCapacityChangeRefusedBySubscription(IDcbDomainService service)
         : $"  latin capacity -> 10: refused — {result.Failure!.Type} (boundary now at " +
           $"{result.Failure.Tags!["latestPosition"]}, decision read {result.Failure.Tags["expectedPosition"]})");
 }
+
+
+// SnapshotWithNewEventsOrCreate: folds and saves the first time, then applies whatever arrived since
+// and saves again. The query handler asks for nothing else.
+async Task ShowTranscript(string studentId)
+{
+    var result = await dispatcher.Get(new GetStudentTranscriptQuery(studentId));
+
+    if (result.Value is not { } transcript)
+    {
+        Console.WriteLine($"  {studentId}: no transcript");
+        return;
+    }
+
+    Console.WriteLine($"  {transcript.Name}: {Courses(transcript)}, folded to position " +
+                      $"{transcript.LatestPosition}");
+}
+
+// Reads the snapshot and no events at all, so it shows what was actually stored — which is behind
+// again the moment anything is appended inside the boundary.
+async Task ShowStaleSnapshot(IDcbDomainService service, string studentId)
+{
+    var stored = (await service.GetProjection(new StudentTranscriptId(studentId), ReadMode.SnapshotOnly)).Value;
+
+    Console.WriteLine(stored is null
+        ? $"  snapshot only: nothing stored for {studentId}"
+        : $"  snapshot only: {Courses(stored)}, folded to position {stored.LatestPosition} — stale, " +
+          "because the subscription above landed after it was written");
+}
+
+string Courses(StudentTranscript transcript) =>
+    transcript.Courses.Count switch
+    {
+        0 => "no courses",
+        1 => $"1 course ({transcript.Courses[0]})",
+        var count => $"{count} courses ({string.Join(", ", transcript.Courses)})"
+    };
 
 async Task Seed(IDcbDomainService service)
 {

@@ -53,6 +53,7 @@
     <File Path="docs/_config.yml" />
   </Folder>
   <Folder Name="/benchmarks/">
+    <File Path="benchmarks/README.md" />
     <Project Path="benchmarks/Memoria.Benchmarks/Memoria.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/scripts/install/">

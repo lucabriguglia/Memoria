@@ -81,6 +81,41 @@ indexed, where the substring match a property filter compiles to on most provide
 **A stream id usually becomes one tag.** `customer-42` becomes `customer:42`, and the events that
 were in that stream carry that tag. The difference is that they can carry others too.
 
+## What it costs
+
+Measured with [the benchmarks in this repo](https://github.com/lucabriguglia/Memoria/tree/main/benchmarks),
+on in-memory SQLite, with the same event type, the same model state and the same fold on both sides —
+so what is measured is the store.
+
+**Reads are a wash.** DCB issues the same number of database round trips as streams, and the timings
+converge as the event set grows:
+
+| Operation, ratio to streams | 10 events | 100 events | 1000 events |
+|-----------------------------|-----------|------------|-------------|
+| `GetEvents`                 | 1.34×     | 1.03×      | 1.01×       |
+| `GetAggregate`, snapshot    | 1.03×     | 1.07×      | 1.08×       |
+| `GetAggregate`, folded      | 1.10×     | 1.06×      | 0.99×       |
+
+A stream is a range on one indexed column; a boundary is a semi-join against `DcbEventTags` over the
+same rows. That join is a small fixed cost, so it shows up on a 10-event read and amortises away by
+100. A snapshot read is one row either way, and stays flat however long the history gets — which is
+the point of snapshots in both models.
+
+**Appends cost about twice as much, and that is the floor.** DCB's `SaveAggregate` runs around 2.1 ms
+against 1.0 ms for streams on SQLite, allocating 2.7× as much, flat in the number of events already
+stored.
+
+The ratio matters less than what is behind it. A streamed append is 3 database commands; a DCB append
+is 8 — it claims the tag head rows, reads the boundary's position, writes the events, replaces the
+tokens, writes the tags, then the snapshot. In-process those five extra commands are nearly free,
+which is why 2× is a floor rather than an estimate. **Against a networked engine, budget for the
+round trips, not for this ratio.**
+
+None of this is a reason to pick one or the other. A decision whose boundary is not the shape of any
+stream cannot be made correctly under streams at any price, and an append that a stream can express
+is not worth five extra round trips. Pick on the boundary, as above; use these numbers to size the
+consequence.
+
 ## Known limits
 
 - **`TagQuery` is `AnyOf` only.** A boundary is a disjunction of tags. Conjunction is not in 1.8.0.

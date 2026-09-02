@@ -36,55 +36,55 @@ public class SerializerBenchmarks
         }
     };
 
-    private OrderPlacedEvent @event = null!;
-    private OrderAggregate aggregate = null!;
-    private string eventJsonNewtonsoft = null!;
-    private string aggregateJsonNewtonsoft = null!;
-    private string eventJsonSystemTextJson = null!;
-    private string aggregateJsonSystemTextJson = null!;
+    private OrderPlacedEvent _event = null!;
+    private OrderAggregate _aggregate = null!;
+    private string _eventJsonNewtonsoft = null!;
+    private string _aggregateJsonNewtonsoft = null!;
+    private string _eventJsonSystemTextJson = null!;
+    private string _aggregateJsonSystemTextJson = null!;
 
     [GlobalSetup]
     public void Setup()
     {
-        @event = new OrderPlacedEvent(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 199.99m,
+        _event = new OrderPlacedEvent(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 199.99m,
             DateTimeOffset.UtcNow);
 
-        aggregate = new OrderAggregate();
-        aggregate.Apply([@event]);
+        _aggregate = new OrderAggregate();
+        _aggregate.Apply([_event]);
 
-        eventJsonNewtonsoft = JsonConvert.SerializeObject(@event);
-        aggregateJsonNewtonsoft = JsonConvert.SerializeObject(aggregate);
-        eventJsonSystemTextJson = JsonSerializer.Serialize(@event, SystemTextJsonOptions);
-        aggregateJsonSystemTextJson = JsonSerializer.Serialize(aggregate, SystemTextJsonOptions);
+        _eventJsonNewtonsoft = JsonConvert.SerializeObject(_event);
+        _aggregateJsonNewtonsoft = JsonConvert.SerializeObject(_aggregate);
+        _eventJsonSystemTextJson = JsonSerializer.Serialize(_event, SystemTextJsonOptions);
+        _aggregateJsonSystemTextJson = JsonSerializer.Serialize(_aggregate, SystemTextJsonOptions);
     }
 
     [Benchmark(Baseline = true, Description = "Event serialize (Newtonsoft)")]
-    public string EventSerializeNewtonsoft() => JsonConvert.SerializeObject(@event);
+    public string EventSerializeNewtonsoft() => JsonConvert.SerializeObject(_event);
 
     [Benchmark(Description = "Event serialize (System.Text.Json)")]
-    public string EventSerializeSystemTextJson() => JsonSerializer.Serialize(@event, SystemTextJsonOptions);
+    public string EventSerializeSystemTextJson() => JsonSerializer.Serialize(_event, SystemTextJsonOptions);
 
     [Benchmark(Description = "Event deserialize (Newtonsoft)")]
     public object EventDeserializeNewtonsoft() =>
-        JsonConvert.DeserializeObject(eventJsonNewtonsoft, typeof(OrderPlacedEvent), NewtonsoftSettings)!;
+        JsonConvert.DeserializeObject(_eventJsonNewtonsoft, typeof(OrderPlacedEvent), NewtonsoftSettings)!;
 
     [Benchmark(Description = "Event deserialize (System.Text.Json)")]
     public object EventDeserializeSystemTextJson() =>
-        JsonSerializer.Deserialize(eventJsonSystemTextJson, typeof(OrderPlacedEvent), SystemTextJsonOptions)!;
+        JsonSerializer.Deserialize(_eventJsonSystemTextJson, typeof(OrderPlacedEvent), SystemTextJsonOptions)!;
 
     [Benchmark(Description = "Aggregate serialize (Newtonsoft)")]
-    public string AggregateSerializeNewtonsoft() => JsonConvert.SerializeObject(aggregate);
+    public string AggregateSerializeNewtonsoft() => JsonConvert.SerializeObject(_aggregate);
 
     [Benchmark(Description = "Aggregate serialize (System.Text.Json)")]
-    public string AggregateSerializeSystemTextJson() => JsonSerializer.Serialize(aggregate, SystemTextJsonOptions);
+    public string AggregateSerializeSystemTextJson() => JsonSerializer.Serialize(_aggregate, SystemTextJsonOptions);
 
     [Benchmark(Description = "Aggregate deserialize (Newtonsoft)")]
     public object AggregateDeserializeNewtonsoft() =>
-        JsonConvert.DeserializeObject(aggregateJsonNewtonsoft, typeof(OrderAggregate), NewtonsoftSettings)!;
+        JsonConvert.DeserializeObject(_aggregateJsonNewtonsoft, typeof(OrderAggregate), NewtonsoftSettings)!;
 
     [Benchmark(Description = "Aggregate deserialize (System.Text.Json)")]
     public object AggregateDeserializeSystemTextJson() =>
-        JsonSerializer.Deserialize(aggregateJsonSystemTextJson, typeof(OrderAggregate), SystemTextJsonOptions)!;
+        JsonSerializer.Deserialize(_aggregateJsonSystemTextJson, typeof(OrderAggregate), SystemTextJsonOptions)!;
 
     private static void AllowNonPublicSetters(JsonTypeInfo typeInfo)
     {

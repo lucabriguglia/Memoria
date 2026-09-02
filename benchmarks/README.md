@@ -15,10 +15,11 @@ side over `GetEvents`, `GetAggregate` and `SaveAggregate`. The event type, the m
 and the payloads are identical on both sides — only the identity and the boundary differ — so what is
 left is the store.
 
-Every benchmark runs on **all three engines the store targets**, as a BenchmarkDotNet parameter:
+The streams-against-DCB benchmarks run on **the three engines the DCB store targets**, as a BenchmarkDotNet parameter:
 in-memory SQLite, which needs nothing installed, and SQL Server 2022 and PostgreSQL 15 in containers
 via Testcontainers. Each container starts once per benchmark process, lazily, on the first case that
-needs it; Docker must be running or those cases fail with a message saying so.
+needs it; Docker must be running or those cases fail with a message saying so. Cosmos DB is compared
+separately, further down, because it hosts no DCB store.
 
 ### Round trips
 
@@ -93,6 +94,52 @@ flatter DCB for the worst possible reason.
 
 Both sides are guarded. Comparing a guarded streamed append against an unguarded DCB append would be
 meaningless, because the guard is most of what a DCB append does.
+
+## The streamed store across providers
+
+`Store/StreamedProviderBenchmarks` answers a different question from the two above: not which
+consistency model costs more on one engine, but what one consistency model costs on each provider it
+ships with.
+
+**Cosmos DB appears only here.** There is no DCB store for it, and the reason is structural rather
+than unfinished work: an append has to condition on a tag query and write atomically, and a
+transactional batch is scoped to one logical partition while a boundary is not. See
+[Providers](../docs/concepts/providers.md).
+
+Medians over 100 events:
+
+| Operation                   | SQLite  | SQL Server | PostgreSQL | Cosmos  |
+|-----------------------------|---------|------------|------------|---------|
+| GetEvents                   | 1.14 ms | 3.65 ms    | 2.85 ms    | 5.73 ms |
+| GetAggregate, snapshot only | 0.36 ms | 2.35 ms    | 2.00 ms    | 0.99 ms |
+| GetAggregate, folded        | 1.33 ms | 3.81 ms    | 3.06 ms    | 5.78 ms |
+| SaveAggregate               | 1.08 ms | 7.17 ms    | 4.30 ms    | 9.46 ms |
+
+Cosmos wins the point read and loses the query, which is what it is built to do. Reading a snapshot
+is a `ReadItemAsync` by id and partition key, and at 0.99 ms it beats both relational engines; every
+operation that has to *query* — `GetEvents`, and the fold built on it — is the slowest of the four. It
+also allocates roughly twice as much (730 KB against ~390 KB), which is the SDK's serialization
+rather than the store's.
+
+There are no ratios in this report. Each provider is its own row, because none of them is a baseline
+the others vary from: an in-process SQLite, two containers and a local emulator are four different
+deployments, not four ways of doing one thing.
+
+The Cosmos cases need the emulator running on `https://localhost:8081`, the same local-only gate the
+Cosmos test project has — no CI job provides one. Filter them out if it is not running. The
+round-trip report stays Entity Framework Core only: Cosmos is not an EF provider, so there is no
+command interceptor to count with.
+
+### Why the benchmark's stream and aggregate ids differ
+
+Not cosmetic. On Cosmos DB an event document is keyed `{streamId}:{sequence}` and an aggregate
+document `{aggregateId}:{typeVersion}`, both in one container. The first version of this benchmark
+used `show-1` for the stream and the aggregate, and the version 1 aggregate's document id collided
+with the event at sequence 1 — `ReadItemAsync<AggregateDocument>` returned that event, and
+`ToAggregate` threw `ArgumentNullException` on a null `AggregateType`.
+
+The ids here are prefixed to avoid it. The repository's Cosmos tests avoid it too, but by naming
+convention rather than by design.
 
 ## Serializer
 

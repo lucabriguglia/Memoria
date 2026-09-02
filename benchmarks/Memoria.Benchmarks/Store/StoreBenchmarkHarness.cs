@@ -39,20 +39,27 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
     private readonly StoreEngine _engine;
     private readonly IDisposable? _streamedConnection;
     private readonly IDisposable? _dcbConnection;
-    private readonly BenchmarkDbContext _streamedContext;
-    private readonly BenchmarkDcbDbContext _dcbContext;
+    private readonly BenchmarkDbContext? _streamedContext;
+    private readonly BenchmarkDcbDbContext? _dcbContext;
+    private readonly IDcbDomainService? _dcb;
 
     public StoreBenchmarkHarness(StoreEngine engine = StoreEngine.Sqlite)
     {
         _engine = engine;
         ConfigureTypeBindings();
 
-        // A database each. One EnsureCreated on a database that already has tables does
-        // nothing, so putting both schemas in one database silently leaves the second store
-        // without its tables.
-
         Commands = new CommandCountingInterceptor();
 
+        if (engine is StoreEngine.Cosmos)
+        {
+            // Not an Entity Framework Core provider, so there is no context, no interceptor and no
+            // DCB side. Cosmos hosts the streamed store only.
+            Streamed = CosmosEmulator.CreateDomainService(HttpContextAccessor());
+            return;
+        }
+
+        // A database each. One EnsureCreated on a database that already has tables does nothing, so
+        // putting both schemas in one database silently leaves the second store without its tables.
         _streamedContext = new BenchmarkDbContext(
             new DbContextOptionsBuilder<DomainDbContext>()
                 .UseEngine(engine, "streamed", out _streamedConnection)
@@ -71,7 +78,7 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
         _dcbContext.Database.EnsureCreated();
 
         Streamed = new EntityFrameworkCoreDomainService(_streamedContext);
-        Dcb = new EntityFrameworkCoreDcbDomainService(_dcbContext);
+        _dcb = new EntityFrameworkCoreDcbDomainService(_dcbContext);
     }
 
     /// <summary>Counts the commands each store sends, for <see cref="RoundTripReport"/>.</summary>
@@ -79,10 +86,14 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
 
     public IDomainService Streamed { get; }
 
-    public IDcbDomainService Dcb { get; }
+    /// <summary>The DCB store, on the engines that have one.</summary>
+    /// <exception cref="InvalidOperationException">The engine hosts no DCB store.</exception>
+    public IDcbDomainService Dcb => _dcb ?? throw new InvalidOperationException(
+        $"{_engine} hosts no DCB store, so there is nothing to compare against here. " +
+        "See docs/concepts/providers.md.");
 
     /// <summary>The DCB context.s underlying connection, for ad hoc diagnostics.</summary>
-    public System.Data.Common.DbConnection DcbConnection => _dcbContext.Database.GetDbConnection();
+    public System.Data.Common.DbConnection DcbConnection => _dcbContext!.Database.GetDbConnection();
 
     public static ShowStreamId StreamId { get; } = new("show-1");
 
@@ -109,8 +120,12 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
 
         // Checked, not ignored. A silently failed seed would leave every benchmark measuring
         // a query against an empty table, which looks like a very fast store.
-        Ensure(await _streamedContext.SaveEvents(StreamId, streamed, expectedEventSequence: 0));
-        Ensure(await _dcbContext.SaveEvents(tagged, condition: null, maxEventsPerAppend: int.MaxValue));
+        Ensure(await Streamed.SaveEvents(StreamId, streamed, expectedEventSequence: 0));
+
+        if (_dcbContext is not null)
+        {
+            Ensure(await _dcbContext.SaveEvents(tagged, condition: null, maxEventsPerAppend: int.MaxValue));
+        }
 
         await UpdateStatistics(_engine);
     }
@@ -122,13 +137,16 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
     public async Task WriteSnapshots()
     {
         Ensure(await Streamed.GetAggregate(StreamId, StreamedId, ReadMode.SnapshotOrCreate));
-        Ensure(await Dcb.GetAggregate(DcbId, ReadMode.SnapshotOrCreate));
+        if (_dcb is not null)
+        {
+            Ensure(await _dcb.GetAggregate(DcbId, ReadMode.SnapshotOrCreate));
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
-        await _streamedContext.DisposeAsync();
-        await _dcbContext.DisposeAsync();
+        if (_streamedContext is not null) await _streamedContext.DisposeAsync();
+        if (_dcbContext is not null) await _dcbContext.DisposeAsync();
         _streamedConnection?.Dispose();
         _dcbConnection?.Dispose();
     }
@@ -177,8 +195,8 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
             return;
         }
 
-        await _streamedContext.Database.ExecuteSqlRawAsync("ANALYZE;");
-        await _dcbContext.Database.ExecuteSqlRawAsync("ANALYZE;");
+        await _streamedContext!.Database.ExecuteSqlRawAsync("ANALYZE;");
+        await _dcbContext!.Database.ExecuteSqlRawAsync("ANALYZE;");
     }
 
     private static void ConfigureTypeBindings()

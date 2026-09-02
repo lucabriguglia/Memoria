@@ -1,4 +1,9 @@
 using Microsoft.Data.SqlClient;
+using Memoria.EventSourcing;
+using Memoria.EventSourcing.Store.Cosmos;
+using Memoria.EventSourcing.Store.Cosmos.Configuration;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.MsSql;
@@ -15,7 +20,14 @@ public enum StoreEngine
     SqlServer,
 
     /// <summary>The other engine the store targets, also in a container.</summary>
-    PostgreSql
+    PostgreSql,
+
+    /// <summary>
+    /// The streamed store only. Cosmos DB cannot host DCB: an append has to condition on a tag
+    /// query and write atomically, and a transactional batch is scoped to one logical partition
+    /// while a boundary is not. See docs/concepts/providers.md.
+    /// </summary>
+    Cosmos
 }
 
 /// <summary>
@@ -116,9 +128,65 @@ public static class PostgreSqlContainer
     }
 }
 
+
+/// <summary>
+/// The Cosmos DB emulator the benchmarks use, and the streamed store built on it.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The local emulator on <c>https://localhost:8081</c> with the well-known key, matching what the
+/// Cosmos test project does. There is no container image here for the same reason there is no CI job
+/// for those tests: the emulator is a local-only gate. Start it before running the Cosmos cases.
+/// </para>
+/// <para>
+/// A database per harness, so a run never reads another run's documents.
+/// </para>
+/// </remarks>
+public static class CosmosEmulator
+{
+    public const string Endpoint = "https://localhost:8081";
+
+    private const string WellKnownKey =
+        "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+
+    /// <summary>
+    /// Creates a domain service over a freshly named database, creating the database and container.
+    /// </summary>
+    public static IDomainService CreateDomainService(IHttpContextAccessor httpContextAccessor)
+    {
+        var options = Options.Create(new CosmosOptions
+        {
+            Endpoint = Endpoint,
+            AuthKey = WellKnownKey,
+            DatabaseName = $"bench_{Guid.NewGuid():N}"
+        });
+
+        var clientProvider = new CosmosClientProvider(options);
+
+        try
+        {
+            new CosmosSetup(options, clientProvider).CreateDatabaseAndContainerIfNotExist()
+                .GetAwaiter().GetResult();
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException(
+                $"The Cosmos DB emulator could not be reached at {Endpoint} " +
+                $"({exception.GetType().Name}: {exception.Message}). Start it, or filter the Cosmos " +
+                "cases out of the run.", exception);
+        }
+
+        var dataStore = new CosmosDataStore(clientProvider, TimeProvider.System, httpContextAccessor);
+
+        return new CosmosDomainService(clientProvider, TimeProvider.System, httpContextAccessor, dataStore);
+    }
+}
+
 /// <summary>Applies the provider for a chosen engine to a context's options.</summary>
 public static class StoreEngineExtensions
 {
+    /// <summary>Whether a DCB store exists for this engine.</summary>
+    public static bool SupportsDcb(this StoreEngine engine) => engine is not StoreEngine.Cosmos;
     public static DbContextOptionsBuilder<T> UseEngine<T>(this DbContextOptionsBuilder<T> builder,
         StoreEngine engine, string name, out IDisposable? owned) where T : DbContext
     {

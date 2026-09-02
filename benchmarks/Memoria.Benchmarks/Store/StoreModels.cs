@@ -70,12 +70,20 @@ public class DcbSeats : DcbAggregateRoot
 
 public class ShowStreamId(string showId) : IStreamId
 {
-    public string Id { get; } = showId;
+    public string Id { get; } = $"show:{showId}";
 }
 
+/// <summary>
+/// Deliberately not the same string as <see cref="ShowStreamId"/>.
+/// </summary>
+/// <remarks>
+/// On Cosmos DB an event document is keyed <c>{streamId}:{sequence}</c> and an aggregate document
+/// <c>{aggregateId}:{typeVersion}</c>, in one container. Give the stream and the aggregate the same
+/// string and a version 1 aggregate collides with the event at sequence 1.
+/// </remarks>
 public class StreamedSeatsId(string showId) : IAggregateId<StreamedSeats>
 {
-    public string Id { get; } = showId;
+    public string Id { get; } = $"seats:{showId}";
 
     public IDictionary<string, string>? EventPropertyFilter => null;
 }

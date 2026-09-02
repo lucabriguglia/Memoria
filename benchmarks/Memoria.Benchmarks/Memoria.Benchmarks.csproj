@@ -21,6 +21,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\Memoria.EventSourcing\Memoria.EventSourcing.csproj" />
         <ProjectReference Include="..\..\src\Memoria.EventSourcing.Store.EntityFrameworkCore\Memoria.EventSourcing.Store.EntityFrameworkCore.csproj" />
+        <ProjectReference Include="..\..\src\Memoria.EventSourcing.Store.Cosmos\Memoria.EventSourcing.Store.Cosmos.csproj" />
         <ProjectReference Include="..\..\src\Memoria.EventSourcing.Dcb\Memoria.EventSourcing.Dcb.csproj" />
         <ProjectReference Include="..\..\src\Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore\Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.csproj" />
     </ItemGroup>

@@ -15,11 +15,12 @@ namespace Memoria.Benchmarks.Store;
 /// most of what it does.
 /// </para>
 /// <para>
-/// A streamed append is 2 database commands on SQL Server and a DCB append is 7. The expectation was
-/// that those five extra round trips would widen the gap once each crossed a wire; measured, they did
-/// not — about 2x on SQLite and about 2x on SQL Server, with the absolute cost roughly sevenfold
-/// higher. A streamed append pays transaction and commit costs that scale the same way. The gap that
-/// remains unmeasured is distance, and <see cref="RoundTripReport"/> is the number for it.
+/// A streamed append is 2 database commands on a real engine and a DCB append is 7. The expectation
+/// was that those five extra round trips would widen the gap once each crossed a wire; measured, they
+/// did not — 2.1x on SQLite, 1.9x on SQL Server, 2.6x on PostgreSQL, with the absolute cost several
+/// times higher on the real engines. A streamed append pays transaction and commit costs that scale
+/// the same way. What remains unmeasured is distance, and <see cref="RoundTripReport"/> is the
+/// number for it.
 /// </para>
 /// <para>
 /// <see cref="RunStrategy.Monitoring"/> with one invocation per iteration, because every append has a
@@ -39,7 +40,7 @@ public class StoreWriteBenchmarks
 
     /// <summary>How many events the stream and the boundary already hold before the append.</summary>
     /// <summary>The database to run against. SQLite hides the cost of a round trip; SQL Server does not.</summary>
-    [Params(StoreEngine.Sqlite, StoreEngine.SqlServer)]
+    [Params(StoreEngine.Sqlite, StoreEngine.SqlServer, StoreEngine.PostgreSql)]
     public StoreEngine Engine { get; set; }
 
     [Params(10, 100, 1000)]

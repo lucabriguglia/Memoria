@@ -31,7 +31,7 @@ public class StoreReadBenchmarks
 
     /// <summary>How many events sit inside the stream and inside the boundary.</summary>
     /// <summary>The database to run against. SQLite hides the cost of a round trip; SQL Server does not.</summary>
-    [Params(StoreEngine.Sqlite, StoreEngine.SqlServer)]
+    [Params(StoreEngine.Sqlite, StoreEngine.SqlServer, StoreEngine.PostgreSql)]
     public StoreEngine Engine { get; set; }
 
     [Params(10, 100, 1000)]

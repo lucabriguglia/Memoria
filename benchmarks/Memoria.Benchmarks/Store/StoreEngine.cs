@@ -1,4 +1,5 @@
 using Microsoft.Data.SqlClient;
+using Npgsql;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.MsSql;
 
@@ -11,7 +12,10 @@ public enum StoreEngine
     Sqlite,
 
     /// <summary>A real engine in a container, where a round trip is a round trip.</summary>
-    SqlServer
+    SqlServer,
+
+    /// <summary>The other engine the store targets, also in a container.</summary>
+    PostgreSql
 }
 
 /// <summary>
@@ -66,6 +70,52 @@ public static class SqlServerContainer
     }
 }
 
+
+/// <summary>
+/// The PostgreSQL container the benchmarks share, started once per process, on the same terms as
+/// <see cref="SqlServerContainer"/>.
+/// </summary>
+/// <remarks>
+/// The DCB store pins the tag columns to the <c>C</c> collation here, chosen by provider name in
+/// <c>DcbDbContext</c>, so nothing engine-specific is configured at this end. Event data is the
+/// default <c>text</c> rather than the <c>jsonb</c> override, which keeps the payload identical to
+/// the other two engines and the comparison about the store.
+/// </remarks>
+public static class PostgreSqlContainer
+{
+    private const string Image = "postgres:15.1";
+
+    private static readonly Lazy<string> Started = new(Start, LazyThreadSafetyMode.ExecutionAndPublication);
+
+    /// <summary>The connection string for the container's default database.</summary>
+    public static string ConnectionString => Started.Value;
+
+    /// <summary>A connection string for a uniquely named database that does not exist yet.</summary>
+    public static string ForFreshDatabase(string name) =>
+        new NpgsqlConnectionStringBuilder(ConnectionString)
+        {
+            Database = $"bench_{name}_{Guid.NewGuid():N}"
+        }.ConnectionString;
+
+    private static string Start()
+    {
+        var container = new Testcontainers.PostgreSql.PostgreSqlBuilder(Image).Build();
+
+        try
+        {
+            container.StartAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException(
+                $"The PostgreSQL container could not be started ({exception.GetType().Name}: {exception.Message}). " +
+                "Is Docker running? Filter to a Sqlite-only run to skip it.", exception);
+        }
+
+        return container.GetConnectionString();
+    }
+}
+
 /// <summary>Applies the provider for a chosen engine to a context's options.</summary>
 public static class StoreEngineExtensions
 {
@@ -84,6 +134,10 @@ public static class StoreEngineExtensions
             case StoreEngine.SqlServer:
                 owned = null;
                 return builder.UseSqlServer(SqlServerContainer.ForFreshDatabase(name));
+
+            case StoreEngine.PostgreSql:
+                owned = null;
+                return builder.UseNpgsql(PostgreSqlContainer.ForFreshDatabase(name));
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(engine), engine, null);

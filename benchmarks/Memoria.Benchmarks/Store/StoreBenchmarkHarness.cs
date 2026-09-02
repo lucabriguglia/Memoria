@@ -21,20 +21,22 @@ namespace Memoria.Benchmarks.Store;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Two engines. In-memory SQLite needs nothing installed, so its numbers are reproducible by anyone
-/// reading them; SQL Server in a container is a real engine paying real per-command costs. Both are
-/// run, because the whole question was whether the SQLite answer survives the move.
+/// Three engines. In-memory SQLite needs nothing installed, so its numbers are reproducible by
+/// anyone reading them; SQL Server and PostgreSQL in containers are real engines paying real
+/// per-command costs. All three run, because the question was whether the SQLite answer survives the
+/// move to a real one.
 /// </para>
 /// <para>
-/// It did: appends cost about 2x on both, though the absolute cost is roughly sevenfold higher on
-/// SQL Server. What neither engine can answer is distance — the container is on this machine, so a
-/// round trip is loopback rather than a network hop. <see cref="RoundTripReport"/> exists for that
-/// case: a DCB append issues five more commands than a streamed one, on both engines, and that count
-/// is what a remote database charges for.
+/// It does: appends cost 1.9x to 2.6x on all three, though the absolute cost is several times higher
+/// on a real engine. What no local container can answer is distance — they run on this machine, so a
+/// round trip is loopback rather than a network hop. <see cref="RoundTripReport"/> is for that case:
+/// a DCB append issues five more commands than a streamed one on every engine, and that count is
+/// what a remote database charges for.
 /// </para>
 /// </remarks>
 public sealed class StoreBenchmarkHarness : IAsyncDisposable
 {
+    private readonly StoreEngine _engine;
     private readonly IDisposable? _streamedConnection;
     private readonly IDisposable? _dcbConnection;
     private readonly BenchmarkDbContext _streamedContext;
@@ -42,6 +44,7 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
 
     public StoreBenchmarkHarness(StoreEngine engine = StoreEngine.Sqlite)
     {
+        _engine = engine;
         ConfigureTypeBindings();
 
         // A database each. One EnsureCreated on a database that already has tables does
@@ -78,6 +81,9 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
 
     public IDcbDomainService Dcb { get; }
 
+    /// <summary>The DCB context.s underlying connection, for ad hoc diagnostics.</summary>
+    public System.Data.Common.DbConnection DcbConnection => _dcbContext.Database.GetDbConnection();
+
     public static ShowStreamId StreamId { get; } = new("show-1");
 
     public static StreamedSeatsId StreamedId { get; } = new("show-1");
@@ -105,6 +111,8 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
         // a query against an empty table, which looks like a very fast store.
         Ensure(await _streamedContext.SaveEvents(StreamId, streamed, expectedEventSequence: 0));
         Ensure(await _dcbContext.SaveEvents(tagged, condition: null, maxEventsPerAppend: int.MaxValue));
+
+        await UpdateStatistics(_engine);
     }
 
     /// <summary>
@@ -141,6 +149,36 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
         {
             throw new InvalidOperationException($"Benchmark setup failed: {result.Failure!.Description}");
         }
+    }
+
+
+    /// <summary>
+    /// Brings the engine's planner statistics up to date after the seed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// PostgreSQL only. Without it the DCB read is measured against a table the planner knows nothing
+    /// about, and it is unusually sensitive to that: both its predicates are <c>= ANY(@array)</c>,
+    /// whose selectivity PostgreSQL cannot estimate from a parameter, so it defaults to one row on
+    /// each side, picks a nested loop semi join and applies the position match as a filter rather than
+    /// an index condition. At a thousand events that removed 499,500 rows by filter and took 80ms
+    /// against 3ms for the same query after ANALYZE.
+    /// </para>
+    /// <para>
+    /// A real database has statistics, so measuring without them measures autovacuum lag rather than
+    /// the store. SQL Server needs no equivalent: it creates the missing statistics itself the first
+    /// time a query needs them.
+    /// </para>
+    /// </remarks>
+    private async Task UpdateStatistics(StoreEngine engine)
+    {
+        if (engine is not StoreEngine.PostgreSql)
+        {
+            return;
+        }
+
+        await _streamedContext.Database.ExecuteSqlRawAsync("ANALYZE;");
+        await _dcbContext.Database.ExecuteSqlRawAsync("ANALYZE;");
     }
 
     private static void ConfigureTypeBindings()

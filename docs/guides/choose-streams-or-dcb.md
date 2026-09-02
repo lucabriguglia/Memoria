@@ -83,39 +83,50 @@ were in that stream carry that tag. The difference is that they can carry others
 
 ## What it costs
 
-Measured with [the benchmarks in this repo](https://github.com/lucabriguglia/Memoria/tree/main/benchmarks),
-on in-memory SQLite and on SQL Server 2022 in a container, with the same event type, the same model
-state and the same fold on both sides — so what is measured is the store.
+Measured with [the benchmarks in this repo](https://github.com/lucabriguglia/Memoria/tree/main/benchmarks)
+on all three engines the store targets — in-memory SQLite, SQL Server 2022 and PostgreSQL 15, the
+last two in containers — with the same event type, the same model state and the same fold on both
+sides, so what is measured is the store.
 
-**Reads are a wash.** DCB issues the same number of database round trips as streams. On SQLite the
-timings converge as the set grows — 1.34× at ten events, 1.01× at a thousand, as the tag semi-join's
-small fixed cost amortises away. On SQL Server the ratios scatter between 0.82× and 1.23× with one
-1.82× outlier at ten events, which is to say the difference is below the noise of a containerised
-engine: DCB is faster in about as many cases as it is slower.
+**Reads are a wash on every engine.** DCB issues the same number of round trips as streams, and the
+timings sit within noise of each other: 1.00–1.46× on SQLite, 0.88–1.14× on SQL Server, 0.87–1.19× on
+PostgreSQL. DCB is faster in about as many cases as it is slower. The widest gaps are all at ten
+events, where the tag semi-join's small fixed cost has nothing to amortise against.
 
 A stream is a range on one indexed column; a boundary is a semi-join against `DcbEventTags` over the
 same rows. A snapshot read is one row either way, and stays flat however long the history gets —
 which is the point of snapshots in both models.
 
-**Appends cost about twice as much**, on both engines, allocating 2.7× as much, flat in the number of
-events already stored:
+**Appends cost roughly two to three times as much**, on every engine, allocating about 2.5× as much,
+flat in the number of events already stored:
 
-| `SaveAggregate`, median | Streams | DCB     | Ratio |
-|-------------------------|---------|---------|-------|
-| SQLite, in memory       | ~0.95 ms | ~2.1 ms | ~2.1× |
-| SQL Server, container    | ~7.4 ms  | ~14.5 ms | ~2.0× |
+| `SaveAggregate`, median | Streams  | DCB      | Ratio |
+|-------------------------|----------|----------|-------|
+| SQLite, in memory       | ~1.15 ms | ~2.2 ms  | ~2.1× |
+| SQL Server, container   | ~7.5 ms  | ~14.1 ms | ~1.9× |
+| PostgreSQL, container   | ~4.1 ms  | ~10.8 ms | ~2.6× |
 
-That the ratio survives the move is worth saying plainly, because we expected it not to. A streamed
-append is 2 database commands on SQL Server and a DCB append is 7 — it claims the tag head rows,
-reads the boundary's position, writes the events, replaces the tokens, writes the tags, then the
-snapshot. The prediction was that five extra round trips would widen the gap sharply once each one
-crossed a network. It did not: the absolute cost rose about sevenfold on both sides and the ratio
-stayed put, because a streamed append pays transaction and commit costs that scale the same way.
+A streamed append is 2 database commands on both real engines; a DCB append is 7 — it claims the tag
+head rows, reads the boundary's position, writes the events, replaces the tokens, writes the tags,
+then the snapshot. Five extra commands, on all three engines.
 
-The caveat that remains is distance. The container is on the same machine, so a round trip is
-loopback rather than a network hop. The further the database, the more those five extra commands
-cost, and the ratio is the first thing that will move. If your database is remote, count the round
-trips rather than trusting this table.
+The ratio does not track the engine's speed. PostgreSQL has the *fastest* streamed append here and
+the *largest* DCB ratio, because its baseline is cheaper while the five extra commands cost much the
+same — which is the shape to expect. The further away the database, the more those commands cost and
+the more the ratio moves. If your database is remote, count the round trips rather than trusting this
+table.
+
+### One PostgreSQL caveat
+
+The DCB read is unusually sensitive to missing planner statistics on PostgreSQL. Both its predicates
+are `= ANY(@array)`, whose selectivity PostgreSQL cannot estimate from a parameter, so on a table it
+has never analysed it assumes one row on each side, picks a nested loop semi join, and applies the
+position match as a filter rather than an index condition. On a thousand events that measured 80 ms
+against 3 ms for the same query after `ANALYZE`. The streamed store stayed at 4 ms throughout.
+
+It resolves itself once autovacuum runs, and SQL Server never shows it because it creates the missing
+statistics on first use. It is worth knowing about after a restore, a bulk import or a migration,
+where a large table can be queried before it has ever been analysed.
 
 None of this is a reason to pick one or the other. A decision whose boundary is not the shape of any
 stream cannot be made correctly under streams at any price, and an append that a stream can express

@@ -388,6 +388,43 @@ public class SnapshotTests : RelationalTestBase
     }
 
     [Fact]
+    public async Task A_stored_snapshot_records_when_it_was_written()
+    {
+        var written = new DateTimeOffset(2024, 3, 1, 9, 0, 0, TimeSpan.Zero);
+        TimeProvider.SetUtcNow(written);
+        await Append(Reserved("a1", "s7"));
+
+        await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
+
+        var snapshot = Context.DcbSnapshots.Single();
+        snapshot.CreatedDate.Should().Be(written);
+        snapshot.UpdatedDate.Should().Be(written, "a first write is also the latest one");
+        snapshot.UpdatedBy.Should().Be("TestUser");
+    }
+
+    [Fact]
+    public async Task Rewriting_a_snapshot_moves_its_update_stamp_and_keeps_its_creation_stamp()
+    {
+        // A snapshot is the one row in this store that is edited rather than appended, so it is the
+        // only place the two stamps can disagree — and the only place a rewrite could quietly lose
+        // when the state was first folded.
+        var created = new DateTimeOffset(2024, 3, 1, 9, 0, 0, TimeSpan.Zero);
+        TimeProvider.SetUtcNow(created);
+        await Append(Reserved("a1", "s7"));
+        await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
+
+        var refreshed = new DateTimeOffset(2024, 3, 2, 17, 30, 0, TimeSpan.Zero);
+        TimeProvider.SetUtcNow(refreshed);
+        await Append(Reserved("a1", "s8"));
+        await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotWithNewEvents);
+
+        var snapshot = Context.DcbSnapshots.Single();
+        snapshot.UpdatedDate.Should().Be(refreshed, "the refresh is the latest write");
+        snapshot.CreatedDate.Should().Be(created, "the row was created once and rewritten, not recreated");
+        snapshot.CreatedBy.Should().Be("TestUser");
+    }
+
+    [Fact]
     public async Task A_storage_failure_reading_a_snapshot_is_classified_and_leaks_nothing()
     {
         await Context.Database.ExecuteSqlRawAsync("DROP TABLE DcbSnapshots;");

@@ -162,6 +162,34 @@ public class SnapshotTests : RelationalTestBase
     }
 
     [Fact]
+    public async Task A_union_and_an_intersection_over_the_same_tags_keep_separate_snapshots()
+    {
+        // Same aggregate id, same two tags, different boundaries — the union folds an event about
+        // the seat alone, the intersection does not. Only the canonical form separates them, so if
+        // it stopped doing so one fold would be returned as the other with nothing to show for it.
+        await Append(Reserved("a1", "s7", SeatA1, StudentS7));
+        await Append(Reserved("a1", "s9", SeatA1));
+
+        var union = await Context.GetAggregate(new WideSeatId("a1"), ReadMode.SnapshotOrCreate);
+        var intersection = await Context.GetAggregate(new SeatForStudentId("a1"), ReadMode.SnapshotOrCreate);
+
+        Context.DcbSnapshots.Count().Should().Be(2);
+        union.Value!.Version.Should().Be(2, "both events carry seat:a1");
+        intersection.Value!.Version.Should().Be(1, "only the first event carries student:s7 as well");
+    }
+
+    [Fact]
+    public async Task An_intersections_snapshot_is_not_returned_for_the_union_of_the_same_tags()
+    {
+        await Append(Reserved("a1", "s7", SeatA1, StudentS7));
+        await Context.GetAggregate(new SeatForStudentId("a1"), ReadMode.SnapshotOrCreate);
+
+        var union = await Context.GetAggregate(new WideSeatId("a1"), ReadMode.SnapshotOnly);
+
+        union.Value.Should().BeNull("that boundary has no snapshot of its own");
+    }
+
+    [Fact]
     public async Task A_snapshot_whose_stored_boundary_disagrees_with_its_identity_is_ignored()
     {
         // The identity carries only a digest of the boundary, so the stored boundary is compared in

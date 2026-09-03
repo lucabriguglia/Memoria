@@ -255,6 +255,41 @@ public class AppendConditionTests : RelationalTestBase
     }
 
     [Fact]
+    public async Task An_intersection_boundary_is_not_moved_by_an_event_carrying_only_one_of_its_tags()
+    {
+        // The whole reason to take an intersection: the decision is about this seat *and* this
+        // student, and somebody else reserving the same seat for a different student is not a fact
+        // it rested on.
+        var boundary = TagQuery.AllOf(SeatA1, StudentS7);
+        var position = await Context.GetLatestPosition(boundary);
+
+        await Context.SaveEvents([Reserved("a1", "s9", SeatA1, new Tag("student", "s9"))], condition: null);
+
+        var result = await Context.SaveEvents(
+            [Reserved("a1", "s7", SeatA1, StudentS7)], new AppendCondition(boundary, position));
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task An_intersection_boundary_is_moved_by_an_event_carrying_all_of_its_tags()
+    {
+        var boundary = TagQuery.AllOf(SeatA1, StudentS7);
+        var position = await Context.GetLatestPosition(boundary);
+
+        await Context.SaveEvents([Reserved("a1", "s7", SeatA1, StudentS7)], condition: null);
+
+        var result = await Context.SaveEvents(
+            [Reserved("a1", "s7", SeatA1, StudentS7)], new AppendCondition(boundary, position));
+
+        result.IsNotSuccess.Should().BeTrue();
+        result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
+        result.Failure.Tags.Should().Contain("expectedPosition", "0");
+        result.Failure.Tags.Should().Contain("latestPosition",
+            (await Context.GetLatestPosition(boundary)).ToString());
+    }
+
+    [Fact]
     public async Task An_appended_event_is_stamped_by_the_audit_interceptor()
     {
         TimeProvider.SetUtcNow(new DateTimeOffset(2026, 8, 31, 9, 0, 0, TimeSpan.Zero));

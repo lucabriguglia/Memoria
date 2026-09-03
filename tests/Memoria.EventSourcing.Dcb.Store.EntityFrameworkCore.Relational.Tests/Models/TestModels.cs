@@ -82,3 +82,20 @@ public class WideSeatId(string seatId) : IDcbAggregateId<SeatAggregate>
     public TagQuery Boundary { get; } =
         TagQuery.AnyOf(new Tag("seat", seatId), new Tag("student", "s7"));
 }
+
+/// <summary>
+/// The same seat aggregate over the intersection of the same two tags <see cref="WideSeatId"/>
+/// unions.
+/// </summary>
+/// <remarks>
+/// Deliberately the same id and the same tags as <see cref="WideSeatId"/>, so the only thing
+/// separating their snapshots is how those tags combine. If the canonical form ever stopped saying
+/// so, one would be read back as the other.
+/// </remarks>
+public class SeatForStudentId(string seatId) : IDcbAggregateId<SeatAggregate>
+{
+    public string Id { get; } = seatId;
+
+    public TagQuery Boundary { get; } =
+        TagQuery.AllOf(new Tag("seat", seatId), new Tag("student", "s7"));
+}

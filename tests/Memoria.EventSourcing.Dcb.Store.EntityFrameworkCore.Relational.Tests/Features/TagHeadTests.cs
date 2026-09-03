@@ -134,6 +134,37 @@ public class TagHeadTests : RelationalTestBase
         result.IsSuccess.Should().BeTrue();
     }
 
+    [Fact]
+    public async Task An_intersection_condition_claims_a_head_row_for_every_tag_it_names()
+    {
+        // An intersection names both tags and is moved only by an event carrying both — so watching
+        // either one alone would be enough. It claims both anyway: conservative, and the same rule
+        // the union follows, so the append path needs no second notion of which tags matter.
+        await Context.SaveEvents([Reserved("a2", "s9", SeatA2)],
+            AppendCondition.NothingAppendedFor(TagQuery.AllOf(SeatA1, StudentS7)));
+
+        (await TokenFor(SeatA1)).Should().NotBeNull();
+        (await TokenFor(StudentS7)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task An_intersection_condition_is_refused_when_any_of_its_tag_heads_moves_mid_append()
+    {
+        // The price of claiming both heads: an event carrying only seat:a1 does not move this
+        // boundary, but it does move a row the append is guarding on, so the append is refused.
+        // Safe — the retry re-reads the boundary, finds it unmoved and succeeds — and the reason the
+        // narrower lock set is a deliberate follow-up rather than an oversight.
+        var interceptor = StaleTagHeadInterceptor.OnSameConnection(SeatA1.ToString());
+        await using var racing = CreateContext(interceptor);
+
+        var result = await racing.SaveEvents([Reserved("a1", "s7", SeatA1, StudentS7)],
+            AppendCondition.NothingAppendedFor(TagQuery.AllOf(SeatA1, StudentS7)));
+
+        interceptor.Fired.Should().BeTrue("the race must actually have been simulated");
+        result.IsNotSuccess.Should().BeTrue();
+        result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
+    }
+
     /// <summary>
     /// The companion to <see cref="The_token_is_declared_as_a_concurrency_token"/>. That one covers
     /// the model declaration; this one covers the other half the declaration needs to do anything —

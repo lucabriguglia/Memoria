@@ -48,6 +48,29 @@ public abstract partial class DcbStoreOnEngineTests
         });
 
     [RequiresDockerFact]
+    public Task AnIntersectionBoundaryReturnsOnlyTheEventsCarryingEveryOneOfItsTags() =>
+        WithDatabase(async (dbContext, _) =>
+        {
+            // A union is one EXISTS over an IN; an intersection is one EXISTS per tag, chained. That
+            // is a different plan on every engine — each correlated subquery seeks the
+            // (Tag, Position) primary key and the engine intersects them — so it is proven here and
+            // not only on SQLite.
+            await dbContext.SaveEvents(
+                [
+                    Reserved("a1", "s7", SeatA1, StudentS7),
+                    Reserved("a1", "s9", SeatA1),
+                    Reserved("a2", "s7", SeatA2, StudentS7)
+                ],
+                condition: null);
+
+            var events = await dbContext.GetEvents(TagQuery.AllOf(SeatA1, StudentS7));
+
+            events.Should().ContainSingle()
+                .Which.Should().BeOfType<SeatReservedEvent>()
+                .Which.StudentId.Should().Be("s7");
+        });
+
+    [RequiresDockerFact]
     public Task ReadsAreCaseSensitiveJustAsAppendsAre() =>
         WithDatabase(async (dbContext, _) =>
         {

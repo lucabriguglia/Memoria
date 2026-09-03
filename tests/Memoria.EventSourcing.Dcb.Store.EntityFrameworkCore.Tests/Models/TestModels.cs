@@ -48,6 +48,18 @@ public class SeatId(string seatId) : IDcbAggregateId<SeatAggregate>
     public TagQuery Boundary { get; } = TagQuery.AnyOf(new Tag("seat", seatId));
 }
 
+/// <summary>
+/// The same aggregate over an intersection boundary: one student's dealings with one seat, rather
+/// than everything about the seat.
+/// </summary>
+public class SeatForStudentId(string seatId, string studentId) : IDcbAggregateId<SeatAggregate>
+{
+    public string Id { get; } = $"{seatId}-{studentId}";
+
+    public TagQuery Boundary { get; } =
+        TagQuery.AllOf(new Tag("seat", seatId), new Tag("student", studentId));
+}
+
 [ProjectionType("SeatSummary")]
 public class SeatSummaryProjection : DcbProjection
 {

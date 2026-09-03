@@ -125,6 +125,59 @@ public class GetEventsTests : TestBase
     }
 
     [Fact]
+    public async Task An_intersection_boundary_returns_only_the_events_carrying_every_one_of_its_tags()
+    {
+        await Seed(1, new SeatReservedEvent("a1", "s7"), SeatA1.ToString(), StudentS7.ToString());
+        await Seed(2, new SeatReservedEvent("a1", "s8"), SeatA1.ToString());
+        await Seed(3, new SeatReservedEvent("a2", "s7"), SeatA2.ToString(), StudentS7.ToString());
+
+        var events = await Context.GetEvents(TagQuery.AllOf(SeatA1, StudentS7));
+
+        events.Should().ContainSingle()
+            .Which.Should().BeOfType<SeatReservedEvent>()
+            .Which.StudentId.Should().Be("s7");
+    }
+
+    [Fact]
+    public async Task An_intersection_boundary_returns_an_event_carrying_more_than_it_asks_for()
+    {
+        await Seed(1, new SeatReservedEvent("a1", "s7"), SeatA1.ToString(), StudentS7.ToString(), "term:t3");
+
+        var events = await Context.GetEvents(TagQuery.AllOf(SeatA1, StudentS7));
+
+        events.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task An_intersection_boundary_returns_a_matching_event_once()
+    {
+        // One row per event, not per matching tag row — the same property the union has, and the
+        // same reason: a duplicate would be applied twice by the fold.
+        await Seed(1, new SeatReservedEvent("a1", "s7"), SeatA1.ToString(), StudentS7.ToString());
+
+        var events = await Context.GetEvents(TagQuery.AllOf(SeatA1, StudentS7));
+
+        events.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task An_intersection_boundary_narrows_by_type_position_and_date_too()
+    {
+        var day = new DateTimeOffset(2026, 8, 31, 0, 0, 0, TimeSpan.Zero);
+        var both = new[] { SeatA1.ToString(), StudentS7.ToString() };
+
+        await Seed(1, new SeatReservedEvent("a1", "s7"), day, both);
+        await Seed(2, new SeatReleasedEvent("a1"), day.AddDays(1), both);
+        await Seed(3, new SeatReservedEvent("a1", "s7"), day.AddDays(2), SeatA1.ToString());
+
+        var query = TagQuery.AllOf(SeatA1, StudentS7);
+
+        (await Context.GetEvents(query, [typeof(SeatReleasedEvent)])).Should().ContainSingle();
+        (await Context.GetEventsUpToPosition(query, 1)).Should().ContainSingle();
+        (await Context.GetEventsFromDate(query, day.AddDays(1))).Should().ContainSingle();
+    }
+
+    [Fact]
     public async Task An_unregistered_event_type_is_reported_rather_than_skipped()
     {
         await Seed(1, new SeatReservedEvent("a1", "s7"), SeatA1.ToString());

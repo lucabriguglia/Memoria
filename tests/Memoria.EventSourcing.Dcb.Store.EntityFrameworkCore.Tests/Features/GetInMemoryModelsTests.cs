@@ -121,4 +121,20 @@ public class GetInMemoryModelsTests : TestBase
         (await Context.GetInMemoryProjection(new SeatSummaryId("a1"), upToDate: day.AddDays(1)))
             .Value!.Reservations.Should().Be(1);
     }
+
+    [Fact]
+    public async Task An_aggregate_over_an_intersection_boundary_folds_only_the_events_carrying_both_tags()
+    {
+        // The same three events the union would fold; two of them are about this seat or this
+        // student but not both, and the decision this model serves is about the pair.
+        await Seed(1, new SeatReservedEvent("a1", "s7"), SeatA1.ToString(), "student:s7");
+        await Seed(2, new SeatReservedEvent("a1", "s8"), SeatA1.ToString(), "student:s8");
+        await Seed(3, new SeatReservedEvent("a2", "s7"), SeatA2.ToString(), "student:s7");
+
+        var result = await Context.GetInMemoryAggregate(new SeatForStudentId("a1", "s7"));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Reservations.Should().Be(1);
+        result.Value.LatestPosition.Should().Be(1);
+    }
 }

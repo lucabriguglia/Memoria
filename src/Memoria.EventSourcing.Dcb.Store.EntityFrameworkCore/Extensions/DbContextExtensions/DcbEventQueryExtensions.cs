@@ -90,16 +90,80 @@ internal static class DcbEventQueryExtensions
     /// Selects the events inside a boundary, optionally bounded by position.
     /// </summary>
     /// <remarks>
-    /// A semi-join against <see cref="PositionsInside"/>, so an event inside the boundary is returned
-    /// exactly once however many of the boundary's tags it carries.
+    /// <para>
+    /// One correlated <c>EXISTS</c> over the event's tags, so an event inside the boundary is
+    /// returned exactly once however many of the boundary's tags it carries — a join would return it
+    /// per matching tag row and the fold would apply it twice.
+    /// </para>
+    /// <para>
+    /// A position bound goes <em>inside</em> the <c>EXISTS</c> rather than onto the events it selects.
+    /// Both are correct, because the subquery equates the two positions, but only this one gives the
+    /// <c>(Tag, Position)</c> key both halves of a seek instead of leaving the engine to infer the
+    /// second. That is the read after a snapshot, which asks for a suffix of a boundary whose whole
+    /// history may be long.
+    /// </para>
+    /// <para>
+    /// Written as four explicit cases rather than one composed predicate: an unbounded read is the
+    /// common one and has to stay a bare <c>EXISTS</c>, because folding the bounds in as always-true
+    /// comparisons measurably costs it. See the note on small boundaries in <c>benchmarks/README.md</c>.
+    /// </para>
     /// </remarks>
     public static IQueryable<DcbEventEntity> Inside(this IDcbDbContext dcbDbContext, TagQuery query,
         long? fromPosition = null, long? toPosition = null)
     {
-        var positions = dcbDbContext.PositionsInside(query, fromPosition, toPosition);
+        var groups = query.TagGroups;
+        var events = dcbDbContext.DcbEvents.AsNoTracking();
 
-        return dcbDbContext.DcbEvents.AsNoTracking()
-            .Where(eventEntity => positions.Contains(eventEntity.Position));
+        if (groups.All(group => group.Count == 1))
+        {
+            var tags = groups.Select(group => group.Single().ToString()).ToList();
+
+            return (fromPosition, toPosition) switch
+            {
+                (null, null) => events.Where(eventEntity =>
+                    eventEntity.Tags.Any(tagEntity => tags.Contains(tagEntity.Tag))),
+
+                ({ } from, null) => events.Where(eventEntity =>
+                    eventEntity.Tags.Any(tagEntity => tags.Contains(tagEntity.Tag)
+                                                      && tagEntity.Position >= from)),
+
+                (null, { } to) => events.Where(eventEntity =>
+                    eventEntity.Tags.Any(tagEntity => tags.Contains(tagEntity.Tag)
+                                                      && tagEntity.Position <= to)),
+
+                ({ } from, { } to) => events.Where(eventEntity =>
+                    eventEntity.Tags.Any(tagEntity => tags.Contains(tagEntity.Tag)
+                                                      && tagEntity.Position >= from
+                                                      && tagEntity.Position <= to))
+            };
+        }
+
+        // Only an intersection produces a group of more than one tag, and it produces exactly one
+        // group. Single() rather than a loop over groups, so a query shape this store has not been
+        // taught — a boundary mixing the two, which no factory builds today — fails loudly instead
+        // of being translated as something wider than the caller asked for.
+        //
+        // Each tag is its own EXISTS, so each is a semi-join that cannot duplicate either. The bound
+        // rides on the events here rather than inside every one of them: an intersection is already
+        // seeking one tag at a time, and repeating the bound per tag buys nothing.
+        var narrowedEvents = groups.Single().Aggregate(events, (narrowed, tag) =>
+        {
+            var required = tag.ToString();
+
+            return narrowed.Where(eventEntity => eventEntity.Tags.Any(tagEntity => tagEntity.Tag == required));
+        });
+
+        if (fromPosition is { } lower)
+        {
+            narrowedEvents = narrowedEvents.Where(eventEntity => eventEntity.Position >= lower);
+        }
+
+        if (toPosition is { } upper)
+        {
+            narrowedEvents = narrowedEvents.Where(eventEntity => eventEntity.Position <= upper);
+        }
+
+        return narrowedEvents;
     }
 
     /// <summary>

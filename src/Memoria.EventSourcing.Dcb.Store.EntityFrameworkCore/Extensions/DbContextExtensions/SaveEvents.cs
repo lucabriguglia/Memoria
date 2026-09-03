@@ -166,24 +166,18 @@ public static partial class DcbDbContextExtensions
                 .ExecuteUpdateAsync(head => head.SetProperty(row => row.Token, token), cancellationToken);
         }
 
-        var written = new List<DcbEventEntity>(events.Length);
-
-        foreach (var taggedEvent in events)
+        var written = events.Select(taggedEvent => new DcbEventEntity
         {
-            var eventEntity = new DcbEventEntity
-            {
-                EventType = TypeBindings.GetEventBindingKey(taggedEvent.Event.GetType()),
-                Data = DomainSerializer.Current.Serialize(taggedEvent.Event),
-                // Added through the navigation so Entity Framework Core fills in the foreign key
-                // from the position the database assigns.
-                Tags = taggedEvent.Tags
-                    .Select(tag => new DcbEventTagEntity { Tag = tag.ToString() })
-                    .ToList()
-            };
+            EventType = TypeBindings.GetEventBindingKey(taggedEvent.Event.GetType()),
+            Data = DomainSerializer.Current.Serialize(taggedEvent.Event),
+            // Added through the navigation so Entity Framework Core fills in the foreign key
+            // from the position the database assigns.
+            Tags = taggedEvent.Tags
+                .Select(tag => new DcbEventTagEntity { Tag = tag.ToString() })
+                .ToList()
+        }).ToList();
 
-            written.Add(eventEntity);
-            dcbDbContext.DcbEvents.Add(eventEntity);
-        }
+        dcbDbContext.DcbEvents.AddRange(written);
 
         await dcbDbContext.SaveChangesAsync(cancellationToken);
 

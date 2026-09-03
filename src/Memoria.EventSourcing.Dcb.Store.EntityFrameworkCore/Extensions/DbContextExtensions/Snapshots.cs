@@ -29,13 +29,28 @@ public static partial class DcbDbContextExtensions
     /// <summary>
     /// Writes a snapshot, replacing any earlier fold of the same model under the same boundary.
     /// </summary>
+    /// <param name="dcbDbContext">The context.</param>
+    /// <param name="snapshot">The snapshot row to write.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <param name="exists">
+    /// Whether a row with this identity is already stored, when the caller knows it. Null asks for it
+    /// to be looked up.
+    /// </param>
+    /// <remarks>
+    /// Every read that writes a snapshot back has just read the same row to decide whether to fold
+    /// from it, so it already holds the answer and passes it. Asking again would be a round trip for
+    /// a fact the caller has — and in <see cref="SaveAggregate{T}"/> a round trip inside the
+    /// transaction holding the tag head rows, which is the one place a wasted one is paid for by
+    /// every other append over those tags. Only the two save paths, which are handed a model rather
+    /// than reading one, have nothing to pass.
+    /// </remarks>
     private static async Task WriteSnapshot(this IDcbDbContext dcbDbContext, DcbSnapshotEntity snapshot,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool? exists = null)
     {
-        var exists = await dcbDbContext.DcbSnapshots.AsNoTracking()
+        exists ??= await dcbDbContext.DcbSnapshots.AsNoTracking()
             .AnyAsync(existing => existing.Id == snapshot.Id, cancellationToken);
 
-        if (exists)
+        if (exists is true)
         {
             dcbDbContext.DcbSnapshots.Update(snapshot);
         }
@@ -83,7 +98,8 @@ public static partial class DcbDbContextExtensions
                     return current;
                 }
 
-                return await dcbDbContext.RefreshAggregate(aggregateId, current, cancellationToken);
+                return await dcbDbContext.RefreshAggregate(aggregateId, current, snapshotExists: true,
+                    cancellationToken);
             }
 
             if (readMode is ReadMode.SnapshotOnly or ReadMode.SnapshotWithNewEvents)
@@ -122,7 +138,10 @@ public static partial class DcbDbContextExtensions
 
             aggregate.LatestPosition = eventEntities[^1].Position;
 
-            await dcbDbContext.WriteSnapshot(aggregate.ToSnapshotEntity(aggregateId), cancellationToken);
+            // Reached only because the snapshot read above missed, so this is the first fold of this
+            // model under this boundary and there is nothing to replace.
+            await dcbDbContext.WriteSnapshot(aggregate.ToSnapshotEntity(aggregateId), cancellationToken,
+                exists: false);
 
             return aggregate;
         }
@@ -144,8 +163,8 @@ public static partial class DcbDbContextExtensions
     /// created. Mirrors the streamed store's equivalent.
     /// </returns>
     private static async Task<Result<T?>> RefreshAggregate<T>(this IDcbDbContext dcbDbContext,
-        IDcbAggregateId<T> aggregateId, T aggregate, CancellationToken cancellationToken)
-        where T : IDcbAggregateRoot
+        IDcbAggregateId<T> aggregateId, T aggregate, bool snapshotExists,
+        CancellationToken cancellationToken) where T : IDcbAggregateRoot
     {
         var query = aggregateId.Boundary;
         var versionBefore = aggregate.Version;
@@ -174,7 +193,8 @@ public static partial class DcbDbContextExtensions
 
         aggregate.LatestPosition = newEventEntities[^1].Position;
 
-        await dcbDbContext.WriteSnapshot(aggregate.ToSnapshotEntity(aggregateId), cancellationToken);
+        await dcbDbContext.WriteSnapshot(aggregate.ToSnapshotEntity(aggregateId), cancellationToken,
+            exists: snapshotExists);
 
         return aggregate;
     }
@@ -214,7 +234,8 @@ public static partial class DcbDbContextExtensions
                     return current;
                 }
 
-                return await dcbDbContext.RefreshProjection(projectionId, current, cancellationToken);
+                return await dcbDbContext.RefreshProjection(projectionId, current, snapshotExists: true,
+                    cancellationToken);
             }
 
             if (readMode is ReadMode.SnapshotOnly or ReadMode.SnapshotWithNewEvents)
@@ -247,7 +268,10 @@ public static partial class DcbDbContextExtensions
 
             projection.LatestPosition = eventEntities[^1].Position;
 
-            await dcbDbContext.WriteSnapshot(projection.ToSnapshotEntity(projectionId), cancellationToken);
+            // Reached only because the snapshot read above missed, so this is the first fold of this
+            // model under this boundary and there is nothing to replace.
+            await dcbDbContext.WriteSnapshot(projection.ToSnapshotEntity(projectionId), cancellationToken,
+                exists: false);
 
             return projection;
         }
@@ -269,8 +293,8 @@ public static partial class DcbDbContextExtensions
     /// producing events, so everything about folding one is the same.
     /// </returns>
     private static async Task<Result<T?>> RefreshProjection<T>(this IDcbDbContext dcbDbContext,
-        IDcbProjectionId<T> projectionId, T projection, CancellationToken cancellationToken)
-        where T : IDcbProjection
+        IDcbProjectionId<T> projectionId, T projection, bool snapshotExists,
+        CancellationToken cancellationToken) where T : IDcbProjection
     {
         var query = projectionId.Boundary;
         var versionBefore = projection.Version;
@@ -300,7 +324,8 @@ public static partial class DcbDbContextExtensions
 
         projection.LatestPosition = newEventEntities[^1].Position;
 
-        await dcbDbContext.WriteSnapshot(projection.ToSnapshotEntity(projectionId), cancellationToken);
+        await dcbDbContext.WriteSnapshot(projection.ToSnapshotEntity(projectionId), cancellationToken,
+            exists: snapshotExists);
 
         return projection;
     }

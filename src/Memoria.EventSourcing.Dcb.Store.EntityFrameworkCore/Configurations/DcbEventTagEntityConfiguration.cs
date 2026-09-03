@@ -39,10 +39,16 @@ public class DcbEventTagEntityConfiguration(string? tagCollation = null)
             .HasForeignKey(tagEntity => tagEntity.Position)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // The primary key leads with Tag, so it cannot serve a lookup by position alone — which the
-        // cascade and the read-back of an event's own tags both need.
-        builder
-            .HasIndex(tagEntity => tagEntity.Position)
-            .HasDatabaseName("IX_DcbEventTags_Position");
+        // Entity Framework Core indexes the foreign key by convention, so Position carries an index
+        // without one being declared here. It earns nothing on the read side — no read looks a tag up
+        // by position, and the store offers no way to delete an event, so the cascade above is its
+        // only possible caller. Measured over 400,000 tag rows it cost about 14% of the throughput of
+        // a batched append, and a cascading delete was actually faster without it.
+        //
+        // Kept anyway. Removing a convention-created index needs a replacement convention set on the
+        // context, which every consumer would inherit, and that is a lot of mechanism to shave a cost
+        // that does not show up on the single-decision appends this store is built for. The trade
+        // also turns around once the tag table stops fitting in memory and the cascade's scan has to
+        // reach disk — which is exactly when someone would be deleting in bulk.
     }
 }

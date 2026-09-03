@@ -202,4 +202,42 @@ public class TagHeadTests : RelationalTestBase
                 + "WHERE clause the append cannot detect an overlapping one");
         }
     }
+
+    /// <summary>
+    /// The third thing the guard needs, after the token declaration and the tracked read: the row has
+    /// to exist at all. Creating it is what <c>EnsureTagHeads</c> does before every append.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Skipping that read when a tag is already known looks like a free round trip to save — the rows
+    /// are never deleted, so a process could remember which ones it has created. What it costs is
+    /// this: an append whose head row is missing loads no row to guard, updates nothing, and
+    /// <em>succeeds</em>. No exception, no conflict, no row created for next time. The tag is left
+    /// with no concurrency guard at all, permanently and silently.
+    /// </para>
+    /// <para>
+    /// So this test appends over a tag whose head row was removed, and asserts the row is put back.
+    /// The assertion is on the recovery rather than on a failure, because there is no failure to
+    /// assert on — which is the whole point.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task An_append_restores_a_tag_head_row_that_has_gone_missing()
+    {
+        await Context.SaveEvents([Reserved("a1", "s7")], condition: null);
+
+        var boundary = TagQuery.AnyOf(SeatA1);
+        var latest = await Context.GetLatestPosition(boundary);
+
+        // Whatever removed it — a restore, a truncate, surgery on the wrong database — the append
+        // that follows must not proceed as though the guard were still there.
+        await Context.Database.ExecuteSqlRawAsync("DELETE FROM DcbTagHeads");
+        Context.ChangeTracker.Clear();
+
+        var result = await Context.SaveEvents([Reserved("a1", "s8")], new AppendCondition(boundary, latest));
+
+        result.IsSuccess.Should().BeTrue();
+        Context.DcbTagHeads.Should().ContainSingle(head => head.Tag == SeatA1.ToString(),
+            "the append has to create the row it contends on, or nothing guards this tag again");
+    }
 }

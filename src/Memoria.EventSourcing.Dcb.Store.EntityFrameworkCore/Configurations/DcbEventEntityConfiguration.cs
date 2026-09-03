@@ -39,15 +39,10 @@ public class DcbEventEntityConfiguration : IEntityTypeConfiguration<DcbEventEnti
             .Property(eventEntity => eventEntity.CreatedBy)
             .HasMaxLength(255);
 
-        builder
-            .HasIndex(eventEntity => eventEntity.EventType)
-            .HasDatabaseName("IX_DcbEvents_EventType");
-
-        // Serves the from/up-to/between-date reads, which would otherwise scan the whole log. The
-        // streamed store's equivalent leads with StreamId; there is no such column to lead with
-        // here, because a DCB read is narrowed by tag rather than by stream.
-        builder
-            .HasIndex(eventEntity => eventEntity.CreatedDate)
-            .HasDatabaseName("IX_DcbEvents_CreatedDate");
+        // No secondary index, deliberately. Every read reaches this table by position, having already
+        // resolved its boundary through the DcbEventTags key, so an index on event type or date is
+        // maintained on every append and chosen by nothing — and an index on event type is worse than
+        // that, because the optimiser will prefer it to the tag semi-join and lose badly. See
+        // SchemaTests.The_log_carries_no_index_the_primary_keys_do_not_already_serve for the numbers.
     }
 }

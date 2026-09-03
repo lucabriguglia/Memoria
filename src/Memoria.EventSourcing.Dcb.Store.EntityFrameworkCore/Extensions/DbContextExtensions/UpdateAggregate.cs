@@ -40,7 +40,8 @@ public static partial class DcbDbContextExtensions
             var aggregate = snapshot is null ? new T() : snapshot.ToAggregate<T>();
             aggregate.Tags = aggregateId.Boundary.Tags;
 
-            return await dcbDbContext.RefreshAggregate(aggregateId, aggregate, cancellationToken);
+            return await dcbDbContext.RefreshAggregate(aggregateId, aggregate,
+                snapshotExists: snapshot is not null, cancellationToken);
         }
         catch (Exception exception)
         {

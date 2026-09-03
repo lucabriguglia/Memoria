@@ -10,45 +10,96 @@ namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Extensions.DbConte
 internal static class DcbEventQueryExtensions
 {
     /// <summary>
-    /// Selects the events inside a boundary — those carrying every tag of at least one of its
-    /// groups.
+    /// Selects the positions inside a boundary — those of the events carrying every tag of at least
+    /// one of its groups — reading the tag table alone.
     /// </summary>
+    /// <param name="dcbDbContext">The context.</param>
+    /// <param name="query">The consistency boundary.</param>
+    /// <param name="fromPosition">An optional inclusive lower bound.</param>
+    /// <param name="toPosition">An optional inclusive upper bound.</param>
     /// <remarks>
     /// <para>
     /// The single place a boundary becomes SQL. Every read narrows from it, so both boundary shapes
     /// are understood here once rather than in each of them.
     /// </para>
     /// <para>
-    /// A union is one <c>EXISTS</c> over an <c>IN</c>, rather than a join, so an event carrying two
-    /// of the boundary's tags is still returned once — a join would return it per matching tag row
-    /// and double-apply it in the fold. An intersection is one <c>EXISTS</c> per tag, chained: each
-    /// is a semi-join and so cannot duplicate either, and each seeks the <c>(Tag, Position)</c>
-    /// primary key, which means the cost grows with the number of tags in the group and no extra
-    /// index is needed.
+    /// A union is one <c>IN</c> over the tags, rather than a join, so an event carrying two of the
+    /// boundary's tags contributes its position once — a join would return it per matching tag row
+    /// and double-apply it in the fold. An intersection anchors on one tag and requires the rest with
+    /// one <c>EXISTS</c> each: each is a semi-join and so cannot duplicate either, and each seeks the
+    /// <c>(Tag, Position)</c> primary key, which means the cost grows with the number of tags in the
+    /// group and no extra index is needed.
+    /// </para>
+    /// <para>
+    /// The position bounds are applied <em>here</em>, on the tag rows, rather than on the events the
+    /// caller ends up with. Both are correct — the two are equated by the semi-join — but only this
+    /// one puts the bound where the <c>(Tag, Position)</c> key can seek on it instead of leaving the
+    /// optimizer to propagate it across the join. That matters most for the read after a snapshot,
+    /// which asks for a suffix of a boundary whose whole history may be long.
     /// </para>
     /// </remarks>
-    public static IQueryable<DcbEventEntity> Inside(this IDcbDbContext dcbDbContext, TagQuery query)
+    public static IQueryable<long> PositionsInside(this IDcbDbContext dcbDbContext, TagQuery query,
+        long? fromPosition = null, long? toPosition = null)
     {
         var groups = query.TagGroups;
-        var events = dcbDbContext.DcbEvents.AsNoTracking();
+        var tagRows = dcbDbContext.DcbEventTags.AsNoTracking();
+
+        if (fromPosition is { } from)
+        {
+            tagRows = tagRows.Where(tagEntity => tagEntity.Position >= from);
+        }
+
+        if (toPosition is { } to)
+        {
+            tagRows = tagRows.Where(tagEntity => tagEntity.Position <= to);
+        }
 
         if (groups.All(group => group.Count == 1))
         {
             var tags = groups.Select(group => group.Single().ToString()).ToList();
 
-            return events.Where(eventEntity => eventEntity.Tags.Any(tagEntity => tags.Contains(tagEntity.Tag)));
+            // Distinct because an event carrying two of the boundary's tags has a row for each. Every
+            // caller today consumes this as a semi-join or an aggregate, where Entity Framework Core
+            // drops it as redundant — but the set this returns is what the name promises, not what
+            // the current callers happen to tolerate.
+            return tagRows.Where(tagEntity => tags.Contains(tagEntity.Tag))
+                .Select(tagEntity => tagEntity.Position)
+                .Distinct();
         }
 
         // Only an intersection produces a group of more than one tag, and it produces exactly one
         // group. Single() rather than a loop over groups, so a query shape this store has not been
         // taught — a boundary mixing the two, which no factory builds today — fails loudly instead
         // of being translated as something wider than the caller asked for.
-        return groups.Single().Aggregate(events, (narrowed, tag) =>
-        {
-            var required = tag.ToString();
+        var required = groups.Single().Select(tag => tag.ToString()).ToList();
+        var anchor = required[0];
 
-            return narrowed.Where(eventEntity => eventEntity.Tags.Any(tagEntity => tagEntity.Tag == required));
-        });
+        // Anchored on one tag and narrowed by the rest, rather than narrowed from every event: the
+        // anchor is a seek on the tag key, and each remaining tag is another seek on the same key.
+        // No Distinct needed, unlike the union above — (Tag, Position) is the primary key, so the
+        // anchor matches at most one row per position.
+        var anchored = required.Skip(1).Aggregate(
+            tagRows.Where(tagEntity => tagEntity.Tag == anchor),
+            (narrowed, tag) => narrowed.Where(tagEntity => dcbDbContext.DcbEventTags
+                .Any(other => other.Tag == tag && other.Position == tagEntity.Position)));
+
+        return anchored.Select(tagEntity => tagEntity.Position);
+    }
+
+    /// <summary>
+    /// Selects the events inside a boundary, optionally bounded by position.
+    /// </summary>
+    /// <remarks>
+    /// A semi-join against <see cref="PositionsInside"/>, so an event inside the boundary is returned
+    /// exactly once however many of the boundary's tags it carries.
+    /// </remarks>
+    public static IQueryable<DcbEventEntity> Inside(this IDcbDbContext dcbDbContext, TagQuery query,
+        long? fromPosition = null, long? toPosition = null)
+    {
+        var positions = dcbDbContext.PositionsInside(query, fromPosition, toPosition);
+
+        return dcbDbContext.DcbEvents.AsNoTracking()
+            .Where(eventEntity => positions.Contains(eventEntity.Position));
     }
 
     /// <summary>

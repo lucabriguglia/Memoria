@@ -56,6 +56,34 @@ public class SchemaTests
     }
 
     [Fact]
+    public void The_log_carries_no_index_the_primary_keys_do_not_already_serve()
+    {
+        // Every read resolves its boundary through the DcbEventTags primary key and then reaches
+        // DcbEvents by position, which is its primary key. A secondary index on the log is therefore
+        // maintained on every append and chosen by nothing — and an index on EventType is worse than
+        // unused, because the optimiser prefers it to the tag semi-join and loses.
+        //
+        // Measured on SQL Server 2022 over 200,000 events / 400,000 tag rows / 41,761 distinct tags,
+        // across 540 reads covering every shape the store offers: IX_DcbEvents_CreatedDate was used
+        // zero times, and IX_DcbEvents_EventType took a type-filtered read from 4ms to 210ms.
+        //
+        // A boundary is the consistency boundary of one decision and so is narrow by construction,
+        // which is why the tag predicate beats a filter on type or date every time. Re-adding an
+        // index here needs a measurement saying otherwise.
+        using var context = SqlServerContext();
+
+        var model = context.GetService<IDesignTimeModel>().Model;
+
+        model.FindEntityType(typeof(DcbEventEntity))!.GetIndexes().Should().BeEmpty();
+
+        // The tag table's one index is the foreign key's, created by convention rather than declared.
+        // It earns nothing here either, but removing it costs a replacement convention set on the
+        // context — see DcbEventTagEntityConfiguration.
+        model.FindEntityType(typeof(DcbEventTagEntity))!.GetIndexes()
+            .Should().ContainSingle(index => index.Properties.Single().Name == nameof(DcbEventTagEntity.Position));
+    }
+
+    [Fact]
     public void The_tag_key_fits_inside_the_sql_server_index_key_limit()
     {
         // nvarchar(255) is 510 bytes, plus 8 for the bigint: 518 against a 900-byte limit. 1.7.0

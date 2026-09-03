@@ -33,10 +33,6 @@ CREATE TABLE IF NOT EXISTS public."DcbEvents" (
     CONSTRAINT "PK_DcbEvents" PRIMARY KEY ("Position")
 );
 
-CREATE INDEX IF NOT EXISTS "IX_DcbEvents_CreatedDate" ON public."DcbEvents" ("CreatedDate");
-
-CREATE INDEX IF NOT EXISTS "IX_DcbEvents_EventType" ON public."DcbEvents" ("EventType");
-
 /* --------------------------------------------------------------- snapshots */
 CREATE TABLE IF NOT EXISTS public."DcbSnapshots" (
     "Id" character varying(400) NOT NULL,
@@ -73,4 +69,9 @@ CREATE TABLE IF NOT EXISTS public."DcbEventTags" (
         REFERENCES public."DcbEvents" ("Position") ON DELETE CASCADE
 );
 
+/*
+    Entity Framework Core indexes the foreign key by convention, so this index is part of the model
+    the migration tooling would generate and is created here to match it. It serves the cascade
+    above; no read in the store looks a tag up by position.
+*/
 CREATE INDEX IF NOT EXISTS "IX_DcbEventTags_Position" ON public."DcbEventTags" ("Position");

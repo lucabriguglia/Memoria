@@ -41,18 +41,6 @@ BEGIN
     );
 END;
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_DcbEvents_CreatedDate'
-                 AND object_id = OBJECT_ID(N'[dbo].[DcbEvents]'))
-BEGIN
-    CREATE INDEX [IX_DcbEvents_CreatedDate] ON [dbo].[DcbEvents] ([CreatedDate]);
-END;
-
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_DcbEvents_EventType'
-                 AND object_id = OBJECT_ID(N'[dbo].[DcbEvents]'))
-BEGIN
-    CREATE INDEX [IX_DcbEvents_EventType] ON [dbo].[DcbEvents] ([EventType]);
-END;
-
 /* --------------------------------------------------------------- snapshots */
 IF OBJECT_ID(N'[dbo].[DcbSnapshots]', N'U') IS NULL
 BEGIN
@@ -101,6 +89,11 @@ BEGIN
     );
 END;
 
+/*
+    Entity Framework Core indexes the foreign key by convention, so this index is part of the model
+    the migration tooling would generate and is created here to match it. It serves the cascade
+    above; no read in the store looks a tag up by position.
+*/
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_DcbEventTags_Position'
                  AND object_id = OBJECT_ID(N'[dbo].[DcbEventTags]'))
 BEGIN

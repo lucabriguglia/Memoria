@@ -19,6 +19,11 @@ namespace Memoria.Benchmarks.Store;
 /// whether the gap is a constant or grows with the set.
 /// </para>
 /// <para>
+/// Every read here is <em>unbounded</em>. Nothing in this class calls <c>GetEventsFromPosition</c>,
+/// which is the read a snapshot does to catch up and the one a position bound exists for — so these
+/// numbers say nothing about it, in either direction. A case for it is worth adding.
+/// </para>
+/// <para>
 /// Relative costs on one engine, not production latency. Read them next to
 /// <see cref="RoundTripReport"/>.
 /// </para>

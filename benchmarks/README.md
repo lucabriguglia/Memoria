@@ -48,14 +48,32 @@ aggressively there, folding the tag head `UPDATE` into the event `INSERT` and th
 
 ### What the engines showed
 
-Reads are a wash everywhere: 1.00–1.46x on SQLite, 0.88–1.14x on SQL Server, 0.87–1.19x on
-PostgreSQL, with the widest gaps at ten events where the fixed cost has nothing to amortise against.
+Reads are a wash. On SQLite, which runs in process and is much the quietest of the three, DCB comes
+in between 0.95x and 1.29x of streams, widest at ten events where a boundary's fixed cost has nothing
+to amortise against and the entire read is tens of microseconds.
 
-| `SaveAggregate`, median | Streams  | DCB      | Ratio |
-|-------------------------|----------|----------|-------|
-| SQLite, in memory       | ~1.15 ms | ~2.2 ms  | ~2.1x |
-| SQL Server, container   | ~7.5 ms  | ~14.1 ms | ~1.9x |
-| PostgreSQL, container   | ~4.1 ms  | ~10.8 ms | ~2.6x |
+**Use `GetAggregate, snapshot only` to calibrate before believing any of the others.** It is the same
+operation in both stores — one row fetched by primary key, no boundary anywhere near it — so its
+ratio measures the harness rather than the store, and it ought to be exactly 1.00. It came out at
+0.83–1.16 on PostgreSQL and 0.93–0.99 on SQL Server in the same run that produced everything else
+here. A container difference inside that band is not a finding.
+
+One result does survive that test, because it repeats on all three engines and in the right
+direction: **`GetEvents` over a thousand events is faster under DCB** — 0.95x on SQLite, 0.78x on SQL
+Server, 0.84x on PostgreSQL — while allocating about 3% less. Both stores fetch the same rows, and
+DCB reaches them through two key seeks rather than one seek over a wider row.
+
+| `SaveAggregate`, median | Streams | DCB      | Ratio |
+|-------------------------|---------|----------|-------|
+| SQLite, in memory       | ~1.3 ms | ~2.6 ms  | ~2.1x |
+| SQL Server, container   | ~8.2 ms | ~16.5 ms | ~2.0x |
+| PostgreSQL, container   | ~4.6 ms | ~13.0 ms | ~2.8x |
+
+Compare the ratios, never the milliseconds, when re-running. Two runs of the *same commit* on this
+machine ten minutes apart put the SQL Server streamed append at 13.8 ms and then 18.9 ms — a 37%
+spread with nothing changed. The ratios were stable across the same pair. If you need to know whether
+a change moved the store, run the old and new commits alternately in one sitting and compare within
+each pass; a table like this one from two different sittings cannot tell you.
 
 The original reason for running more than one engine was a prediction: that SQLite would understate
 the DCB append cost, because five extra round trips are nearly free in process. **It was wrong.** The
@@ -67,6 +85,27 @@ largest DCB ratio, because its baseline is cheaper while five extra commands cos
 
 What no local container can answer is distance: they run on this machine, so a round trip is loopback
 rather than a network hop. Keep the round-trip table for that case.
+
+### Why a boundary is an EXISTS and not an IN
+
+Both translate a boundary correctly and both are semi-joins, so neither can return an event twice.
+They do not cost the same, and which one wins depends on how big the boundary is.
+
+Selecting the events with `WHERE Position IN (SELECT Position FROM DcbEventTags WHERE …)` was
+measured against the `EXISTS` the store uses now, alternating commits in one sitting on SQLite:
+
+| `GetAggregate, folded`, DCB ÷ streams | 10 events | 100 events | 1000 events |
+|---------------------------------------|-----------|------------|-------------|
+| `EXISTS`                              | 1.05      | 1.02       | 1.00        |
+| `IN (subquery)`                       | **1.32**  | 0.95       | **0.89**    |
+
+The subquery has a setup cost that a ten-event boundary cannot absorb and a plan that pays off once
+there are a thousand rows to find. `EXISTS` is the default because a boundary is the consistency
+boundary of one decision and is normally small; a thousand-event boundary read in full is unusual,
+and is what snapshots exist for. If your boundaries really are that large, this is the knob.
+
+The two baseline passes bracketing that measurement agreed to 1–2%, which is what makes a 1.05
+against 1.32 readable at all. Do not try to reproduce it on a container.
 
 ### Why the harness runs ANALYZE on PostgreSQL
 

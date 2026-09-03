@@ -73,6 +73,22 @@ Both are semi-joins rather than joins, so an event carrying several of a boundar
 once — a join would return it per matching tag row and the fold would apply it twice.
 
 Every seek is against the `(Tag, Position)` primary key, so neither shape needs an index of its own.
+
+A position bound — `GetEventsFromPosition` and friends — goes *inside* the `EXISTS`, alongside the
+tag, rather than onto the events it selects. Both are correct, because the subquery equates the two
+positions, but only this gives that key both halves of a seek instead of leaving the engine to infer
+the second. It is the read after a snapshot, which asks for a suffix of a boundary whose whole
+history may be long.
+
+An unbounded read stays a bare `EXISTS` with nothing added. Selecting the events by a materialised
+`Position IN (…)` instead was measurably slower on small boundaries — around 20% on a ten-event fold
+— and faster on large ones, and a boundary is normally small by construction. See
+[the benchmarks](https://github.com/lucabriguglia/Memoria/tree/main/benchmarks).
+
+`GetLatestPosition` never reads `DcbEvents` at all unless it is given an event type filter: a tag row
+and the event it tags commit together, so the highest tagged position *is* the boundary's latest
+position, and that is a backward seek per tag rather than a semi-join against the log. It runs inside
+every conditioned append's transaction, so what it costs is what every overlapping append waits for.
 An intersection's cost grows with the number of tags it names, which is a reason to keep a boundary
 to the things a decision is actually about rather than a reason to avoid it: a boundary naming twenty
 tags is a modelling problem before it is a query-plan one.

@@ -89,9 +89,13 @@ last two in containers — with the same event type, the same model state and th
 sides, so what is measured is the store.
 
 **Reads are a wash on every engine.** DCB issues the same number of round trips as streams, and the
-timings sit within noise of each other: 1.00–1.46× on SQLite, 0.88–1.14× on SQL Server, 0.87–1.19× on
-PostgreSQL. DCB is faster in about as many cases as it is slower. The widest gaps are all at ten
-events, where the tag semi-join's small fixed cost has nothing to amortise against.
+timings sit within noise of each other. On SQLite, which runs in process and measures cleanly, DCB
+comes in at 0.95–1.29× of streams, widest at ten events where the tag lookup's small fixed cost has
+nothing to amortise against. The container figures are noisier than the difference they are meant to
+show — reading a snapshot is the *same* operation in both stores and still varied by ±17% between
+cases — so treat anything inside that band as measurement rather than store. The one result that
+repeats on all three engines is `GetEvents` over a thousand events, where DCB is the faster of the
+two.
 
 A stream is a range on one indexed column; a boundary is a semi-join against `DcbEventTags` over the
 same rows. A snapshot read is one row either way, and stays flat however long the history gets —
@@ -100,11 +104,15 @@ which is the point of snapshots in both models.
 **Appends cost roughly two to three times as much**, on every engine, allocating about 2.5× as much,
 flat in the number of events already stored:
 
-| `SaveAggregate`, median | Streams  | DCB      | Ratio |
-|-------------------------|----------|----------|-------|
-| SQLite, in memory       | ~1.15 ms | ~2.2 ms  | ~2.1× |
-| SQL Server, container   | ~7.5 ms  | ~14.1 ms | ~1.9× |
-| PostgreSQL, container   | ~4.1 ms  | ~10.8 ms | ~2.6× |
+| `SaveAggregate`, median | Streams | DCB      | Ratio |
+|-------------------------|---------|----------|-------|
+| SQLite, in memory       | ~1.3 ms | ~2.6 ms  | ~2.1× |
+| SQL Server, container   | ~8.2 ms | ~16.5 ms | ~2.0× |
+| PostgreSQL, container   | ~4.6 ms | ~13.0 ms | ~2.8× |
+
+Read the ratios, not the milliseconds. Two runs of the same commit ten minutes apart put the SQL
+Server streamed append at 13.8 ms and then 18.9 ms; the ratio held across both. The absolute numbers
+say more about the machine than about either store.
 
 A streamed append is 2 database commands on both real engines; a DCB append is 7 — it claims the tag
 head rows, reads the boundary's position, writes the events, replaces the tokens, writes the tags,

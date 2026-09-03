@@ -108,7 +108,7 @@ public sealed class TagQuery : IEquatable<TagQuery>
     /// Determines whether two queries describe the same boundary.
     /// </summary>
     public static bool operator ==(TagQuery? left, TagQuery? right) =>
-        left is null ? right is null : left.Equals(right);
+        left?.Equals(right) ?? right is null;
 
     /// <summary>
     /// Determines whether two queries describe different boundaries.

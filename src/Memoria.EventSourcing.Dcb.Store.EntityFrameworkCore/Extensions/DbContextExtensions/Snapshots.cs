@@ -91,11 +91,12 @@ public static partial class DcbDbContextExtensions
                 return default(T);
             }
 
-            var aggregate = new T();
-
-            // Set before the fold, so Apply can read it. This is how a model spanning more than one
-            // entity knows which ones it is about without being handed them separately.
-            aggregate.Tags = query.Tags;
+            var aggregate = new T
+            {
+                // Set before the fold, so Apply can read it. This is how a model spanning more than one
+                // entity knows which ones it is about without being handed them separately.
+                Tags = query.Tags
+            };
 
             var eventEntities = await dcbDbContext.GetEventEntities(query, aggregate.EventTypeFilter,
                 cancellationToken);

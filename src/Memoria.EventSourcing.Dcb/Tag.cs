@@ -24,7 +24,7 @@ public readonly record struct Tag
     /// <summary>
     /// The character separating a tag's key from its value in its rendered form.
     /// </summary>
-    public const char Separator = ':';
+    private const char Separator = ':';
 
     /// <summary>
     /// Initialises a tag from a key and a value.

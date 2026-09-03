@@ -149,8 +149,7 @@ public class EntityFrameworkCoreDcbDomainService(
     /// the clearer signal. The service is the boundary where the contract says every outcome is a
     /// <see cref="Result{TValue}"/>, so the translation belongs here.
     /// </remarks>
-    private static async Task<Result<TValue>> Guarded<TValue>(string operation, TagQuery query,
-        Func<Task<TValue>> read)
+    private static async Task<Result<TValue>> Guarded<TValue>(string operation, TagQuery query, Func<Task<TValue>> read)
     {
         try
         {

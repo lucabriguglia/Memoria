@@ -10,7 +10,7 @@ public static class DcbDiagnostics
     /// <summary>
     /// The activity event emitted when an append is refused because its boundary moved.
     /// </summary>
-    public const string ConcurrencyConflictEventName = "Concurrency Conflict";
+    private const string ConcurrencyConflictEventName = "Concurrency Conflict";
 
     /// <summary>
     /// Records that an append was refused because its boundary moved.

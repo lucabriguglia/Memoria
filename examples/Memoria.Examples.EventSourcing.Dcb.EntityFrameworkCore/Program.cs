@@ -19,6 +19,11 @@ using Microsoft.Extensions.DependencyInjection;
 // see the student's other subscriptions, a stream per student cannot see how full the course is, and
 // one stream for the school serialises every subscription in it. Under DCB the boundary is the query
 // "course:c1 OR student:s7", so two subscriptions contend only when they share a course or a student.
+//
+// A boundary is either a union (TagQuery.AnyOf) or an intersection (TagQuery.AllOf). The rule above
+// spans a course and a student, so it reads the union. A question about the pair — is alice on
+// maths? — reads the intersection instead, and folds a handful of events rather than thousands. An
+// append is conditioned on the boundary the decision folded, or a wider one, never a narrower one.
 
 var serviceProvider = ConfigureServices();
 await CreateDatabase(serviceProvider);
@@ -62,6 +67,10 @@ Console.WriteLine();
 Console.WriteLine("--- two different decisions contending on one tag ---");
 await ShowCapacityChangeRefusedBySubscription(dcb);
 
+
+Console.WriteLine();
+Console.WriteLine("--- a boundary that is an intersection ---");
+await ShowIntersectionBoundary(dcb, "maths", "alice");
 
 Console.WriteLine();
 Console.WriteLine("--- a projection, read through a query ---");
@@ -149,6 +158,32 @@ async Task ShowCapacityChangeRefusedBySubscription(IDcbDomainService service)
 }
 
 
+// The same two tags, combined two ways. AnyOf is everything about the course plus everything about
+// the student; AllOf is only the events concerning both.
+async Task ShowIntersectionBoundary(IDcbDomainService service, string courseId, string studentId)
+{
+    var course = new Tag("course", courseId);
+    var student = new Tag("student", studentId);
+
+    var union = (await service.GetEvents(TagQuery.AnyOf(course, student))).Value!;
+    var intersection = (await service.GetEvents(TagQuery.AllOf(course, student))).Value!;
+
+    // Two events here, thousands in a real school: the union grows with every seat in the course and
+    // every course the student takes, and the intersection grows with neither.
+    Console.WriteLine($"  {course} OR  {student} -> {Events(union.Count)}");
+    Console.WriteLine($"  {course} AND {student} -> {Events(intersection.Count)}");
+
+    // Folded from the intersection, so the model needs no guards to tell this student's dealings
+    // with this course from anyone else's.
+    var enrolment = (await service.GetInMemoryProjection(new CourseEnrolmentId(courseId, studentId))).Value!;
+
+    Console.WriteLine($"  {studentId} on {courseId}: {(enrolment.IsEnrolled ? "yes" : "no")}, " +
+                      $"joined {enrolment.TimesJoined} time(s)");
+
+    Console.WriteLine("  An intersection narrows what a decision reads, not what it may condition on:");
+    Console.WriteLine("  the subscription rule folds the union above, so it must condition on the union too.");
+}
+
 // SnapshotWithNewEventsOrCreate: folds and saves the first time, then applies whatever arrived since
 // and saves again. The query handler asks for nothing else.
 async Task ShowTranscript(string studentId)
@@ -176,6 +211,8 @@ async Task ShowStaleSnapshot(IDcbDomainService service, string studentId)
         : $"  snapshot only: {Courses(stored)}, folded to position {stored.LatestPosition} — stale, " +
           "because the subscription above landed after it was written");
 }
+
+string Events(int count) => count == 1 ? "1 event" : $"{count} events";
 
 string Courses(StudentTranscript transcript) =>
     transcript.Courses.Count switch

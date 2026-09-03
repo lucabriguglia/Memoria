@@ -38,8 +38,8 @@ Add(new StudentSubscribedEvent(studentId, courseId),
     new Tag("course", courseId), new Tag("student", studentId));
 ```
 
-A [`TagQuery`](../reference/configuration/dcb-ef-core.md) is a boundary — the events carrying any of
-its tags:
+A [`TagQuery`](../reference/configuration/dcb-ef-core.md) is a boundary. The commonest shape is the
+events carrying any of its tags:
 
 ```C#
 var boundary = TagQuery.AnyOf(new Tag("course", "maths"), new Tag("student", "alice"));
@@ -49,10 +49,46 @@ That one event above falls inside every boundary naming `course:maths` *and* eve
 `student:alice`. Seen through the course it fills a seat; seen through the student it uses up one of
 their ten. One event, two meanings, no duplication.
 
-> **1.8.0 supports `AnyOf` only.** A boundary is a disjunction: any of these tags. Conjunction —
-> events carrying *both* `course:maths` and `student:alice` — is deliberately absent, because it
-> needs a different query shape and changes which rows an append must lock. `TagQuery` is shaped so
-> it can be added without a breaking change.
+## Union and intersection boundaries
+
+`AnyOf` is a **union**: the events carrying *any* of its tags. `AllOf` is an **intersection**: only
+the events carrying *all* of them.
+
+```C#
+// Everything about the course, plus everything about the student.
+var union = TagQuery.AnyOf(new Tag("course", "maths"), new Tag("student", "alice"));
+
+// Only the events concerning both.
+var intersection = TagQuery.AllOf(new Tag("course", "maths"), new Tag("student", "alice"));
+```
+
+| Boundary | Selects | Use for |
+|---|---|---|
+| `AnyOf(a, b)` | events carrying `a` **or** `b` | a rule spanning both things — the course's capacity *and* the student's ten |
+| `AllOf(a, b)` | events carrying `a` **and** `b` | a fact about the pair — is alice already on maths? |
+
+The subscription rule above needs the union: a boundary of only the events concerning both cannot see
+how full the course is. But *"is alice already on maths?"* is answered by a single event, and reading
+it through the union means folding every seat in the course and every course alice has ever taken to
+find it. The intersection reads that one event, and keeps doing so as the school grows.
+
+Narrowing the fold also removes work from the model. A model over the union has to sort out what it
+folded — is this subscription about *my* course, or another of this student's? — so its `Apply` is
+full of `when subscribed.CourseId == CourseId` guards. Under an intersection the boundary has already
+done that, and the guards go away.
+
+Two things to be careful of:
+
+- **An intersection narrows what you read, not what you may condition on.** A decision that folded
+  `AnyOf(course, student)` must condition its append on `AnyOf(course, student)`. Conditioning on the
+  narrower `AllOf` would accept an append resting on a capacity that has since changed. Condition on
+  the boundary you folded, or a wider one.
+- **An intersection is only as good as the tagging.** `CourseDefinedEvent` is appended under the
+  course alone, so it is not inside `AllOf(course:maths, student:alice)` however much it concerns the
+  course that alice is on. If a model needs it, its boundary is a union.
+
+A boundary that mixes the two — an *or* of *and*s — is not in this release. Neither is a
+per-boundary filter on event type: `EventTypeFilter` on the model does that job.
 
 ## The append condition
 

@@ -58,6 +58,25 @@ primary key is also the serving index.
 
 Install with [EF Core migrations or the shipped scripts](../../guides/install-the-store-schema.md#the-dynamic-consistency-boundary-store).
 
+### How a boundary becomes SQL
+
+Every read — `GetEvents*`, `GetLatestPosition`, `GetInMemory*`, and the cheap half of the append
+condition — narrows from one query over `DcbEvents`, so both boundary shapes are translated in one
+place.
+
+| Boundary | SQL | Cost |
+|---|---|---|
+| `AnyOf(a, b, …)` | one `EXISTS` over the event's tags, matching an `IN` list | one index seek, whatever the number of tags |
+| `AllOf(a, b, …)` | one `EXISTS` per tag, chained | one index seek per tag, intersected by the engine |
+
+Both are semi-joins rather than joins, so an event carrying several of a boundary's tags comes back
+once — a join would return it per matching tag row and the fold would apply it twice.
+
+Every seek is against the `(Tag, Position)` primary key, so neither shape needs an index of its own.
+An intersection's cost grows with the number of tags it names, which is a reason to keep a boundary
+to the things a decision is actually about rather than a reason to avoid it: a boundary naming twenty
+tags is a modelling problem before it is a query-plan one.
+
 ### Tag columns are case-sensitive, deliberately
 
 Tags compare ordinally in .NET, so `seat:A1` and `seat:a1` are two tags. The store pins a

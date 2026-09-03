@@ -135,7 +135,9 @@ consequence.
 
 ## Known limits
 
-- **`TagQuery` is `AnyOf` only.** A boundary is a disjunction of tags. Conjunction is not in 1.8.0.
+- **A boundary is flat.** `TagQuery.AnyOf` unions its tags and `TagQuery.AllOf` intersects them; a
+  query mixing the two — an *or* of *and*s — is not in 1.8.0, and neither is a filter on event type
+  inside the boundary, which `EventTypeFilter` on the model does instead.
 - **Do not build a catch-up subscription on `Position` yet.** It is monotonic but not gap-free — see
   [Entity Framework Core (DCB)](../reference/configuration/dcb-ef-core.md#positions-are-not-gap-free).
 - **One row per distinct tag, forever**, in `DcbTagHeads`.

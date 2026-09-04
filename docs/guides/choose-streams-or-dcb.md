@@ -89,26 +89,32 @@ last two in containers — with the same event type, the same model state and th
 sides, so what is measured is the store.
 
 **Reads are a wash on every engine.** DCB issues the same number of round trips as streams, and the
-timings sit within noise of each other. On SQLite, which runs in process and measures cleanly, DCB
-comes in at 0.95–1.29× of streams, widest at ten events where the tag lookup's small fixed cost has
-nothing to amortise against. The container figures are noisier than the difference they are meant to
-show — reading a snapshot is the *same* operation in both stores and still varied by ±17% between
-cases — so treat anything inside that band as measurement rather than store. The one result that
-repeats on all three engines is `GetEvents` over a thousand events, where DCB is the faster of the
-two.
+timings sit within noise of each other — 0.71× to 1.33× across all three engines and 10, 100 and 1000
+events. On SQLite, which runs in process and measures cleanly, the gap is widest at ten events, where
+the tag lookup's small fixed cost has nothing to amortise against.
+
+The container figures are noisier than the difference they are meant to show. Reading a snapshot is
+the *same* operation in both stores, so its ratio ought to be exactly 1.00; it measured 1.04–1.07 on
+SQLite, 0.81–1.04 on SQL Server and 1.03–1.13 on PostgreSQL. Treat anything inside those bands as
+measurement rather than store. The result that repeats is `GetEvents` over a thousand events, where
+DCB is the faster of the two — 0.86× on SQLite and 0.88× on SQL Server, though PostgreSQL came out a
+wash at 0.98× in the latest run. DCB also allocates about 3% less on that read, on all three engines.
 
 A stream is a range on one indexed column; a boundary is a semi-join against `DcbEventTags` over the
 same rows. A snapshot read is one row either way, and stays flat however long the history gets —
 which is the point of snapshots in both models.
 
-**Appends cost roughly two to three times as much**, on every engine, allocating about 2.5× as much,
+**Appends cost roughly two to three times as much**, on every engine, allocating 2.4–2.9× as much,
 flat in the number of events already stored:
 
-| `SaveAggregate`, median | Streams | DCB      | Ratio |
-|-------------------------|---------|----------|-------|
-| SQLite, in memory       | ~1.3 ms | ~2.6 ms  | ~2.1× |
-| SQL Server, container   | ~8.2 ms | ~16.5 ms | ~2.0× |
-| PostgreSQL, container   | ~4.6 ms | ~13.0 ms | ~2.8× |
+| `SaveAggregate`, median | Streams        | DCB            | Ratio     |
+|-------------------------|----------------|----------------|-----------|
+| SQLite, in memory       | 0.99 – 1.27 ms | 1.84 – 2.46 ms | ~2×       |
+| SQL Server, container   | 7.51 – 10.1 ms | 13.4 – 17.9 ms | 1.77–1.86 |
+| PostgreSQL, container   | 3.83 – 4.03 ms | 9.98 – 10.3 ms | 2.55–2.65 |
+
+The ranges span 10, 100 and 1000 already-stored events, and on both containers the ratio moves by
+less than 0.1 across them — the append's cost really is flat in the length of the history behind it.
 
 Read the ratios, not the milliseconds. Two runs of the same commit ten minutes apart put the SQL
 Server streamed append at 13.8 ms and then 18.9 ms; the ratio held across both. The absolute numbers

@@ -88,55 +88,69 @@ on all three engines the store targets — in-memory SQLite, SQL Server 2022 and
 last two in containers — with the same event type, the same model state and the same fold on both
 sides, so what is measured is the store.
 
-**Reads are a wash on every engine.** DCB issues the same number of round trips as streams, and the
-timings sit within noise of each other — 0.71× to 1.33× across all three engines and 10, 100 and 1000
-events. On SQLite, which runs in process and measures cleanly, the gap is widest at ten events, where
-the tag lookup's small fixed cost has nothing to amortise against.
+**Reads are a wash on every engine, and long reads favour DCB.** DCB issues the same number of round
+trips as streams, and the timings run 0.76× to 1.40× across all three engines and 10, 100 and 1000
+events. That spread is the length of the read, not noise: the gap is widest against DCB at ten
+events, where the tag lookup's fixed cost has nothing to amortise against, and turns in DCB's favour
+by a thousand.
 
-The container figures are noisier than the difference they are meant to show. Reading a snapshot is
-the *same* operation in both stores, so its ratio ought to be exactly 1.00; it measured 1.04–1.07 on
-SQLite, 0.81–1.04 on SQL Server and 1.03–1.13 on PostgreSQL. Treat anything inside those bands as
-measurement rather than store. The result that repeats is `GetEvents` over a thousand events, where
-DCB is the faster of the two — 0.86× on SQLite and 0.88× on SQL Server, though PostgreSQL came out a
-wash at 0.98× in the latest run. DCB also allocates about 3% less on that read, on all three engines.
+Reading a snapshot is the *same* operation in both stores, so its ratio ought to be exactly 1.00; it
+measured 0.99–1.01 on SQL Server, 1.00–1.03 on PostgreSQL and 1.09–1.15 on SQLite. Treat anything
+inside those bands as measurement rather than store — including on SQLite, where the read is 22 μs
+and a couple of fixed microseconds is 10% of it.
+
+The result that repeats is `GetEvents` over a thousand events, where DCB is the faster of the two on
+every engine — 0.97× on SQLite, 0.76× on SQL Server, 0.90× on PostgreSQL — and the fold built on it
+follows at 0.95×, 0.77× and 0.93×. DCB also allocates about 3% less on that read, on all three
+engines. The crossover is around a hundred events.
 
 A stream is a range on one indexed column; a boundary is a semi-join against `DcbEventTags` over the
 same rows. A snapshot read is one row either way, and stays flat however long the history gets —
 which is the point of snapshots in both models.
 
-**Appends cost roughly two to three times as much**, on every engine, allocating 2.4–2.9× as much,
-flat in the number of events already stored:
+**Appends cost roughly one and a third to two and a fifth times as much**, on every engine,
+allocating 1.9–2.2× as much, flat in the number of events already stored:
 
 | `SaveAggregate`, median | Streams        | DCB            | Ratio     |
 |-------------------------|----------------|----------------|-----------|
-| SQLite, in memory       | 0.99 – 1.27 ms | 1.84 – 2.46 ms | ~2×       |
-| SQL Server, container   | 7.51 – 10.1 ms | 13.4 – 17.9 ms | 1.77–1.86 |
-| PostgreSQL, container   | 3.83 – 4.03 ms | 9.98 – 10.3 ms | 2.55–2.65 |
+| SQLite, in memory       | 0.64 – 0.69 ms | 1.02 – 1.06 ms | 1.62–1.72 |
+| SQL Server, container   | 8.97 – 9.30 ms | 11.4 – 12.4 ms | 1.31–1.35 |
+| PostgreSQL, container   | 2.71 – 2.85 ms | 5.85 – 6.28 ms | 2.13–2.20 |
 
-The ranges span 10, 100 and 1000 already-stored events, and on both containers the ratio moves by
+The ranges span 10, 100 and 1000 already-stored events, and on all three engines the ratio moves by
 less than 0.1 across them — the append's cost really is flat in the length of the history behind it.
+
+These are lower than they were before 1.8.0: three round trips came out of the append, and the ratio
+fell from 1.77–1.86 to 1.31–1.35 on SQL Server and from 2.55–2.65 to 2.13–2.20 on PostgreSQL. The
+milliseconds are not comparable across that change — the two sets were measured on different
+machines — but the ratios are.
 
 Read the ratios, not the milliseconds. Two runs of the same commit ten minutes apart put the SQL
 Server streamed append at 13.8 ms and then 18.9 ms; the ratio held across both. The absolute numbers
 say more about the machine than about either store.
 
-A streamed append is 2 database commands on both real engines; a DCB append is 7 — it claims the tag
-head rows, reads the boundary's position, writes the events, replaces the tokens, writes the tags,
-then the snapshot. Five extra commands, on all three engines.
+A streamed append is 2 database commands on both real engines; a DCB append is 4 — it claims the tag
+head rows and reads the boundary's position in one statement, writes the events, writes the tags,
+then the snapshot. Two extra commands, on all three engines.
 
 The ratio does not track the engine's speed. PostgreSQL has the *fastest* streamed append here and
-the *largest* DCB ratio, because its baseline is cheaper while the five extra commands cost much the
+the *largest* DCB ratio, because its baseline is cheaper while the extra commands cost much the
 same — which is the shape to expect. The further away the database, the more those commands cost and
 the more the ratio moves. If your database is remote, count the round trips rather than trusting this
 table.
 
 ### One PostgreSQL caveat
 
-The DCB read is unusually sensitive to missing planner statistics on PostgreSQL. Both its predicates
-are `= ANY(@array)`, whose selectivity PostgreSQL cannot estimate from a parameter, so on a table it
-has never analysed it assumes one row on each side, picks a nested loop semi join, and applies the
-position match as a filter rather than an index condition. On a thousand events that measured 80 ms
-against 3 ms for the same query after `ANALYZE`. The streamed store stayed at 4 ms throughout.
+The DCB read is sensitive to missing planner statistics on PostgreSQL. Both its predicates are
+`= ANY(@array)` — the form Npgsql generates for a tag collection at every size, including a single
+tag — whose selectivity PostgreSQL cannot estimate from a parameter, so on a table it has never
+analysed it can assume one row on each side, pick a nested loop semi join, and apply the position
+match as a filter rather than an index condition.
+
+How much that costs varies more than it first appeared. One sitting measured 80 ms against 3 ms for
+the same query after `ANALYZE`; a later check on PostgreSQL 15.1, with the statistics suppressed and
+verified suppressed, measured 1.20× rather than 21×, because autoanalyze had already given the
+planner enough. Treat it as a real effect of unknown size rather than a number.
 
 It resolves itself once autovacuum runs, and SQL Server never shows it because it creates the missing
 statistics on first use. It is worth knowing about after a restore, a bulk import or a migration,
@@ -144,7 +158,7 @@ where a large table can be queried before it has ever been analysed.
 
 None of this is a reason to pick one or the other. A decision whose boundary is not the shape of any
 stream cannot be made correctly under streams at any price, and an append that a stream can express
-is not worth five extra round trips. Pick on the boundary, as above; use these numbers to size the
+is not worth two extra round trips. Pick on the boundary, as above; use these numbers to size the
 consequence.
 
 ## Known limits

@@ -15,12 +15,12 @@ namespace Memoria.Benchmarks.Store;
 /// most of what it does.
 /// </para>
 /// <para>
-/// A streamed append is 2 database commands on a real engine and a DCB append is 7. The expectation
-/// was that those five extra round trips would widen the gap once each crossed a wire; measured, they
-/// did not — 2.1x on SQLite, 1.9x on SQL Server, 2.6x on PostgreSQL, with the absolute cost several
-/// times higher on the real engines. A streamed append pays transaction and commit costs that scale
-/// the same way. What remains unmeasured is distance, and <see cref="RoundTripReport"/> is the
-/// number for it.
+/// A streamed append is 2 database commands on a real engine and a DCB append is 4. The expectation
+/// was once that the extra round trips would widen the gap the moment each crossed a wire; measured,
+/// they did not, because a streamed append pays transaction and commit costs that scale the same way.
+/// The gap is 1.6-1.7x on SQLite, 1.3x on SQL Server and 2.1-2.2x on PostgreSQL, with the absolute
+/// cost several times higher on the real engines. What remains unmeasured is distance, and
+/// <see cref="RoundTripReport"/> is the number for it.
 /// </para>
 /// <para>
 /// <see cref="RunStrategy.Monitoring"/> with one invocation per iteration, because every append has a
@@ -30,6 +30,9 @@ namespace Memoria.Benchmarks.Store;
 /// </para>
 /// </remarks>
 [MemoryDiagnoser]
+// The median, because commit spikes skew the mean badly enough here that RatioSD reaches 1.01 on
+// SQLite. README.md tells a reader to compare medians on this benchmark, so it prints them.
+[MedianColumn]
 [SimpleJob(RunStrategy.Monitoring, invocationCount: 1, warmupCount: 10, iterationCount: 200)]
 public class StoreWriteBenchmarks
 {

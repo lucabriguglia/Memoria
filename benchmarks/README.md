@@ -8,11 +8,17 @@ dotnet run -c Release --project benchmarks/Memoria.Benchmarks -- --filter "*Stor
 dotnet run -c Release --project benchmarks/Memoria.Benchmarks -- --round-trips             # not a benchmark, see below
 ```
 
-Every number below comes from one sitting on 2026-09-04: BenchmarkDotNet 0.15.8 on .NET 10.0.11,
-Windows 11, an 11th Gen Intel Core i9-11900H with 8 physical cores, against SQL Server 2022 and
-PostgreSQL 15 in Testcontainers and the Cosmos DB emulator, all on the same machine. Read the
-sitting, not the milliseconds: the tables here are comparable to each other and to very little else,
-and the reasons are in [Reading the timings](#reading-the-timings).
+**The numbers below come from two machines, and which one matters.** Everything about streams
+against DCB was re-measured on 2026-09-04 after the DCB append lost three round trips: BenchmarkDotNet
+0.15.8 on .NET 10.0.11, Windows 11, an Intel Core i7-14700KF with 20 physical cores, against SQL
+Server 2022 and PostgreSQL 15 in Testcontainers. [The streamed store across
+providers](#the-streamed-store-across-providers) and [Serializer](#serializer) still come from the
+earlier sitting on an 11th Gen Intel Core i9-11900H with 8 physical cores, which also had the Cosmos
+DB emulator running; neither was affected by that change, and the Cosmos rows cannot be reproduced
+without an emulator. **Do not read a row from one section against a row from the other.**
+
+Read the sitting, not the milliseconds: within a section the tables are comparable to each other and
+to very little else, and the reasons are in [Reading the timings](#reading-the-timings).
 
 ## Streams against DCB
 
@@ -36,7 +42,7 @@ Streams vs DCB, per operation:
 | GetEvents(100)               | 1 vs 1 | 1 vs 1     | 1 vs 1     |
 | GetAggregate (snapshot only) | 1 vs 1 | 1 vs 1     | 1 vs 1     |
 | GetAggregate (folded)        | 1 vs 1 | 1 vs 1     | 1 vs 1     |
-| SaveAggregate (guarded)      | 3 vs 8 | 2 vs 7     | 2 vs 7     |
+| SaveAggregate (guarded)      | 3 vs 5 | 2 vs 4     | 2 vs 4     |
 
 ```bash
 dotnet run -c Release --project benchmarks/Memoria.Benchmarks -- --round-trips --verbose
@@ -45,67 +51,109 @@ dotnet run -c Release --project benchmarks/Memoria.Benchmarks -- --round-trips -
 ```
 
 This is not a BenchmarkDotNet benchmark and needs no statistics: the count is exact and identical on
-every run. **Reads cost DCB nothing in round trips. Appends cost it five more**, and `--verbose`
-prints the statements so you can see which five: it claims the tag head rows, reads the boundary's
-position, writes the events, replaces the tokens, writes the tags, then the snapshot.
+every run. **Reads cost DCB nothing in round trips. Appends cost it two more**, and `--verbose`
+prints the statements so you can see which: it claims the tag head rows and reads the boundary's
+position in one statement, writes the events, replaces the tokens, writes the tags, then the
+snapshot.
 
 The absolute counts drop by one on the real engines because Entity Framework Core batches more
 aggressively there, folding the tag head `UPDATE` into the event `INSERT` and the streamed snapshot
-`UPDATE` into its `INSERT`. **The gap is five on all three.**
+`UPDATE` into its `INSERT`. **The gap is two on all three.**
+
+It was five until three round trips were removed, and what each of them was is worth knowing, because
+each looked necessary:
+
+- The append **asked whether a snapshot row existed** before replacing it. It now attempts the
+  replace outright and inserts only if it matched nothing — zero rows affected is not a SQL error, so
+  a replace that misses costs a statement and does not poison the transaction on PostgreSQL the way a
+  failed insert would.
+- The append **read the tag head rows for their tokens, then read the boundary position separately**,
+  and the two had to describe the same instant. They are read together now, so that holds by
+  construction rather than by ordering two statements.
+- The append **read the tag head rows twice**: once to find out whether they existed, once for their
+  tokens. The second read answers both, so only the tags it did not return are created.
+
+What is left on a real engine is four statements against the streamed store's two, and the two the
+gap consists of are the tag head claim and the tag `INSERT`. Neither is easy to remove. The claim is
+the concurrency check itself. The tag rows carry the position the database assigns to the event, so
+Entity Framework Core has to write the event first and cannot batch the two inserts together —
+closing that one would mean assigning positions on the client, which changes what a position means
+rather than how it is written.
 
 ### What the engines showed
 
-Reads are a wash. Across all three engines and 10, 100 and 1000 events, DCB lands between 0.71x and
-1.33x of streams, and most of that spread is the harness rather than the store.
+Reads are a wash, and the long ones favour DCB. Across all three engines and 10, 100 and 1000 events,
+DCB lands between 0.76x and 1.40x of streams. The spread is not noise: it is almost entirely the
+length of the read.
 
 **Use `GetAggregate, snapshot only` to calibrate before believing any of the others.** It is the same
 operation in both stores — one row fetched by primary key, no boundary anywhere near it — so its
 ratio measures the harness rather than the store, and it ought to be exactly 1.00. It came out at
-1.04–1.07 on SQLite, 0.81–1.04 on SQL Server and 1.03–1.13 on PostgreSQL. A difference inside those
-bands is not a finding. The one case where it strayed furthest — SQL Server at 100 events, 0.81 —
-had a streamed baseline carrying a ±702 μs error and a `RatioSD` of 0.47, so read nothing at all into
-that group.
+0.99–1.01 on SQL Server and 1.00–1.03 on PostgreSQL, which is as good as this gets, and 1.09–1.15 on
+SQLite. A difference inside those bands is not a finding.
 
-Two results survive that test:
+SQLite is the odd one, and the reverse of what you would expect: the in-process engine has the
+*loosest* control. Its snapshot read is 22 μs against roughly 480 μs on the containers, so a fixed
+couple of microseconds anywhere in the DCB path — a longer key, an extra comparison — is 10% of it.
+That is a floor under every SQLite ratio here, not a property of the store.
 
-**`GetEvents` over a thousand events is faster under DCB** — 0.86x on SQLite, 0.88x on SQL Server,
-0.98x on PostgreSQL. Both stores fetch the same rows, and DCB reaches them through two key seeks
-rather than one seek over a wider row. PostgreSQL came out a wash this sitting where a previous one
-had it at 0.84x, so treat the effect as established on SQLite and SQL Server and unproven on
-PostgreSQL.
+Three results survive that test:
+
+**`GetEvents` over a thousand events is faster under DCB on every engine** — 0.97x on SQLite, 0.76x
+on SQL Server, 0.90x on PostgreSQL. Both stores fetch the same rows, and DCB reaches them through two
+key seeks rather than one seek over a wider row. An earlier sitting had this as established on SQLite
+and SQL Server and unproven on PostgreSQL; it now reproduces on all three, and SQL Server's margin is
+the largest in the table.
+
+**The fold behaves the same way**, which is the useful version of the same result: `GetAggregate,
+folded` over a thousand events is 0.95x on SQLite, 0.77x on SQL Server and 0.93x on PostgreSQL.
 
 **DCB allocates about 3% less over a thousand events** — 0.97x on all three engines, the steadiest
 number in the set and the one least able to be explained by container noise.
 
-Against those, the cost of a small boundary is real and points the other way. At ten events on
-SQLite — the quietest engine, and the one whose control sits tightest at 1.07 — `GetEvents` under DCB
-is 1.33x and allocates 1.24x. A boundary's fixed cost has nothing to amortise against when the entire
-read is tens of microseconds.
+Against those, the cost of a small boundary is real and points the other way. At ten events
+`GetEvents` under DCB is 1.40x on SQLite, 1.11x on PostgreSQL and 1.07x on SQL Server, and allocates
+1.24x on both SQLite and SQL Server. A boundary's fixed cost has nothing to amortise against when the
+entire read is tens of microseconds. **The crossover is around a hundred events**, where every engine
+sits within a few percent of 1.00.
 
-| `SaveAggregate`, median | Streams        | DCB            | Ratio         | Allocated |
-|-------------------------|----------------|----------------|---------------|-----------|
-| SQLite, in memory       | 0.99 – 1.27 ms | 1.84 – 2.46 ms | ~2x           | 2.6x      |
-| SQL Server, container   | 7.51 – 10.1 ms | 13.4 – 17.9 ms | **1.77–1.86** | 2.8x      |
-| PostgreSQL, container   | 3.83 – 4.03 ms | 9.98 – 10.3 ms | **2.55–2.65** | 2.4x      |
+| `SaveAggregate`, median | Streams         | DCB             | Ratio         | Allocated |
+|-------------------------|-----------------|-----------------|---------------|-----------|
+| SQLite, in memory       | 0.64 – 0.69 ms  | 1.02 – 1.06 ms  | 1.62–1.72     | 2.04x     |
+| SQL Server, container   | 8.97 – 9.30 ms  | 11.4 – 12.4 ms  | **1.31–1.35** | 2.15x     |
+| PostgreSQL, container   | 2.71 – 2.85 ms  | 5.85 – 6.28 ms  | **2.13–2.20** | 1.89x     |
 
 The ranges span 10, 100 and 1000 already-stored events. **An append's cost is flat in the length of
-the history behind it** — on both containers the ratio moves by less than 0.1 across two orders of
-magnitude, which is the firmest thing in this table. The SQLite spread, 1.50–2.27, is noise rather
-than signal: its standard deviation of 0.35–0.90 ms is the size of its own mean.
+the history behind it** — on all three engines the ratio moves by less than 0.1 across two orders of
+magnitude, which is the firmest thing in this table.
 
-Compare the ratios, never the milliseconds, when re-running. Two runs of the *same commit* on this
-machine ten minutes apart put the SQL Server streamed append at 13.8 ms and then 18.9 ms — a 37%
-spread with nothing changed. The ratios were stable across the same pair. If you need to know whether
-a change moved the store, run the old and new commits alternately in one sitting and compare within
-each pass; a table like this one from two different sittings cannot tell you.
+One row to distrust: PostgreSQL at 1000 events reported a streamed mean of 3.78 ms against a median
+of 2.85 ms, with a standard deviation of 9.4 ms and a `RatioSD` of 3.20. Something outside the store
+stalled during that group. The median is in line with the other two sizes, which is the reason this
+table reports medians at all.
+
+These numbers replaced a set measured before the append lost three round trips, and the gap narrowed
+on every engine: SQL Server from 1.77–1.86 to 1.31–1.35, PostgreSQL from 2.55–2.65 to 2.13–2.20,
+allocation from 2.8x and 2.4x to 2.15x and 1.89x. Only part of that is the change — the two sets are
+from different machines, so the *ratios* carry the comparison and the milliseconds do not. What the
+change was worth on one machine, measured properly by alternating the two commits in a single
+sitting, is a 26% faster append on PostgreSQL and 14% on SQL Server, with allocation down 20% and
+25%.
+
+Compare the ratios, never the milliseconds, when re-running. Two runs of the *same commit* on the
+earlier machine ten minutes apart put the SQL Server streamed append at 13.8 ms and then 18.9 ms — a
+37% spread with nothing changed. The ratios were stable across the same pair. If you need to know
+whether a change moved the store, run the old and new commits alternately in one sitting and compare
+within each pass; a table like this one from two different sittings cannot tell you. That protocol is
+what separated the append change above from a machine which drifted 13% across the same runs.
 
 The original reason for running more than one engine was a prediction: that SQLite would understate
-the DCB append cost, because five extra round trips are nearly free in process. **It was wrong.** The
+the DCB append cost, because the extra round trips are nearly free in process. **It was wrong.** The
 absolute cost rises several-fold on a real engine and the ratio stays in the same band, because a
 streamed append pays transaction and commit costs that scale the same way.
 
 The ratio does not track engine speed either. PostgreSQL has the fastest streamed append and the
-largest DCB ratio, because its baseline is cheaper while five extra commands cost much the same.
+largest DCB ratio, because its baseline is cheaper while the extra commands cost much the same.
 
 What no local container can answer is distance: they run on this machine, so a round trip is loopback
 rather than a network hop. Keep the round-trip table for that case.
@@ -142,9 +190,23 @@ parameter, so it assumes one row on each side, picks a nested loop semi join and
 match as a filter rather than an index condition.
 
 That measured 77 ms against 3.3 ms for streams — a 21x "regression" that was entirely the missing
-statistics. One `ANALYZE` takes it to 3 ms. The harness now runs one after seeding, so the benchmarks
+statistics. One `ANALYZE` takes it to 3 ms. The harness runs one after seeding, so the benchmarks
 measure the store rather than autovacuum lag. SQL Server needs no equivalent: it creates missing
 statistics itself on first use, which is why it never showed this.
+
+**The 21x did not reproduce when it was checked again**, on PostgreSQL 15.1 on the newer machine, with
+the `ANALYZE` suppressed and verified suppressed rather than assumed. A thousand freshly inserted rows
+and an immediate fold gave 1.20x, not 21x — PostgreSQL had usable statistics anyway, presumably from
+autoanalyze firing after the bulk insert. Statistics still matter and the `ANALYZE` still earns its
+place: the same fold is 0.87x with it and 1.20x without. But the order of magnitude above belongs to
+one sitting on one machine and should not be quoted as what missing statistics cost.
+
+Two things follow. A boundary predicate really is `= ANY(@array)` on Npgsql at every cardinality,
+including a single tag, where SQL Server expands the collection to ordinary parameters — that part
+held up. And rewriting it to an equality was built and measured: it is worth about 10% on the
+stale-statistics read and nothing at all once statistics exist, which was not enough to justify the
+expression-building machinery it needed. If the estimate ever does become the problem, that is the
+knob, and `EF.Constant` or Npgsql's parameterised-collection option reach it without new code.
 
 ### Reading the timings
 

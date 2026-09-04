@@ -27,10 +27,10 @@ namespace Memoria.Benchmarks.Store;
 /// move to a real one.
 /// </para>
 /// <para>
-/// It does: appends cost 1.9x to 2.6x on all three, though the absolute cost is several times higher
+/// It does: appends cost 1.3x to 2.2x on all three, though the absolute cost is several times higher
 /// on a real engine. What no local container can answer is distance — they run on this machine, so a
 /// round trip is loopback rather than a network hop. <see cref="RoundTripReport"/> is for that case:
-/// a DCB append issues five more commands than a streamed one on every engine, and that count is
+/// a DCB append issues two more commands than a streamed one on every engine, and that count is
 /// what a remote database charges for.
 /// </para>
 /// </remarks>

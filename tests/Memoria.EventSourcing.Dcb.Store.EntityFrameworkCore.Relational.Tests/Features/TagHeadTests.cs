@@ -222,11 +222,17 @@ public class TagHeadTests : RelationalTestBase
     [Fact]
     public async Task A_conditioned_append_reads_its_tokens_and_its_boundary_in_one_statement()
     {
+        // Establishes the head row first: a tag nobody has appended under yet is read once to find
+        // nothing, created, and read again, which is the first-append path rather than this one.
+        await Context.SaveEvents([Reserved("a1", "s7")], condition: null);
+        var boundary = TagQuery.AnyOf(SeatA1);
+        var latest = await Context.GetLatestPosition(boundary);
+
         var interceptor = new CapturingCommandInterceptor();
         await using var capturing = CreateContext(interceptor);
 
-        var result = await capturing.SaveEvents([Reserved("a1", "s7")],
-            AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+        var result = await capturing.SaveEvents([Reserved("a1", "s8")],
+            new AppendCondition(boundary, latest));
 
         result.IsSuccess.Should().BeTrue("the append itself is uncontended");
 
@@ -245,6 +251,66 @@ public class TagHeadTests : RelationalTestBase
                     command.Contains("DcbEventTags", StringComparison.Ordinal)
                     && !command.Contains("DcbTagHeads", StringComparison.Ordinal),
                 "nothing reads the boundary on its own any more");
+        }
+    }
+
+    /// <summary>
+    /// An append over tags that already have head rows asks about them once.
+    /// </summary>
+    /// <remarks>
+    /// The rows were read to find out whether they existed, and then read again for their tokens.
+    /// The first read's answer is a subset of the second's — a row that came back has both — so the
+    /// existence check is free once the token read reports which tags it found. This does not skip
+    /// the check: a missing row is still detected on every append, and still created. See
+    /// <see cref="An_append_restores_a_tag_head_row_that_has_gone_missing"/> for why skipping it
+    /// would be silent and permanent.
+    /// </remarks>
+    [Fact]
+    public async Task An_append_over_known_tags_reads_the_head_rows_once()
+    {
+        // Establishes the head row, so this append finds it rather than creating it.
+        await Context.SaveEvents([Reserved("a1", "s7")], condition: null);
+        var boundary = TagQuery.AnyOf(SeatA1);
+        var latest = await Context.GetLatestPosition(boundary);
+
+        var interceptor = new CapturingCommandInterceptor();
+        await using var capturing = CreateContext(interceptor);
+
+        var result = await capturing.SaveEvents([Reserved("a1", "s8")],
+            new AppendCondition(boundary, latest));
+
+        result.IsSuccess.Should().BeTrue();
+
+        interceptor.Commands
+            .Where(command => command.TrimStart().StartsWith("SELECT", StringComparison.Ordinal))
+            .Should().ContainSingle(command => command.Contains("DcbTagHeads", StringComparison.Ordinal),
+                "existence and tokens come from the same read");
+    }
+
+    /// <summary>
+    /// An append that creates its own head row still guards on it.
+    /// </summary>
+    /// <remarks>
+    /// The first append under a tag reads the rows, finds none, creates one, and reads again. The
+    /// second read is what makes the row guardable: without it the append would hold an empty set of
+    /// heads, emit no update, and commit with no guard — succeeding, silently, exactly as it would
+    /// if the row had gone missing.
+    /// </remarks>
+    [Fact]
+    public async Task A_conditioned_append_that_creates_its_head_row_still_guards_on_it()
+    {
+        var interceptor = new CapturingCommandInterceptor();
+        await using var capturing = CreateContext(interceptor);
+
+        var result = await capturing.SaveEvents([Reserved("a1", "s7")],
+            AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+        using (new AssertionScope())
+        {
+            result.IsSuccess.Should().BeTrue();
+            interceptor.TagHeadUpdates.Should().ContainSingle(
+                "a row this append created is still a row it has to claim");
+            (await TokenFor(SeatA1)).Should().NotBeNull();
         }
     }
 

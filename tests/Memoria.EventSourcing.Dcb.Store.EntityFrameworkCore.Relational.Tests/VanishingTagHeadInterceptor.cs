@@ -16,6 +16,12 @@ namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Relational.Tests;
 /// once happen twice.
 /// </para>
 /// <para>
+/// Fires before <em>every</em> such read, not once. An append that finds no head rows creates them
+/// and reads again, so removing them once only exercises that recovery; the case this reproduces is
+/// the one where the rows are not there for either read, and the append has to answer its condition
+/// without them.
+/// </para>
+/// <para>
 /// Targets the probe by the two tables it names, rather than by counting reads, so it keeps working
 /// if another statement is added ahead of it. On the same connection, which SQLite allows and Npgsql
 /// does not — the same constraint <see cref="StaleTagHeadInterceptor"/> carries.
@@ -36,7 +42,7 @@ public class VanishingTagHeadInterceptor : DbCommandInterceptor
         var isTheProbe = command.CommandText.Contains("DcbTagHeads", StringComparison.Ordinal)
                          && command.CommandText.Contains("DcbEventTags", StringComparison.Ordinal);
 
-        if (!_fired && isTheProbe)
+        if (isTheProbe)
         {
             _fired = true;
 

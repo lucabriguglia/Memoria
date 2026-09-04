@@ -59,7 +59,7 @@ public static partial class DcbDbContextExtensions
 
         try
         {
-            await dcbDbContext.EnsureTagHeads(affectedTags, cancellationToken);
+            var heads = await dcbDbContext.ClaimTagHeads(affectedTags, condition, cancellationToken);
 
             await using var transaction = await dcbDbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -67,7 +67,7 @@ public static partial class DcbDbContextExtensions
 
             if (events.Length > 0)
             {
-                var appendResult = await dcbDbContext.AppendCore(events, condition, affectedTags,
+                var appendResult = await dcbDbContext.AppendCore(events, condition, affectedTags, heads,
                     cancellationToken);
 
                 if (appendResult.IsNotSuccess)

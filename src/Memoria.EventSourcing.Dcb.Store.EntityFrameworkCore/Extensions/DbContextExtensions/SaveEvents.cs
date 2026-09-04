@@ -72,11 +72,12 @@ public static partial class DcbDbContextExtensions
 
         try
         {
-            await dcbDbContext.EnsureTagHeads(affectedTags, cancellationToken);
+            var heads = await dcbDbContext.ClaimTagHeads(affectedTags, condition, cancellationToken);
 
             await using var transaction = await dcbDbContext.Database.BeginTransactionAsync(cancellationToken);
 
-            var appendResult = await dcbDbContext.AppendCore(events, condition, affectedTags, cancellationToken);
+            var appendResult = await dcbDbContext.AppendCore(events, condition, affectedTags, heads,
+                cancellationToken);
             if (appendResult.IsNotSuccess)
             {
                 return appendResult.Failure!;
@@ -133,26 +134,15 @@ public static partial class DcbDbContextExtensions
     /// with it would claim to have consumed an event it never applied.
     /// </returns>
     private static async Task<Result<long>> AppendCore(this IDcbDbContext dcbDbContext, TaggedEvent[] events,
-        AppendCondition? condition, List<string> affectedTags, CancellationToken cancellationToken)
+        AppendCondition? condition, List<string> affectedTags, List<TagHeadProbe> heads,
+        CancellationToken cancellationToken)
     {
         if (condition is not null)
         {
-            // The tokens and the position the condition is checked against come back together, so
-            // they belong to the same observation by construction rather than by being ordered. The
-            // boundary read rides along as a subquery over nothing in the head row, so the engine
-            // evaluates it once rather than once per tag.
-            var boundaryPositions = dcbDbContext.PositionsInside(condition.Query);
-
-            var heads = await dcbDbContext.DcbTagHeads.AsNoTracking()
-                .Where(head => affectedTags.Contains(head.Tag))
-                .Select(head => new TagHeadProbe(head.Tag, head.Token,
-                    boundaryPositions.Max(position => (long?)position)))
-                .ToListAsync(cancellationToken);
-
-            // Every affected tag has a head row by now, because EnsureTagHeads just created the
-            // missing ones — so this reads the boundary again only if they were removed underneath
-            // it. Taking the empty case as an empty boundary instead would let an append conditioned
-            // on NoEvents through against a boundary full of events.
+            // Every affected tag had a head row when they were claimed, so this reads the boundary
+            // again only if they were removed underneath it. Taking the empty case as an empty
+            // boundary instead would let an append conditioned on NoEvents through against a
+            // boundary full of events.
             var latestPosition = heads.Count > 0
                 ? heads[0].LatestPosition ?? AppendCondition.NoEvents
                 : await dcbDbContext.GetLatestPosition(condition.Query, cancellationToken: cancellationToken);
@@ -253,29 +243,94 @@ public static partial class DcbDbContextExtensions
     }
 
     /// <summary>
-    /// Creates any tag head rows the append will contend on, before the append's own transaction.
+    /// Reads the tag head rows the append will contend on, creating any that do not exist yet.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// One read, not two. Finding out whether a row exists and reading the token it carries are the
+    /// same question asked of the same row, so the read that returns the tokens also says which tags
+    /// it found — and only the tags it did not are created. The existence check is not skipped or
+    /// remembered between appends: a head row that has gone missing is still detected here on every
+    /// append, which is what stops an append proceeding with no guard at all. See
+    /// <c>TagHeadTests.An_append_restores_a_tag_head_row_that_has_gone_missing</c>.
+    /// </para>
+    /// <para>
+    /// Runs before the append's transaction opens, for two reasons. Creating a row has to happen
+    /// outside it — two appends introducing the same tag collide on the primary key, and on
+    /// PostgreSQL a failed statement aborts the entire transaction it ran in, so tolerating that race
+    /// from inside would poison the append. And the transaction then opens with its answer already in
+    /// hand, so the head rows every overlapping append contends on are held for less time.
+    /// </para>
+    /// <para>
+    /// Reading the boundary outside the transaction is safe because it is the token, not the
+    /// transaction, that makes the position trustworthy. Any append that could move this boundary
+    /// must write under one of its tags, so it must replace a token captured here, so the guarded
+    /// update inside the transaction matches nothing and the append is refused. Widening that window
+    /// changes which of two already-correct paths reports the conflict, not whether it is reported.
+    /// </para>
+    /// </remarks>
+    private static async Task<List<TagHeadProbe>> ClaimTagHeads(this IDcbDbContext dcbDbContext,
+        List<string> affectedTags, AppendCondition? condition, CancellationToken cancellationToken)
+    {
+        var heads = await dcbDbContext.ReadTagHeads(affectedTags, condition, cancellationToken);
+
+        var missing = affectedTags
+            .Except(heads.Select(head => head.Tag), StringComparer.Ordinal)
+            .ToList();
+
+        if (missing.Count == 0)
+        {
+            return heads;
+        }
+
+        await dcbDbContext.CreateTagHeads(missing, cancellationToken);
+
+        // Read again rather than assuming what was just written: the tokens have to be the stored
+        // ones, and another append introducing the same tag may have won the race to create it.
+        return await dcbDbContext.ReadTagHeads(affectedTags, condition, cancellationToken);
+    }
+
+    /// <summary>
+    /// Reads the stored tag head rows among the given tags, with the boundary position when there is
+    /// a condition to check against it.
+    /// </summary>
+    /// <remarks>
+    /// The tokens and the position come back together, so they belong to the same observation by
+    /// construction rather than by being ordered. The boundary read rides along as a subquery over
+    /// nothing in the head row, so the engine evaluates it once rather than once per tag. An
+    /// unconditional append has no boundary to check and asks for no position.
+    /// </remarks>
+    private static Task<List<TagHeadProbe>> ReadTagHeads(this IDcbDbContext dcbDbContext,
+        List<string> affectedTags, AppendCondition? condition, CancellationToken cancellationToken)
+    {
+        var heads = dcbDbContext.DcbTagHeads.AsNoTracking()
+            .Where(head => affectedTags.Contains(head.Tag));
+
+        if (condition is null)
+        {
+            return heads
+                .Select(head => new TagHeadProbe(head.Tag, head.Token, null))
+                .ToListAsync(cancellationToken);
+        }
+
+        var boundaryPositions = dcbDbContext.PositionsInside(condition.Query);
+
+        return heads
+            .Select(head => new TagHeadProbe(head.Tag, head.Token,
+                boundaryPositions.Max(position => (long?)position)))
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Creates head rows for tags that have none.
     /// </summary>
     /// <remarks>
     /// A head row carries no domain meaning until an event references its tag, so creating one early
-    /// is harmless and creating one twice is not a conflict. It has to happen outside the append's
-    /// transaction: two appends introducing the same tag collide on the primary key, and on
-    /// PostgreSQL a failed statement aborts the entire transaction it ran in — so tolerating that
-    /// race from inside the append would poison the append.
+    /// is harmless and creating one twice is not a conflict.
     /// </remarks>
-    private static async Task EnsureTagHeads(this IDcbDbContext dcbDbContext, List<string> tags,
+    private static async Task CreateTagHeads(this IDcbDbContext dcbDbContext, List<string> missing,
         CancellationToken cancellationToken)
     {
-        var existing = await dcbDbContext.DcbTagHeads.AsNoTracking()
-            .Where(head => tags.Contains(head.Tag))
-            .Select(head => head.Tag)
-            .ToListAsync(cancellationToken);
-
-        var missing = tags.Except(existing, StringComparer.Ordinal).ToList();
-        if (missing.Count == 0)
-        {
-            return;
-        }
-
         foreach (var tag in missing)
         {
             dcbDbContext.DcbTagHeads.Add(new DcbTagHeadEntity { Tag = tag, Token = Guid.NewGuid() });

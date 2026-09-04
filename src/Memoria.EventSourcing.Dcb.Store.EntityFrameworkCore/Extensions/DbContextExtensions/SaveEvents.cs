@@ -94,6 +94,18 @@ public static partial class DcbDbContextExtensions
     }
 
     /// <summary>
+    /// One tag head row as a conditioned append reads it, with the boundary position that was true
+    /// at the same instant.
+    /// </summary>
+    /// <param name="Tag">The tag.</param>
+    /// <param name="Token">The token to guard the update on.</param>
+    /// <param name="LatestPosition">
+    /// The highest position inside the condition's boundary, or null when it is empty. The same value
+    /// on every row — it is the boundary's, not the tag's.
+    /// </param>
+    private sealed record TagHeadProbe(string Tag, Guid Token, long? LatestPosition);
+
+    /// <summary>
     /// The tags an append contends on: every tag it writes under, and every tag its condition names.
     /// </summary>
     /// <remarks>
@@ -125,17 +137,25 @@ public static partial class DcbDbContextExtensions
     {
         if (condition is not null)
         {
-            // Tracked, so replacing each Token below emits `WHERE Tag = @t AND Token = @old`. That is
-            // the check: an overlapping append committing first replaces the token and this update
-            // matches nothing.
-            var heads = await dcbDbContext.DcbTagHeads
+            // The tokens and the position the condition is checked against come back together, so
+            // they belong to the same observation by construction rather than by being ordered. The
+            // boundary read rides along as a subquery over nothing in the head row, so the engine
+            // evaluates it once rather than once per tag.
+            var boundaryPositions = dcbDbContext.PositionsInside(condition.Query);
+
+            var heads = await dcbDbContext.DcbTagHeads.AsNoTracking()
                 .Where(head => affectedTags.Contains(head.Tag))
+                .Select(head => new TagHeadProbe(head.Tag, head.Token,
+                    boundaryPositions.Max(position => (long?)position)))
                 .ToListAsync(cancellationToken);
 
-            // Read after the heads are loaded, so the tokens captured above belong to the same
-            // observation as this position.
-            var latestPosition = await dcbDbContext.GetLatestPosition(condition.Query,
-                cancellationToken: cancellationToken);
+            // Every affected tag has a head row by now, because EnsureTagHeads just created the
+            // missing ones — so this reads the boundary again only if they were removed underneath
+            // it. Taking the empty case as an empty boundary instead would let an append conditioned
+            // on NoEvents through against a boundary full of events.
+            var latestPosition = heads.Count > 0
+                ? heads[0].LatestPosition ?? AppendCondition.NoEvents
+                : await dcbDbContext.GetLatestPosition(condition.Query, cancellationToken: cancellationToken);
 
             if (latestPosition != condition.AfterPosition)
             {
@@ -149,7 +169,17 @@ public static partial class DcbDbContextExtensions
             // Ordered so the updates are emitted in a consistent order across transactions.
             foreach (var head in heads.OrderBy(head => head.Tag, StringComparer.Ordinal))
             {
-                head.Token = Guid.NewGuid();
+                // Attached carrying the token that was read, then changed. Attach takes the original
+                // values from the instance, so replacing Token emits
+                // `WHERE Tag = @t AND Token = @old` — that is the check: an overlapping append
+                // committing first replaces the token and this update matches nothing. Attaching a
+                // row built here rather than loading a tracked one is what lets the read above be a
+                // projection, and so lets it carry the position too.
+                var tracked = new DcbTagHeadEntity { Tag = head.Tag, Token = head.Token };
+
+                dcbDbContext.DcbTagHeads.Attach(tracked);
+
+                tracked.Token = Guid.NewGuid();
             }
         }
         else

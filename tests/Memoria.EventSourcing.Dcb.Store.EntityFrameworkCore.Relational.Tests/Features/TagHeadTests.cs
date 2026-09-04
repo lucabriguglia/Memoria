@@ -204,6 +204,82 @@ public class TagHeadTests : RelationalTestBase
     }
 
     /// <summary>
+    /// The tokens and the boundary position come back from one statement, not two.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// They have to belong to the same observation — a position read after the tokens were captured
+    /// could reflect an append the tokens do not — and reading them together is the only way to get
+    /// that for free rather than by ordering two round trips inside the transaction that holds the
+    /// tag head rows.
+    /// </para>
+    /// <para>
+    /// Asserted on which tables each read touches rather than on a count, because
+    /// <c>EnsureTagHeads</c> reads <c>DcbTagHeads</c> too: a count cannot say which of the two reads
+    /// went away.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task A_conditioned_append_reads_its_tokens_and_its_boundary_in_one_statement()
+    {
+        var interceptor = new CapturingCommandInterceptor();
+        await using var capturing = CreateContext(interceptor);
+
+        var result = await capturing.SaveEvents([Reserved("a1", "s7")],
+            AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+        result.IsSuccess.Should().BeTrue("the append itself is uncontended");
+
+        var reads = interceptor.Commands
+            .Where(command => command.TrimStart().StartsWith("SELECT", StringComparison.Ordinal))
+            .ToList();
+
+        using (new AssertionScope())
+        {
+            reads.Should().ContainSingle(command =>
+                    command.Contains(nameof(DcbTagHeadEntity.Token), StringComparison.Ordinal)
+                    && command.Contains("DcbEventTags", StringComparison.Ordinal),
+                "the tokens and the boundary position are read together");
+
+            reads.Should().NotContain(command =>
+                    command.Contains("DcbEventTags", StringComparison.Ordinal)
+                    && !command.Contains("DcbTagHeads", StringComparison.Ordinal),
+                "nothing reads the boundary on its own any more");
+        }
+    }
+
+    /// <summary>
+    /// A probe that comes back empty reads the boundary again rather than treating it as empty.
+    /// </summary>
+    /// <remarks>
+    /// The tokens and the boundary position arrive together, which means an empty result carries no
+    /// position — and the position it carries no answer for is the one every condition is checked
+    /// against. Taking that silence for <c>NoEvents</c> would let an append conditioned on "this has
+    /// never happened" through against a boundary full of events, which is the one thing a condition
+    /// exists to prevent.
+    /// </remarks>
+    [Fact]
+    public async Task A_conditioned_append_whose_tag_heads_vanish_mid_read_still_sees_its_boundary()
+    {
+        await Context.SaveEvents([Reserved("a1", "s7")], condition: null);
+
+        var vanishing = new VanishingTagHeadInterceptor();
+        await using var racing = CreateContext(vanishing);
+
+        // The boundary already holds an event, so "nothing appended for it" is false and this append
+        // has to be refused however the head rows behave.
+        var result = await racing.SaveEvents([Reserved("a1", "s8")],
+            AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+        using (new AssertionScope())
+        {
+            vanishing.Fired.Should().BeTrue("the race is only reproduced if the probe was intercepted");
+            result.IsNotSuccess.Should().BeTrue("the boundary is not empty, whatever the head rows say");
+            result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
+        }
+    }
+
+    /// <summary>
     /// The third thing the guard needs, after the token declaration and the tracked read: the row has
     /// to exist at all. Creating it is what <c>EnsureTagHeads</c> does before every append.
     /// </summary>

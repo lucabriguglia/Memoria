@@ -1,4 +1,5 @@
 using FluentAssertions;
+using FluentAssertions.Execution;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Relational.Tests.Models;
 using Microsoft.EntityFrameworkCore;
@@ -279,6 +280,172 @@ public class SnapshotTests : RelationalTestBase
 
         var read = await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOnly);
         read.Value!.ReservedBy.Should().Be("s7", "the append wrote a snapshot, so SnapshotOnly finds one");
+    }
+
+    // -- what a snapshot write costs ------------------------------------------------------------
+
+    /// <summary>
+    /// Replacing a snapshot is one statement, not a probe followed by one.
+    /// </summary>
+    /// <remarks>
+    /// The probe was a round trip taken inside the transaction holding the tag head rows, which is
+    /// the one place a wasted round trip is paid for by every other append over those tags. Asserted
+    /// on the statement kinds rather than the count: attempting the insert first and falling back to
+    /// an update would also be two statements here, and would also be one on a fresh row — the count
+    /// alone cannot tell the two designs apart.
+    /// </remarks>
+    [Fact]
+    public async Task Replacing_a_snapshot_does_not_first_ask_whether_one_exists()
+    {
+        var aggregate = new SeatAggregate();
+        aggregate.Reserve("a1", "s7");
+        await Context.SaveAggregate(new SeatId("a1"), aggregate, condition: null);
+
+        var interceptor = new CapturingCommandInterceptor();
+        await using var capturing = CreateContext(interceptor);
+
+        var again = new SeatAggregate();
+        again.Reserve("a1", "s8");
+        var result = await capturing.SaveAggregate(new SeatId("a1"), again, condition: null);
+
+        result.IsSuccess.Should().BeTrue();
+
+        interceptor.SnapshotStatements.Should()
+            .ContainSingle("the row is replaced, and nothing needs asking first")
+            .Which.Should().Contain("UPDATE", Exactly.Once());
+    }
+
+    [Fact]
+    public async Task Writing_a_snapshot_for_the_first_time_still_creates_the_row()
+    {
+        var interceptor = new CapturingCommandInterceptor();
+        await using var capturing = CreateContext(interceptor);
+
+        var aggregate = new SeatAggregate();
+        aggregate.Reserve("a1", "s7");
+
+        var result = await capturing.SaveAggregate(new SeatId("a1"), aggregate, condition: null);
+
+        result.IsSuccess.Should().BeTrue();
+        interceptor.SnapshotStatements.Should().HaveCountLessThanOrEqualTo(2,
+            "a row that is not there costs one failed replace and one insert, and no more");
+
+        (await Context.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOnly))
+            .Value!.ReservedBy.Should().Be("s7");
+    }
+
+    [Fact]
+    public async Task Replacing_a_projection_snapshot_does_not_first_ask_whether_one_exists()
+    {
+        await Append(Reserved("a1", "s7"));
+        var projectionId = new SeatSummaryId("a1");
+        await Context.SaveProjection(projectionId, (await Context.GetInMemoryProjection(projectionId)).Value!);
+
+        var interceptor = new CapturingCommandInterceptor();
+        await using var capturing = CreateContext(interceptor);
+
+        var result = await capturing.SaveProjection(projectionId,
+            (await Context.GetInMemoryProjection(projectionId)).Value!);
+
+        result.IsSuccess.Should().BeTrue();
+        interceptor.SnapshotStatements.Should().ContainSingle()
+            .Which.Should().Contain("UPDATE", Exactly.Once());
+    }
+
+    /// <summary>
+    /// A caller that has just looked and found nothing inserts outright, without a doomed replace
+    /// first.
+    /// </summary>
+    /// <remarks>
+    /// This is the whole reason <c>WriteSnapshot</c> still takes an <c>exists</c> answer rather than
+    /// always assuming a row is there. Every read that folds a model has just missed on the same row,
+    /// so it knows; without this the first fold of every model would pay a failed statement.
+    /// </remarks>
+    [Fact]
+    public async Task A_first_fold_inserts_its_snapshot_without_attempting_a_replace()
+    {
+        await Append(Reserved("a1", "s7"));
+
+        var interceptor = new CapturingCommandInterceptor();
+        await using var capturing = CreateContext(interceptor);
+
+        var folded = await capturing.GetAggregate(new SeatId("a1"), ReadMode.SnapshotOrCreate);
+
+        folded.Value!.ReservedBy.Should().Be("s7");
+
+        // Two statements touch the table: the read that missed, and the insert. What matters is that
+        // no replace was attempted between them.
+        using (new AssertionScope())
+        {
+            interceptor.SnapshotStatements.Should()
+                .ContainSingle(statement => statement.Contains("INSERT", StringComparison.Ordinal));
+
+            interceptor.SnapshotStatements.Should()
+                .NotContain(statement => statement.Contains("UPDATE", StringComparison.Ordinal),
+                    "the fold already knows there is no row to replace");
+        }
+    }
+
+    /// <summary>
+    /// Only a replace that matched no row falls through to an insert. A real failure does not.
+    /// </summary>
+    /// <remarks>
+    /// The fallback exists for one case: the row was not there. Catching more widely would turn a
+    /// missing table or a broken connection into a second doomed statement, and report that one's
+    /// error instead of the original. Both still fail the save, which is why
+    /// <c>A_failed_snapshot_write_takes_the_events_with_it</c> cannot tell the two apart — so this
+    /// asserts on how many statements were attempted.
+    /// </remarks>
+    [Fact]
+    public async Task A_snapshot_write_that_fails_for_a_real_reason_is_not_retried_as_an_insert()
+    {
+        var interceptor = new CapturingCommandInterceptor();
+        await using var capturing = CreateContext(interceptor);
+
+        await Context.Database.ExecuteSqlRawAsync("DROP TABLE DcbSnapshots;");
+
+        var aggregate = new SeatAggregate();
+        aggregate.Reserve("a1", "s7");
+
+        var result = await capturing.SaveAggregate(new SeatId("a1"), aggregate, condition: null);
+
+        result.IsNotSuccess.Should().BeTrue();
+        interceptor.SnapshotStatements.Should()
+            .ContainSingle("a missing table is not a missing row, and is not worth a second attempt");
+    }
+
+    /// <summary>
+    /// A replaced snapshot keeps the stamps of the write that created it.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Interceptors.AuditInterceptor"/> excludes the creation stamps from an UPDATE
+    /// because the rewrite hands Entity Framework Core a freshly built row, on which they are
+    /// default. That only works while the row reaches the tracker as Modified — a path that inserted
+    /// instead would stamp them anew and lose when the state was first folded.
+    /// </remarks>
+    [Fact]
+    public async Task Replacing_a_snapshot_keeps_the_creation_stamps_of_the_write_that_made_it()
+    {
+        var created = TimeProvider.GetUtcNow();
+
+        var aggregate = new SeatAggregate();
+        aggregate.Reserve("a1", "s7");
+        await Context.SaveAggregate(new SeatId("a1"), aggregate, condition: null);
+
+        TimeProvider.Advance(TimeSpan.FromHours(1));
+
+        var again = new SeatAggregate();
+        again.Reserve("a1", "s8");
+        await Context.SaveAggregate(new SeatId("a1"), again, condition: null);
+
+        var stored = await Context.DcbSnapshots.AsNoTracking().SingleAsync();
+
+        using (new AssertionScope())
+        {
+            stored.CreatedDate.Should().Be(created, "the row was created then, not now");
+            stored.CreatedBy.Should().Be("TestUser");
+            stored.UpdatedDate.Should().Be(created.AddHours(1), "the rewrite is what moved this one");
+        }
     }
 
     [Fact]

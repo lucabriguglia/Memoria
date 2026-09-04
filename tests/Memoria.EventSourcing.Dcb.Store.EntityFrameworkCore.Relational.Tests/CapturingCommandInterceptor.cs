@@ -49,6 +49,19 @@ public class CapturingCommandInterceptor : DbCommandInterceptor
     }
 
     /// <summary>
+    /// Every statement that touched the snapshot table, in order.
+    /// </summary>
+    /// <remarks>
+    /// Exposed whole rather than as a count, because what matters is the <em>kind</em> of each one: a
+    /// write that probes for the row before replacing it and a write that just replaces it differ
+    /// only in whether a SELECT appears first.
+    /// </remarks>
+    public IReadOnlyList<string> SnapshotStatements =>
+    [
+        .. _commands.Where(command => command.Contains("DcbSnapshots", StringComparison.Ordinal))
+    ];
+
+    /// <summary>
     /// The statements that updated the tag head table.
     /// </summary>
     public IReadOnlyList<string> TagHeadUpdates =>

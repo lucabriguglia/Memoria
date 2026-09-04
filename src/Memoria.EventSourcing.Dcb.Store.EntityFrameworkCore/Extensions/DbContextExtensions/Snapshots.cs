@@ -33,31 +33,52 @@ public static partial class DcbDbContextExtensions
     /// <param name="snapshot">The snapshot row to write.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <param name="exists">
-    /// Whether a row with this identity is already stored, when the caller knows it. Null asks for it
-    /// to be looked up.
+    /// Whether a row with this identity is already stored, when the caller knows it. Null means
+    /// unknown, and is taken to mean one is — the common case for a save.
     /// </param>
     /// <remarks>
+    /// <para>
     /// Every read that writes a snapshot back has just read the same row to decide whether to fold
-    /// from it, so it already holds the answer and passes it. Asking again would be a round trip for
-    /// a fact the caller has — and in <see cref="SaveAggregate{T}"/> a round trip inside the
-    /// transaction holding the tag head rows, which is the one place a wasted one is paid for by
-    /// every other append over those tags. Only the two save paths, which are handed a model rather
-    /// than reading one, have nothing to pass.
+    /// from it, so it already holds the answer and passes it. Only the two save paths, which are
+    /// handed a model rather than reading one, have nothing to pass — and they replace far more often
+    /// than they create, because a model is saved once per decision and created once ever.
+    /// </para>
+    /// <para>
+    /// So an unknown answer is assumed to be "it exists" and the replace is attempted outright. A
+    /// replace that matches no row costs nothing but a failed statement — zero rows affected is not a
+    /// SQL error, so it does not poison the transaction on PostgreSQL the way a failed insert would;
+    /// Entity Framework Core raises <see cref="DbUpdateConcurrencyException"/> from its own
+    /// rows-affected check. Asking first instead would be a round trip on every save to spare the
+    /// first one, and in <see cref="SaveAggregate{T}"/> a round trip inside the transaction holding
+    /// the tag head rows, which is the one place a wasted one is paid for by every other append over
+    /// those tags.
+    /// </para>
     /// </remarks>
     private static async Task WriteSnapshot(this IDcbDbContext dcbDbContext, DcbSnapshotEntity snapshot,
         CancellationToken cancellationToken, bool? exists = null)
     {
-        exists ??= await dcbDbContext.DcbSnapshots.AsNoTracking()
-            .AnyAsync(existing => existing.Id == snapshot.Id, cancellationToken);
+        if (exists is not false)
+        {
+            try
+            {
+                dcbDbContext.DcbSnapshots.Update(snapshot);
+                await dcbDbContext.SaveChangesAsync(cancellationToken);
+                dcbDbContext.ChangeTracker.Clear();
 
-        if (exists is true)
-        {
-            dcbDbContext.DcbSnapshots.Update(snapshot);
+                return;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // There was no row to replace. Anything else — a missing table, a broken connection —
+                // is a real failure and is left to the caller, which turns it into a storage failure
+                // and rolls the append back with it.
+                //
+                // The tracker is deliberately not cleared: Add below moves this same instance from
+                // Modified to Added, which is exactly the state the insert needs.
+            }
         }
-        else
-        {
-            dcbDbContext.DcbSnapshots.Add(snapshot);
-        }
+
+        dcbDbContext.DcbSnapshots.Add(snapshot);
 
         await dcbDbContext.SaveChangesAsync(cancellationToken);
         dcbDbContext.ChangeTracker.Clear();

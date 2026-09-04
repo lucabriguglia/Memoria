@@ -56,6 +56,28 @@ public class GetLatestPositionTests : TestBase
         position.Should().Be(1);
     }
 
+    /// <summary>
+    /// A union is at the highest position carrying <em>any</em> of its tags, not the highest carrying
+    /// the first one.
+    /// </summary>
+    /// <remarks>
+    /// The single-tag cases above cannot see the difference, and neither can the intersection cases,
+    /// which take the other branch of the query builder entirely. Without this, a union that read
+    /// only its first tag would satisfy every other test here — and every append conditioned on it
+    /// would be accepted against a boundary that had already moved under one of its other tags.
+    /// </remarks>
+    [Fact]
+    public async Task A_union_is_at_the_highest_position_across_all_its_tags()
+    {
+        await Seed(1, new SeatReservedEvent("a1", "s7"), SeatA1.ToString());
+        await Seed(7, new SeatReservedEvent("a2", "s8"), SeatA2.ToString());
+        await Seed(9, new SeatReservedEvent("a3", "s9"), "seat:a3");
+
+        var position = await Context.GetLatestPosition(TagQuery.AnyOf(SeatA1, SeatA2));
+
+        position.Should().Be(7, "seat:a2 is inside the boundary and seat:a3 is not");
+    }
+
     [Fact]
     public async Task An_intersection_boundary_is_at_the_highest_position_carrying_all_its_tags()
     {

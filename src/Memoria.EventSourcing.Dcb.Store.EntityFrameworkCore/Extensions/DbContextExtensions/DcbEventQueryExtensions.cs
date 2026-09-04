@@ -7,6 +7,23 @@ namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Extensions.DbConte
 /// <summary>
 /// Builds the query every DCB read narrows from.
 /// </summary>
+/// <remarks>
+/// <para>
+/// A union's tags reach the database as a collection, and what a provider makes of that differs.
+/// SQL Server expands it to ordinary parameters — <c>Tag = @p0</c> for one tag, <c>IN (@p0, @p1)</c>
+/// for two. Npgsql keeps it as a single array parameter, <c>Tag = ANY(@tags)</c>, at every
+/// cardinality including one, and PostgreSQL cannot estimate the selectivity of an array parameter:
+/// on a table it has no statistics for it can assume one row on each side, choose a nested loop semi
+/// join, and apply the position match as a filter rather than an index condition.
+/// </para>
+/// <para>
+/// Left alone deliberately. Rewriting the predicate to an equality per tag was built and measured: it
+/// is worth about 10% on a read whose statistics are stale and nothing once they exist, which did not
+/// pay for the expression-building it needed. If that estimate ever does become the problem, the knob
+/// is <c>EF.Constant</c> or Npgsql's parameterised-collection option, and neither needs a change
+/// here. See "Why the harness runs ANALYZE on PostgreSQL" in <c>benchmarks/README.md</c>.
+/// </para>
+/// </remarks>
 internal static class DcbEventQueryExtensions
 {
     /// <summary>

@@ -125,3 +125,14 @@ Need a specific implementation for your existing code or a new provider (e.g., a
 I can also work directly on your projects to implement Memoria for your specific event sourcing or CQRS needs. 
 
 Please reach out to request custom integrations, new providers, or project assistance via [LinkedIn](https://www.linkedin.com/in/lucabriguglia).
+
+## 📄 License
+
+Memoria is dual-licensed from version 2.0.0 onwards:
+
+- **[Reciprocal Public License 1.5](https://opensource.org/license/rpl-1-5/) (free)** — you may use Memoria at no cost provided you release the source of the software you build with it under the same terms. RPL-1.5 is a strong copyleft licence: unlike the GPL, its reciprocity obligation is triggered by *deploying* your software, not only by distributing it.
+- **[Commercial licence](https://lucabriguglia.github.io/Memoria/license.html) (paid)** — if you do not want to release your source, use Memoria under the commercial License Agreement.
+
+**Versions 1.x and earlier remain licensed under the [Apache License 2.0](https://github.com/lucabriguglia/Memoria/blob/main/LICENSE-APACHE-2.0.txt), perpetually and irrevocably.** Nothing about the 2.0 licence change affects packages you have already taken.
+
+Full terms: [LICENSE.md](https://github.com/lucabriguglia/Memoria/blob/main/LICENSE.md).

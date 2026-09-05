@@ -2,25 +2,26 @@
 	<Import Project="..\Directory.Build.props" Condition="Exists('..\Directory.Build.props')" />
 
   <PropertyGroup Label="ProjectSettings">
-    <Authors>Luca Briguglia</Authors>
-    <Company>Cledev Limited</Company>
-    <Copyright>Copyright Luca Briguglia</Copyright>
+    <Authors>Luca Cammarata Briguglia</Authors>
+    <Copyright>Copyright Luca Cammarata Briguglia</Copyright>
     <Product>Memoria</Product>
-    <Description>Open source DDD, CQRS and Event Sourcing framework for .NET.</Description>
+    <Description>DDD, CQRS and Event Sourcing framework for .NET.</Description>
     <PackageTags>CQRS EventSourcing DDD OpenCQRS Memoria</PackageTags>
     <PackageProjectUrl>https://github.com/lucabriguglia/Memoria</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/lucabriguglia/Memoria</RepositoryUrl>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>logo.png</PackageIcon>
-    <Version>1.8.0</Version>
+    <Version>2.0.0-beta</Version>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)logo.png" Pack="true" PackagePath="" />
     <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="" />
+    <None Include="$(MSBuildThisFileDirectory)LICENSE.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

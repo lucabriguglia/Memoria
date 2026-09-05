@@ -4,8 +4,9 @@
     <File Path="Directory.Build.props" />
     <File Path="Directory.Build.targets" />
     <File Path=".github/workflows/build.yml" />
-    <File Path="LICENSE" />
     <File Path="README.md" />
+    <File Path="LICENSE-APACHE-2.0.txt" />
+    <File Path="LICENSE.md" />
     <File Path="logo.png" />
   </Folder>
   <Folder Name="/docs/">
@@ -37,6 +38,7 @@
     <File Path="docs/guides/upgrade-1.8.0.md" />
     <File Path="docs/guides/validate-commands.md" />
     <File Path="docs/index.md" />
+    <File Path="docs/license.md" />
     <File Path="docs/reference/configuration/caching.md" />
     <File Path="docs/reference/configuration/cosmos.md" />
     <File Path="docs/reference/configuration/dcb-ef-core.md" />

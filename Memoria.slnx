@@ -70,6 +70,7 @@
     <File Path="scripts/migrations/1.5.0-indexes-sqlserver.sql" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/Memoria.Web/Memoria.Web.csproj" />
     <Project Path="src/Memoria/Memoria.csproj" />
     <Project Path="src/Memoria.EventSourcing/Memoria.EventSourcing.csproj" />
     <Project Path="src/Memoria.EventSourcing.Dcb/Memoria.EventSourcing.Dcb.csproj" />

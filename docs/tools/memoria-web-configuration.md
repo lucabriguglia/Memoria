@@ -1,8 +1,8 @@
 # Memoria Web: configuration
 
-Everything [Memoria Web](memoria-web.md) needs is configuration, and only one setting is required:
-the store to open. The rest have defaults that are right for a store installed under Memoria's own
-default names.
+Everything [Memoria Web](memoria-web.md) needs is configuration, and only two things are required:
+the store to open, and how operators sign in. The rest have defaults that are right for a store
+installed under Memoria's own default names.
 
 Settings are read the way ASP.NET Core reads any of them — `appsettings.json`,
 `appsettings.{Environment}.json`, environment variables, then command-line arguments — so a setting
@@ -17,9 +17,15 @@ can be overridden without editing a file.
 | `Database:Cosmos:DatabaseName`   | No                              | `Memoria`                             | Cosmos only: the database the container is in    |
 | `Database:Cosmos:ContainerName`  | No                              | `Domain`                              | Cosmos only: the container the store writes into |
 | `Extensions:Directory`           | No                              | `<content root>/App_Data/extensions`  | Where uploaded archives and assemblies are kept  |
+| `Authentication:Oidc:Authority`  | Unless running open             | —                                     | The OpenID Connect provider operators sign in through |
+| `Authentication:Oidc:ClientId`   | Unless running open             | —                                     | What the tool is registered as at that provider  |
+| `Authentication:Oidc:ClientSecret` | Unless running open           | —                                     | What the tool proves that registration with      |
+| `Authentication:Oidc:Scopes`     | No                              | `openid profile email`                | What is asked of the provider, space-separated   |
+| `Authentication:Disabled`        | Unless signing in               | —                                     | `true` runs the tool open, with nobody signed in |
 
 As environment variables, replace each `:` with a double underscore:
-`ConnectionStrings__Memoria`, `Database__Provider`, `Extensions__Directory`.
+`ConnectionStrings__Memoria`, `Database__Provider`, `Extensions__Directory`,
+`Authentication__Oidc__ClientSecret`.
 
 ## The connection string
 
@@ -111,6 +117,83 @@ it, including from behind a corporate proxy.
 
 A Cosmos store carries the streamed model only. The DCB menu is not shown and its addresses answer
 404 — see [what each store answers](memoria-web.md#what-each-store-answers).
+
+## Signing operators in
+
+Operators sign in through an OpenID Connect provider, and the tool refuses to start until it is
+told which one — or told, in so many words, to run open. There is no default. The settings page
+takes an assembly and runs it, so "nobody said" cannot mean "anybody may".
+
+```json
+{
+  "Authentication": {
+    "Oidc": {
+      "Authority": "https://login.example.com/realms/memoria",
+      "ClientId": "memoria-web",
+      "ClientSecret": "<from the provider>"
+    }
+  }
+}
+```
+
+`Authority` is the issuer: the address the provider's discovery document is read from, at
+`<Authority>/.well-known/openid-configuration`. Any provider that publishes one will do — Microsoft
+Entra ID, Amazon Cognito, Google, Auth0, Okta, Keycloak, Zitadel, Authentik — and the tool never
+learns which. Whoever deploys it chooses the provider, and with it the cloud, rather than the tool
+choosing for them.
+
+`ClientId` and `ClientSecret` are what the provider issued when the tool was registered there as a
+confidential web client. The secret is a secret: put it in an environment variable
+(`Authentication__Oidc__ClientSecret`) or the host's secret store, not in the file.
+
+`Scopes` is what the sign-in asks the provider for, space-separated. The default asks for the
+identity, the name to show, and the email address. Add whatever scope your provider puts its groups
+or roles under when the next release starts reading them.
+
+What the tool does with these: the authorization code flow with PKCE, tokens exchanged on the back
+channel and never handed to the browser, a session cookie that lasts as long as the identity the
+provider issued. The provider has to be told where to send the operator back to — see
+[Deployment](memoria-web-deployment.md#signing-operators-in) for the address to register.
+
+A setting missing from the three is refused by name:
+
+> Authentication:Oidc:ClientSecret is not configured. The provider needs
+> Authentication:Oidc:Authority, Authentication:Oidc:ClientId and Authentication:Oidc:ClientSecret
+> all set.
+
+Which provider was chosen is logged at start-up, next to which store:
+
+```
+info: Memoria.Web[0]  Operators sign in through https://login.example.com/realms/memoria.
+```
+
+### Running open
+
+```json
+{
+  "Authentication": {
+    "Disabled": true
+  }
+}
+```
+
+runs the tool with nobody signed in and every page answering anyone who can reach it — including
+the upload form. It is how the repository's `appsettings.Development.json` runs `dotnet run` on
+localhost, and it is a choice that has to be written down: the tool told neither this nor a provider
+refuses to start,
+
+> Authentication is not configured. Set Authentication:Oidc:Authority, Authentication:Oidc:ClientId
+> and Authentication:Oidc:ClientSecret to sign operators in through an OpenID Connect provider, or
+> set Authentication:Disabled to true to run this tool open, which leaves its upload form to anyone
+> who can reach it.
+
+and a tool told both refuses too, rather than guessing which was meant. While open, every start-up
+says so:
+
+```
+warn: Memoria.Web[0]  Running open: nobody is signed in and every page, including the upload form,
+      answers anyone who can reach it, because Authentication:Disabled is true.
+```
 
 ## Extensions
 

@@ -184,19 +184,24 @@ says it should be.
 
 ## Security
 
-> **The tool has no authentication or authorization today, and uploading is running code.** Anyone
-> who can reach `/settings` can upload a `.dll` that this process will load and execute. There is no
-> login, no role, and no restriction on what an uploaded assembly may do. Both are planned for the
-> next release; everything below describes the tool as it stands.
+> **Uploading is running code.** An operator who can reach `/settings` can upload a `.dll` that this
+> process will load and execute, with no restriction on what it may do. Sign-in decides who can
+> reach it; nothing decides what they may do once they have.
 
-**Authentication and authorization are coming in the next release.** Until they land, the tool has
-no notion of a user at all: every visitor can read every page and press every button, including the
-ones that change what everyone else resolves. Plan for that rather than around it.
+**Operators sign in through your OpenID Connect provider.** Nothing — no page, no form post —
+answers anyone who has not, and the tool refuses to start until it is told which provider, or told
+in so many words to run open. See [Configuration](memoria-web-configuration.md#signing-operators-in)
+for the settings and [Deployment](memoria-web-deployment.md#signing-operators-in) for what to
+register at the provider.
 
-So for now, run it on localhost, or on a network where everyone who can reach it is already trusted
-with the store it is pointed at. Do not expose it to the internet. If you must, put authentication in
-front of it — a reverse proxy that requires a login before any request reaches the application — and
-treat upload rights as equivalent to shell access on the host.
+**There are no roles yet.** Every signed-in operator can read every page and press every button,
+including the ones that change what everyone else resolves. Grant sign-in to the people you would
+give shell access on the host to, and treat upload rights as exactly that, until roles arrive in the
+next release.
+
+Run it open — `Authentication:Disabled=true`, which is how `dotnet run` runs it on localhost — only
+on localhost or behind a proxy that authenticates every request including the form posts. Every
+start-up while it is open logs a warning saying so.
 
 Two more things worth knowing before pointing it at anything that matters:
 

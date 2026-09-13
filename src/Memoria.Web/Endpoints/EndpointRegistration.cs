@@ -33,7 +33,10 @@ public static class EndpointRegistration
         app.MapDcbModels();
         app.MapStreamedModels();
 
-        app.MapStaticAssets();
+        // The stylesheet and the script answer anyone: a page has to be signed into before it is
+        // drawn, and a redirect that cannot draw itself would be the one thing lost by asking.
+        // Everything else is protected by saying nothing, which is what the fallback policy is for.
+        app.MapStaticAssets().AllowAnonymous();
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
 

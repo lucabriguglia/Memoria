@@ -3,10 +3,10 @@
 [Memoria Web](memoria-web.md) is not published to NuGet. It is an ASP.NET Core application in the
 repository, and you build it, publish it, and host it yourself.
 
-> **Read [Security](memoria-web.md#security) before deciding where to put it.** There is no
-> authentication or authorization of any kind in this release, and anyone who can reach `/settings`
-> can upload an assembly this process will load and execute. Both are coming in the next release;
-> everything on this page describes the tool as it stands.
+> **Read [Security](memoria-web.md#security) before deciding where to put it.** Operators sign in
+> through your OpenID Connect provider — see [Signing operators in](#signing-operators-in) — but
+> there are no roles yet: everyone who can sign in can upload an assembly this process will load
+> and execute. Grant sign-in to the people you would give shell access on the host to.
 
 ## Run it locally
 
@@ -62,9 +62,14 @@ enough; nothing here needs a WebSocket today.
 ### HTTPS
 
 The pipeline calls `UseHttpsRedirection` always, and `UseHsts` outside Development. Terminating TLS at
-a reverse proxy is the usual arrangement; configure
-[forwarded headers](https://learn.microsoft.com/aspnet/core/host-and-deploy/proxy-load-balancer) on the
-proxy side so the application sees the original scheme, or the redirect will fight the proxy.
+a reverse proxy is the usual arrangement, and then the application has to be told what the proxy
+saw: set `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` on the application and have the proxy send
+`X-Forwarded-Proto` and `X-Forwarded-Host`. Without them the application sees `http://` on an
+internal name, the redirect to HTTPS fights the proxy, and — worse — the address the sign-in asks the
+provider to send the operator back to is built from that wrong scheme and host, so the provider
+refuses it as one it was never told about. See
+[forwarded headers](https://learn.microsoft.com/aspnet/core/host-and-deploy/proxy-load-balancer)
+for a proxy that sends different header names.
 
 ### Keeping uploads across restarts
 
@@ -111,21 +116,54 @@ EXPOSE 8080
 ENTRYPOINT ["dotnet", "Memoria.Web.dll"]
 ```
 
-## Putting authentication in front of it
+## Signing operators in
 
-The application has none in this release, so the proxy has to be the whole of it. Whatever you use —
-an identity-aware proxy, OAuth2 Proxy, a Kubernetes ingress with an auth annotation, basic auth on
-nginx — the requirement is the same: **no request reaches the application unauthenticated**,
-including `POST /settings/upload`. Protecting the pages and leaving the form posts open protects
-nothing.
+The application signs operators in itself, through whichever OpenID Connect provider it is pointed
+at, and answers nothing — no page, no form post — to anyone who has not. Three settings do it; see
+[Configuration](memoria-web-configuration.md#signing-operators-in) for what each one is.
 
-Grant access to the people you would give shell access on that host to, because an uploaded assembly
-runs with the application's own privileges.
+```bash
+docker run -p 8080:8080 \
+  -e ASPNETCORE_URLS=http://+:8080 \
+  -e ASPNETCORE_FORWARDEDHEADERS_ENABLED=true \
+  -e ConnectionStrings__Memoria="Host=db;Port=5432;Database=memoria;Username=reader;Password=…" \
+  -e Authentication__Oidc__Authority=https://login.example.com/realms/memoria \
+  -e Authentication__Oidc__ClientId=memoria-web \
+  -e Authentication__Oidc__ClientSecret=… \
+  -e Extensions__Directory=/data/extensions \
+  -v memoria-web-extensions:/data/extensions \
+  memoria-web:latest
+```
 
-The next release adds authentication and authorization to the application itself, which will make
-this section a choice rather than the only option. A proxy in front of it stays perfectly valid
-either way — and until then it is the only thing standing between the internet and an upload form
-that runs code.
+At the provider, register the tool as a confidential web client with one redirect URI:
+
+```
+https://<the address operators use>/signin-oidc
+```
+
+That is the address the provider sends the operator back to after they sign in, and the provider
+checks it against what was registered character for character. It is built from the scheme and host
+the application sees, which behind a proxy is the reason for the forwarded headers above.
+
+Any provider that publishes a discovery document qualifies — Microsoft Entra ID, Amazon Cognito,
+Google, Auth0, Okta, Keycloak, Zitadel, Authentik. The application never learns which; the choice
+of provider, and with it of cloud, is yours.
+
+**There are no roles in this release.** Everyone who can sign in can read every page, refresh every
+snapshot, and upload an assembly this process will load and execute. Grant sign-in to the people you
+would give shell access on the host to, and no one else, until roles arrive in the next release.
+
+A proxy that authenticates in front of the application stays perfectly valid — as a second gate, not
+as the only one. It is no longer what stands between the internet and an upload form that runs
+code; the application is.
+
+### Running it open
+
+`Authentication:Disabled=true` runs the application with nobody signed in, the way `dotnet run`
+does on localhost. It is a choice that has to be written down — an application told neither this nor
+a provider refuses to start — and every start-up while it is in force logs a warning saying so. Use
+it on localhost, or behind a proxy that authenticates **every** request including the form posts,
+and nowhere else.
 
 ## Pointing it at production data
 

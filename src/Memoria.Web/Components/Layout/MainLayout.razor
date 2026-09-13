@@ -98,6 +98,23 @@
            preference, which is what that tab holds, and the bar is for places to go. *@
         <NavLink href="settings">Settings</NavLink>
     </nav>
+
+    @* Who the tool thinks is asking, and the way to stop being them. At the far end of the bar,
+       away from the places to go: this is not one of them. Shown only to someone signed in — open,
+       there is nobody, and the bar ends with the menu as it always did. A form rather than a link,
+       like every other write the pages send: ending a session is one, and it carries the same token
+       the others do so a page elsewhere cannot end it on an operator's behalf. *@
+    <AuthorizeView>
+        <Authorized>
+            <div class="operator">
+                <span class="operator-name">@context.User.Identity?.Name</span>
+                <form method="post" action="logout">
+                    <AntiforgeryToken/>
+                    <button type="submit" class="quiet">Sign out</button>
+                </form>
+            </div>
+        </Authorized>
+    </AuthorizeView>
 </header>
 
 <main>

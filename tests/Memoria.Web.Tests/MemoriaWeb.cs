@@ -3,6 +3,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -10,6 +14,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Memoria.Web.Tests;
@@ -44,15 +49,36 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
 
     private readonly Dictionary<string, string?> _settings;
 
-    private MemoriaWeb(Dictionary<string, string?> settings) => _settings = settings;
+    private readonly string? _operator;
 
-    /// <summary>An instance that signs operators in through <see cref="Provider"/>.</summary>
-    public static MemoriaWeb SigningIn() => new(new Dictionary<string, string?>
+    private MemoriaWeb(Dictionary<string, string?> settings, string? @operator = null)
+    {
+        _settings = settings;
+        _operator = @operator;
+    }
+
+    private static Dictionary<string, string?> ProviderSettings => new()
     {
         ["Authentication:Oidc:Authority"] = Provider.Authority,
         ["Authentication:Oidc:ClientId"] = Provider.ClientId,
         ["Authentication:Oidc:ClientSecret"] = Provider.ClientSecret
-    });
+    };
+
+    /// <summary>An instance that signs operators in through <see cref="Provider"/>.</summary>
+    public static MemoriaWeb SigningIn() => new(ProviderSettings);
+
+    /// <summary>
+    /// An instance that signs operators in through <see cref="Provider"/>, and on which one already
+    /// has: every request arrives as <paramref name="name"/>, as if the provider had sent them back
+    /// and the cookie were set.
+    /// </summary>
+    /// <remarks>
+    /// The identity is put on the request by a scheme of this test's own, in place of reading the
+    /// cookie, because the cookie can only be written by the provider's answer. Everything after
+    /// that point — the fallback policy, the pages, the header, sign-out — sees the principal it
+    /// would have seen, with the name under the claim the real one carries it in.
+    /// </remarks>
+    public static MemoriaWeb SignedInAs(string name) => new(ProviderSettings, name);
 
     /// <summary>An instance told, in so many words, to run open.</summary>
     public static MemoriaWeb Open() => new(new Dictionary<string, string?>
@@ -115,15 +141,58 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
 
         builder.ConfigureLogging(logging => logging.AddProvider(new Capture(_logged)));
 
-        builder.ConfigureTestServices(services => services.Configure<OpenIdConnectOptions>(
-            OpenIdConnectDefaults.AuthenticationScheme,
-            options => options.Configuration = new OpenIdConnectConfiguration
+        builder.ConfigureTestServices(services =>
+        {
+            services.Configure<OpenIdConnectOptions>(
+                OpenIdConnectDefaults.AuthenticationScheme,
+                options => options.Configuration = new OpenIdConnectConfiguration
+                {
+                    Issuer = Provider.Authority,
+                    AuthorizationEndpoint = Provider.AuthorizeEndpoint,
+                    TokenEndpoint = Provider.TokenEndpoint,
+                    EndSessionEndpoint = Provider.EndSessionEndpoint
+                });
+
+            if (_operator is null)
             {
-                Issuer = Provider.Authority,
-                AuthorizationEndpoint = Provider.AuthorizeEndpoint,
-                TokenEndpoint = Provider.TokenEndpoint,
-                EndSessionEndpoint = Provider.EndSessionEndpoint
-            }));
+                return;
+            }
+
+            services.AddAuthentication()
+                .AddScheme<OperatorOptions, OperatorHandler>(OperatorHandler.Scheme, options => options.Name = _operator);
+
+            // Asked first, in place of the cookie. The challenge and the sign-out stay the
+            // application's own, so those are still what is proved.
+            services.PostConfigure<AuthenticationOptions>(options =>
+                options.DefaultAuthenticateScheme = OperatorHandler.Scheme);
+        });
+    }
+
+    private sealed class OperatorOptions : AuthenticationSchemeOptions
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    /// <summary>Signs every request in as the one operator it was told about.</summary>
+    private sealed class OperatorHandler(
+        IOptionsMonitor<OperatorOptions> options,
+        ILoggerFactory logger,
+        UrlEncoder encoder)
+        : AuthenticationHandler<OperatorOptions>(options, logger, encoder)
+    {
+        public const string Scheme = "Operator";
+
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        {
+            // The claim the real sign-in reads the name from, and no SOAP-era URI: the
+            // application asks the provider to keep the names it gave them.
+            var identity = new ClaimsIdentity(
+                [new Claim("sub", Options.Name.ToLowerInvariant()), new Claim("name", Options.Name)],
+                Scheme, nameType: "name", roleType: "roles");
+
+            return Task.FromResult(AuthenticateResult.Success(
+                new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme)));
+        }
     }
 
     /// <summary>A logger that keeps every line, so a test can ask what the application said.</summary>

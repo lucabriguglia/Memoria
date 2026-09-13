@@ -16,8 +16,11 @@ namespace Memoria.Web.Tests.Features;
 /// </summary>
 public class PublicEndpointsTests
 {
-    /// <summary>Every route an anonymous caller may reach, other than the static assets.</summary>
-    private static readonly string[] Public = [];
+    /// <summary>
+    /// Every route an anonymous caller may reach, other than the static assets: the page that says
+    /// they have signed out, which they can only be reading without a session.
+    /// </summary>
+    private static readonly string[] Public = ["/signed-out"];
 
     [Fact]
     public void Opens_nothing_but_the_static_assets_and_the_routes_pinned_here()

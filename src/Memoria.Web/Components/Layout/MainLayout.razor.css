@@ -62,6 +62,21 @@ header {
             font-weight: 600;
         }
 
+/* The signed-in operator and the button that ends their session, at the far end of the bar. Pushed
+   there by the margin rather than placed by the grid the bar does not have: the brand and the menu
+   stay where they are, and this takes whatever is left. */
+.operator {
+    align-items: center;
+    display: flex;
+    font-size: var(--text-md);
+    gap: 0.75rem;
+    margin-left: auto;
+}
+
+    .operator .operator-name {
+        color: var(--ink-soft);
+    }
+
 /* Admin and the pages under it. */
 .menu {
     position: relative;

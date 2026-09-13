@@ -76,5 +76,6 @@ app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapPages();
+app.MapSignOut(authentication);
 
 app.Run();

@@ -20,24 +20,35 @@ models and writes data through it.
 > scoped-CSS bundle answers 500 — the application renders unstyled. The same applies to anything run
 > out of `bin/` rather than out of `dotnet publish` output.
 
-## No authentication yet
+## Signing in
 
-Anyone who can reach `/settings` can upload a `.dll` that this process will load and execute. There
-is no login and no role. Run it on localhost, or behind a proxy that authenticates **every** request
-including the form posts, and grant access to the people you would give shell access on that host to.
+Operators sign in through an OpenID Connect provider — any that publishes a discovery document —
+and nothing answers anyone who has not, form posts included. The tool refuses to start until it is
+told which provider, or told in so many words to run open, which is what
+[`appsettings.Development.json`](appsettings.Development.json) does for `dotnet run` on localhost.
 
-Authentication and authorization are coming in the next release. Until they do, a proxy is the only
-thing that can stand in for them.
+There are no roles yet: everyone who can sign in can read every page, refresh every snapshot, and
+upload a `.dll` that this process will load and execute. Grant sign-in to the people you would give
+shell access on the host to. See
+[Configuration](https://lucabriguglia.github.io/Memoria/tools/memoria-web-configuration.html#signing-operators-in)
+for the settings and
+[Deployment](https://lucabriguglia.github.io/Memoria/tools/memoria-web-deployment.html#signing-operators-in)
+for what to register at the provider.
 
 ## Configuration
 
-| Setting                         | Required                        | Default                              |
-| ------------------------------- | ------------------------------- | ------------------------------------ |
-| `ConnectionStrings:Memoria`     | Yes                             | —                                    |
-| `Database:Provider`             | Only when the string is unclear | Read off the connection string       |
-| `Database:Cosmos:DatabaseName`  | No                              | `Memoria`                            |
-| `Database:Cosmos:ContainerName` | No                              | `Domain`                             |
-| `Extensions:Directory`          | No                              | `<content root>/App_Data/extensions` |
+| Setting                            | Required                        | Default                              |
+| ---------------------------------- | ------------------------------- | ------------------------------------ |
+| `ConnectionStrings:Memoria`        | Yes                             | —                                    |
+| `Database:Provider`                | Only when the string is unclear | Read off the connection string       |
+| `Database:Cosmos:DatabaseName`     | No                              | `Memoria`                            |
+| `Database:Cosmos:ContainerName`    | No                              | `Domain`                             |
+| `Extensions:Directory`             | No                              | `<content root>/App_Data/extensions` |
+| `Authentication:Oidc:Authority`    | Unless running open             | —                                    |
+| `Authentication:Oidc:ClientId`     | Unless running open             | —                                    |
+| `Authentication:Oidc:ClientSecret` | Unless running open             | —                                    |
+| `Authentication:Oidc:Scopes`       | No                              | `openid profile email`               |
+| `Authentication:Disabled`          | Unless signing in               | —                                    |
 
 PostgreSQL, SQL Server and SQLite are read through Entity Framework Core and carry both consistency
 models. Cosmos DB is read through its own SDK and carries the streamed model only — there is no
@@ -57,6 +68,7 @@ has to exist already.
 | `Data/`          | Reading the connection string, and wiring whichever store it named        |
 | `Extensibility/` | Uploads, assembly loading, type scanning, and the queries the pages ask   |
 | `Endpoints/`     | The handful of form posts the statically rendered pages send              |
+| `Security/`      | Reading how operators sign in, and wiring the provider, the policy and sign-out |
 | `App_Data/`      | Uploaded archives and the assemblies taken out of them (local state)      |
 
 ## Documentation

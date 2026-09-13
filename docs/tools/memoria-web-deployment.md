@@ -135,15 +135,21 @@ docker run -p 8080:8080 \
   memoria-web:latest
 ```
 
-At the provider, register the tool as a confidential web client with one redirect URI:
+At the provider, register the tool as a confidential web client with one redirect URI and one
+post-logout redirect URI:
 
 ```
 https://<the address operators use>/signin-oidc
+https://<the address operators use>/signout-callback-oidc
 ```
 
-That is the address the provider sends the operator back to after they sign in, and the provider
-checks it against what was registered character for character. It is built from the scheme and host
-the application sees, which behind a proxy is the reason for the forwarded headers above.
+The first is where the provider sends the operator back after they sign in; the second, after they
+sign out, from where the tool takes them to its own signed-out page. The provider checks each
+against what was registered character for character. Both are built from the scheme and host the
+application sees, which behind a proxy is the reason for the forwarded headers above.
+
+Sign-out ends both sessions: the tool's cookie, and the provider's own, so the next visit asks for
+credentials again rather than signing the same operator straight back in.
 
 Any provider that publishes a discovery document qualifies — Microsoft Entra ID, Amazon Cognito,
 Google, Auth0, Okta, Keycloak, Zitadel, Authentik. The application never learns which; the choice

@@ -1,0 +1,14 @@
+@page "/signed-out"
+@attribute [AllowAnonymous]
+@layout MainLayout
+
+@* Where the provider sends an operator who has signed out, and the one page an anonymous caller
+   may read: whoever lands here has just stopped being anybody, and a page that asked them to sign
+   in before it could say they had signed out would be a page nobody ever saw. The way back is the
+   home page, which asks them to sign in the moment they follow it. *@
+
+<PageTitle>Signed out</PageTitle>
+
+<h1>Signed out</h1>
+
+<p>Your session here has ended. <a href="">Sign in again</a> to come back.</p>

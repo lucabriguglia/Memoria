@@ -1,9 +1,15 @@
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Memoria.Web.Security;
+
+// Aliased inside the namespace for the reason EndpointRegistration gives: under Memoria, a plain
+// Results binds to the framework namespace of that name rather than to the class.
+using Results = Microsoft.AspNetCore.Http.Results;
 
 /// <summary>
 /// Signs operators in the way the settings ask, or leaves the tool open when they ask for that.
@@ -29,6 +35,10 @@ public static class SignInRegistration
     /// </remarks>
     public static IServiceCollection AddSignIn(this IServiceCollection services, AuthenticationSettings settings)
     {
+        // What the layout asks to say who is signed in. Registered in both modes so the layout is
+        // one layout: open, it is asked and answers nobody.
+        services.AddCascadingAuthenticationState();
+
         if (settings is not AuthenticationSettings.OpenIdConnect provider)
         {
             services.AddAuthentication();
@@ -83,6 +93,47 @@ public static class SignInRegistration
 
         return services;
     }
+
+    /// <summary>
+    /// Maps the sign-out the layout's button posts to, when there is a sign-in to end.
+    /// </summary>
+    /// <param name="app">The application.</param>
+    /// <param name="settings">Which sign-in was read.</param>
+    /// <returns>The same application, so calls can be chained.</returns>
+    /// <remarks>
+    /// Both sessions are ended: the cookie here, and the provider's own, which is asked to send
+    /// the operator back to a page that says so. That page is the one address an anonymous
+    /// caller may read, since whoever lands on it has just stopped being anybody. Open, nothing is
+    /// mapped — there is no session to end and no button posting here.
+    /// </remarks>
+    public static WebApplication MapSignOut(this WebApplication app, AuthenticationSettings settings)
+    {
+        if (settings is not AuthenticationSettings.OpenIdConnect)
+        {
+            return app;
+        }
+
+        // Antiforgery in so many words, since there is no form to bind that would mark it: the
+        // button is a form post like the others and is checked like them.
+        app.MapPost("/logout", () => Results.SignOut(
+                new AuthenticationProperties { RedirectUri = SignedOutPath },
+                [CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme]))
+            .WithMetadata(new RequiresAntiforgery());
+
+        return app;
+    }
+
+    /// <summary>
+    /// The mark binding a form puts on an endpoint, put on one by hand. The framework's own type
+    /// for it is internal; the interface the middleware reads is not.
+    /// </summary>
+    private sealed class RequiresAntiforgery : IAntiforgeryMetadata
+    {
+        public bool RequiresValidation => true;
+    }
+
+    /// <summary>Where the provider sends an operator who has signed out.</summary>
+    public const string SignedOutPath = "/signed-out";
 
     /// <summary>
     /// Says which of the two the tool is running with, once, when it starts.

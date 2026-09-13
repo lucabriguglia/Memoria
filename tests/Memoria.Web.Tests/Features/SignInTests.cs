@@ -59,6 +59,21 @@ public class SignInTests
         Installed(web).Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Signed in, the pages answer, and the header says who the tool thinks is asking — the one
+    /// place an operator on a shared machine finds out whose session they are in.
+    /// </summary>
+    [Fact]
+    public async Task Shows_a_signed_in_operator_the_pages_and_their_name()
+    {
+        using var web = MemoriaWeb.SignedInAs("Ada Lovelace");
+
+        var response = await web.Client.GetAsync("/");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Header(await response.Content.ReadAsStringAsync()).Should().Contain("Ada Lovelace");
+    }
+
     [Fact]
     public async Task Answers_anyone_when_told_to_run_open()
     {
@@ -109,6 +124,15 @@ public class SignInTests
             .Contain("Authentication:Oidc:ClientId").And
             .Contain("Authentication:Oidc:ClientSecret").And
             .Contain("Authentication:Disabled");
+    }
+
+    /// <summary>The page's header alone, so a name in the body does not stand in for one up there.</summary>
+    private static string Header(string page)
+    {
+        var start = page.IndexOf("<header", StringComparison.Ordinal);
+        var end = page.IndexOf("</header>", StringComparison.Ordinal);
+
+        return start >= 0 && end > start ? page[start..end] : string.Empty;
     }
 
     private static string[] Installed(MemoriaWeb web) =>

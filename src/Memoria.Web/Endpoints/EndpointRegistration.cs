@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Memoria.EventSourcing;
 using Memoria.EventSourcing.Dcb;
 using Memoria.Web.Components;
@@ -54,9 +55,11 @@ public static class EndpointRegistration
             DomainTypeRegistry types,
             ExtensionStore store,
             ILoggerFactory loggerFactory,
+            ClaimsPrincipal user,
             [FromForm] IFormFileCollection files) =>
         {
             var logger = loggerFactory.CreateLogger("Memoria.Web.Settings");
+            var asked = Operator.Of(user);
 
             if (files.Count == 0)
             {
@@ -69,11 +72,12 @@ public static class EndpointRegistration
                 {
                     using var content = file.OpenReadStream();
                     store.Install(file.FileName, content);
-                    logger.LogInformation("Installed {FileName}.", file.FileName);
+                    logger.LogInformation("Installed {FileName}, asked by {Operator}.", file.FileName, asked);
                 }
                 catch (Exception exception)
                 {
-                    logger.LogError(exception, "Could not install {FileName}.", file.FileName);
+                    logger.LogError(exception, "Could not install {FileName}, asked by {Operator}.",
+                        file.FileName, asked);
                     return Back(error: $"{file.FileName} could not be installed: {exception.Message}");
                 }
             }
@@ -88,18 +92,20 @@ public static class EndpointRegistration
             DomainTypeRegistry types,
             ExtensionStore store,
             ILoggerFactory loggerFactory,
+            ClaimsPrincipal user,
             [FromForm] string name) =>
         {
             var logger = loggerFactory.CreateLogger("Memoria.Web.Settings");
+            var asked = Operator.Of(user);
 
             try
             {
                 store.Remove(name);
-                logger.LogInformation("Removed {FileName}.", name);
+                logger.LogInformation("Removed {FileName}, asked by {Operator}.", name, asked);
             }
             catch (Exception exception)
             {
-                logger.LogError(exception, "Could not remove {FileName}.", name);
+                logger.LogError(exception, "Could not remove {FileName}, asked by {Operator}.", name, asked);
                 return Back(error: $"{name} could not be removed: {exception.Message}");
             }
 
@@ -113,7 +119,8 @@ public static class EndpointRegistration
             HttpContext context,
             IAntiforgery antiforgery,
             DomainTypeRegistry types,
-            ILoggerFactory loggerFactory) =>
+            ILoggerFactory loggerFactory,
+            ClaimsPrincipal user) =>
         {
             var logger = loggerFactory.CreateLogger("Memoria.Web.Settings");
 
@@ -129,6 +136,10 @@ public static class EndpointRegistration
                 return Back(error: "That request could not be verified. Reload the page and try again.",
                     tab: "types");
             }
+
+            // Said as a write, because it is one in every sense but the store's: what every operator
+            // resolves changes the moment it runs.
+            logger.LogInformation("Reread the extensions, asked by {Operator}.", Operator.Of(user));
 
             types.Reload();
             logger.LogCatalogue(types.Current);
@@ -153,8 +164,9 @@ public static class EndpointRegistration
             HttpRequest request,
             [FromForm] string type,
             [FromForm] string id,
-            [FromForm] string returnUrl) =>
-            await Refresh(DcbModelKind.Aggregate, types, store, loggerFactory, request, type, id, returnUrl))
+            [FromForm] string returnUrl,
+            ClaimsPrincipal user) =>
+            await Refresh(DcbModelKind.Aggregate, types, store, loggerFactory, request, type, id, returnUrl, Operator.Of(user)))
             .RequireAuthorization(Roles.Updater);
 
         app.MapPost("/dcb/projections/update", async (
@@ -164,8 +176,9 @@ public static class EndpointRegistration
             HttpRequest request,
             [FromForm] string type,
             [FromForm] string id,
-            [FromForm] string returnUrl) =>
-            await Refresh(DcbModelKind.Projection, types, store, loggerFactory, request, type, id, returnUrl))
+            [FromForm] string returnUrl,
+            ClaimsPrincipal user) =>
+            await Refresh(DcbModelKind.Projection, types, store, loggerFactory, request, type, id, returnUrl, Operator.Of(user)))
             .RequireAuthorization(Roles.Updater);
     }
 
@@ -187,9 +200,10 @@ public static class EndpointRegistration
             [FromForm] string type,
             [FromForm] string stream,
             [FromForm] string id,
-            [FromForm] string returnUrl) =>
+            [FromForm] string returnUrl,
+            ClaimsPrincipal user) =>
             await RefreshStreamed(
-                StreamedModelKind.Aggregate, types, store, loggerFactory, type, stream, id, returnUrl))
+                StreamedModelKind.Aggregate, types, store, loggerFactory, type, stream, id, returnUrl, Operator.Of(user)))
             .RequireAuthorization(Roles.Updater);
 
         app.MapPost("/streamed/projections/update", async (
@@ -199,9 +213,10 @@ public static class EndpointRegistration
             [FromForm] string type,
             [FromForm] string stream,
             [FromForm] string id,
-            [FromForm] string returnUrl) =>
+            [FromForm] string returnUrl,
+            ClaimsPrincipal user) =>
             await RefreshStreamed(
-                StreamedModelKind.Projection, types, store, loggerFactory, type, stream, id, returnUrl))
+                StreamedModelKind.Projection, types, store, loggerFactory, type, stream, id, returnUrl, Operator.Of(user)))
             .RequireAuthorization(Roles.Updater);
     }
 
@@ -235,7 +250,8 @@ public static class EndpointRegistration
         HttpRequest request,
         string type,
         string id,
-        string returnUrl)
+        string returnUrl,
+        Operator asked)
     {
         var logger = loggerFactory.CreateLogger("Memoria.Web.Dcb");
 
@@ -270,7 +286,7 @@ public static class EndpointRegistration
 
         var refreshed = await ModelRefresher.Refresh(store, model, created.Instance);
 
-        return Answer(logger, returnUrl, model, refreshed,
+        return Answer(logger, returnUrl, model, refreshed, asked,
             nothingToDo: $"Nothing to refresh — no snapshot, and no events inside the boundary this " +
                          $"{Named(kind)} applies.");
     }
@@ -298,7 +314,8 @@ public static class EndpointRegistration
         string type,
         string stream,
         string id,
-        string returnUrl)
+        string returnUrl,
+        Operator asked)
     {
         var logger = loggerFactory.CreateLogger("Memoria.Web.Streamed");
 
@@ -333,7 +350,7 @@ public static class EndpointRegistration
 
         var refreshed = await ModelRefresher.Refresh(store, model, identity.Stream, identity.Identifier);
 
-        return Answer(logger, returnUrl, model, refreshed,
+        return Answer(logger, returnUrl, model, refreshed, asked,
             nothingToDo: $"Nothing to refresh — no snapshot, and no events in this stream that this " +
                          $"{Named(kind)} folds.");
     }
@@ -345,20 +362,22 @@ public static class EndpointRegistration
     /// <param name="returnUrl">The page the button was pressed on.</param>
     /// <param name="model">The model that was refreshed, for the log.</param>
     /// <param name="refreshed">What the store said.</param>
+    /// <param name="asked">Who asked, for the log.</param>
     /// <param name="nothingToDo">
     /// What to say when there was nothing to bring up to date, which each store says in its own
     /// terms: a boundary the model applies, or a stream it folds.
     /// </param>
     private static IResult Answer(
-        ILogger logger, string returnUrl, Type model, RefreshedModel refreshed, string nothingToDo)
+        ILogger logger, string returnUrl, Type model, RefreshedModel refreshed, Operator asked, string nothingToDo)
     {
         if (refreshed.Error is not null)
         {
-            logger.LogWarning("Could not refresh {Model}: {Error}", model.Name, refreshed.Error);
+            logger.LogWarning("Could not refresh {Model}, asked by {Operator}: {Error}",
+                model.Name, asked, refreshed.Error);
             return BackToModel(returnUrl, error: refreshed.Error);
         }
 
-        logger.LogInformation("Refreshed the snapshot for {Model}.", model.Name);
+        logger.LogInformation("Refreshed the snapshot for {Model}, asked by {Operator}.", model.Name, asked);
 
         return BackToModel(returnUrl,
             message: refreshed.Refreshed ? "Snapshot refreshed." : nothingToDo);

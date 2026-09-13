@@ -192,3 +192,18 @@ Perfectly reasonable, with two precautions:
 
 The tool creates nothing and deletes nothing. The only write it can make is refreshing a snapshot —
 see [the one thing it writes](memoria-web.md#the-one-thing-it-writes).
+
+### Who did what
+
+Every line the tool logs about a write — an upload, a removal, a reread of the extensions, a
+snapshot refresh, and each of their failures — names the operator who asked for it, as the name the
+provider showed and the subject it keys them by:
+
+```
+info: Memoria.Web.Settings[0]  Installed orders.zip, asked by Ada Lovelace (3f1c…).
+info: Memoria.Web.Streamed[0]  Refreshed the snapshot for Order, asked by Ada Lovelace (3f1c…).
+```
+
+So "who put that assembly on the host" is answered by the log the host already keeps. Running open,
+the line says `nobody (running open)`. Nothing else the sign-in carried — no token, no other claim —
+reaches the log.

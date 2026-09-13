@@ -167,6 +167,21 @@ A proxy that authenticates in front of the application stays perfectly valid —
 as the only one. It is no longer what stands between the internet and an upload form that runs
 code; the application is.
 
+### How long a session lives
+
+Exactly as long as the identity the provider issued: the session cookie expires when the ID token
+does, and is not renewed on the quiet because more than half of it has gone by. Every page is
+rendered per request and every request is authenticated afresh by that cookie — there is no
+long-lived connection that could keep a session open past it.
+
+So the provider's **ID token lifetime** is the knob. An operator you remove at the provider is out
+at their first request after their current token ends; set the lifetime to minutes if that has to
+be quick. An operator whose session ends mid-visit is sent to the provider to sign in and comes
+back to the page they asked for — a form they were in the middle of posting is not replayed.
+
+The tool does not yet go back to the provider mid-session to check whether the operator is still
+welcome; the token lifetime is the whole of that guarantee.
+
 ### Running it open
 
 `Authentication:Disabled=true` runs the application with nobody signed in, the way `dotnet run`

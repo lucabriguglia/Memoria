@@ -8,6 +8,7 @@ using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Memoria.Web.Extensibility;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -148,6 +149,41 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
     {
         AllowAutoRedirect = false
     });
+
+    /// <summary>
+    /// A client that keeps no cookies of its own, for a test that sends the one it made.
+    /// </summary>
+    public HttpClient BareClient => CreateClient(new WebApplicationFactoryClientOptions
+    {
+        AllowAutoRedirect = false,
+        HandleCookies = false
+    });
+
+    /// <summary>
+    /// A session cookie as the application would have issued it after the provider sent the
+    /// operator back: a ticket for <paramref name="name"/>, protected with the cookie scheme's
+    /// own format and keys, issued and expiring when told. What a request carrying it exercises
+    /// is the real cookie path — the one <see cref="SignedInAs"/> stands in for.
+    /// </summary>
+    /// <returns>The value of the <c>Cookie</c> header to send.</returns>
+    public string SessionCookie(string name, DateTimeOffset issuedUtc, DateTimeOffset expiresUtc)
+    {
+        _ = Client;
+
+        var options = Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>()
+            .Get(CookieAuthenticationDefaults.AuthenticationScheme);
+
+        var identity = new ClaimsIdentity(
+            [new Claim("sub", name.ToLowerInvariant()), new Claim("name", name)],
+            CookieAuthenticationDefaults.AuthenticationScheme, nameType: "name", roleType: "roles");
+
+        var ticket = new AuthenticationTicket(
+            new ClaimsPrincipal(identity),
+            new AuthenticationProperties { IssuedUtc = issuedUtc, ExpiresUtc = expiresUtc },
+            CookieAuthenticationDefaults.AuthenticationScheme);
+
+        return $"{options.Cookie.Name}={options.TicketDataFormat.Protect(ticket)}";
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

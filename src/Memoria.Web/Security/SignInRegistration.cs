@@ -90,6 +90,13 @@ public static class SignInRegistration
                 // by ForbiddenRedirect, which adds the role; this is the framework's own fallback
                 // for a refusal that carries none.
                 options.AccessDeniedPath = ForbiddenRedirect.Path;
+
+                // The session is the identity the provider issued, and ends when it does. The
+                // framework's default reissues a cookie past its half-life with a fresh expiry —
+                // right for a site where the cookie is the only identity, and here a way for a
+                // session to outlive its token one page at a time. Off, the cookie's expiry is
+                // the token's, which UseTokenLifetime below sets it to.
+                options.SlidingExpiration = false;
             })
             .AddOpenIdConnect(options =>
             {

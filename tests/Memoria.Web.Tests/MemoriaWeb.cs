@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using Memoria.Web.Extensibility;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;
@@ -72,6 +73,22 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
         _settings[setting] = value;
         return this;
     }
+
+    private bool _sampleTypes;
+
+    /// <summary>
+    /// The same instance knowing the sample domain types this test assembly carries, as if they
+    /// had been uploaded: what a detail page needs before it will draw its tabs at all.
+    /// </summary>
+    public MemoriaWeb WithSampleTypes()
+    {
+        _sampleTypes = true;
+        return this;
+    }
+
+    /// <summary>The address of the sample aggregate's detail page, on the tab asked for.</summary>
+    public static string SampleAggregateDetail(string tab) =>
+        $"/streamed/aggregates/detail?type={typeof(SampleAggregate).FullName}&stream=sample:1&id=sample-1:1&tab={tab}";
 
     private static Dictionary<string, string?> ProviderSettings => new()
     {
@@ -175,6 +192,14 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
                     TokenEndpoint = Provider.TokenEndpoint,
                     EndSessionEndpoint = Provider.EndSessionEndpoint
                 });
+
+            if (_sampleTypes)
+            {
+                // Registered after the application's own, so it is the one resolved — and the one
+                // Program reloads at start-up. Over the same store, so an upload still lands.
+                services.AddSingleton(provider =>
+                    new DomainTypeRegistry(provider.GetRequiredService<ExtensionStore>(), typeof(SampleAggregate).Assembly));
+            }
 
             if (_operator is null)
             {

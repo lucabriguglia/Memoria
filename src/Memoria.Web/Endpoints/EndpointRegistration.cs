@@ -154,7 +154,8 @@ public static class EndpointRegistration
             [FromForm] string type,
             [FromForm] string id,
             [FromForm] string returnUrl) =>
-            await Refresh(DcbModelKind.Aggregate, types, store, loggerFactory, request, type, id, returnUrl));
+            await Refresh(DcbModelKind.Aggregate, types, store, loggerFactory, request, type, id, returnUrl))
+            .RequireAuthorization(Roles.Updater);
 
         app.MapPost("/dcb/projections/update", async (
             DomainTypeRegistry types,
@@ -164,7 +165,8 @@ public static class EndpointRegistration
             [FromForm] string type,
             [FromForm] string id,
             [FromForm] string returnUrl) =>
-            await Refresh(DcbModelKind.Projection, types, store, loggerFactory, request, type, id, returnUrl));
+            await Refresh(DcbModelKind.Projection, types, store, loggerFactory, request, type, id, returnUrl))
+            .RequireAuthorization(Roles.Updater);
     }
 
     /// <summary>
@@ -187,7 +189,8 @@ public static class EndpointRegistration
             [FromForm] string id,
             [FromForm] string returnUrl) =>
             await RefreshStreamed(
-                StreamedModelKind.Aggregate, types, store, loggerFactory, type, stream, id, returnUrl));
+                StreamedModelKind.Aggregate, types, store, loggerFactory, type, stream, id, returnUrl))
+            .RequireAuthorization(Roles.Updater);
 
         app.MapPost("/streamed/projections/update", async (
             DomainTypeRegistry types,
@@ -198,7 +201,8 @@ public static class EndpointRegistration
             [FromForm] string id,
             [FromForm] string returnUrl) =>
             await RefreshStreamed(
-                StreamedModelKind.Projection, types, store, loggerFactory, type, stream, id, returnUrl));
+                StreamedModelKind.Projection, types, store, loggerFactory, type, stream, id, returnUrl))
+            .RequireAuthorization(Roles.Updater);
     }
 
     // Back to the settings page carrying what happened, so the outcome survives the redirect.

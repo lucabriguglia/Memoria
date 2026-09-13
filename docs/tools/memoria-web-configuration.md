@@ -209,8 +209,10 @@ Authorization__Roles__Administrator=memoria-admins
 
 An operator whose claim carries a mapped value holds that role; one whose claims match nothing is
 a Reader. A group the provider happens to call `Administrator` grants nothing until it is mapped
-here. An operator turned away from an address is told which role it needed and where they were
-going, on a page that says so, and the log lines at start-up say what was mapped:
+here. A Reader does not see the Settings link at all, and on a model's detail page sees the
+**Update** tab but, in place of the button, a note saying the tab needs the Updater role. An
+operator who types an address they may not use is told which role it needed and where they were
+going, on a page that says so. The log lines at start-up say what was mapped:
 
 ```
 info: Memoria.Web[0]  Roles are read off the roles claim: Administrator for memoria-admins, Updater for memoria-updaters, memoria-support.

@@ -623,6 +623,17 @@ else
            reading. It is the seam the other three meet at: it takes what the events tab lists and
            writes it into what the info and state tabs show. *@
         <section class="tab-panel" aria-labelledby="tab-@UpdateTab">
+            @* Held behind the role the button needs, here rather than on the tab's link: this is a
+               page a Reader is already reading, so the tab is better explained than removed. The
+               explanation names the role, which is what they have to ask for. *@
+            <AuthorizeView Policy="@Roles.Updater" Context="signedIn">
+            <NotAuthorized>
+                <p class="missing">
+                    Updating a snapshot needs the Updater role, which you do not hold. Ask whoever runs
+                    this tool to map yours.
+                </p>
+            </NotAuthorized>
+            <Authorized>
             @* The store folds a stream through an identifier and takes the things rather than the
                ids they produced, so both have to be worked back out of this row before it can be
                asked. Each half that could not be is its own answer: the ids are the store's, and a
@@ -682,6 +693,8 @@ else
                     <p class="alert" role="alert">@RefreshError</p>
                 }
             }
+            </Authorized>
+            </AuthorizeView>
         </section>
     }
 

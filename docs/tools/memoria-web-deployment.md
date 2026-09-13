@@ -181,7 +181,9 @@ Perfectly reasonable, with two precautions:
 
 - **Use a read-only account** unless operators are expected to refresh snapshots. Reading needs
   `SELECT` on the store's tables (or read access to the Cosmos container); **Update** additionally
-  needs to write the aggregate and projection rows.
+  needs to write the aggregate and projection rows. The Updater role keeps the button from
+  everyone else, but it is granted per operator; a database account that cannot write is the
+  guarantee that holds whatever the mapping says.
 - **Expect the queries to be the store's queries.** Data pages read the same tables the application
   does. They page rather than fetching whole streams, and against a relational store the list queries
   are run once in the background at start-up so nobody's first page load pays to build the model and

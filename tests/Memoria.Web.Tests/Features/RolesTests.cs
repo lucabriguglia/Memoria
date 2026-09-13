@@ -118,6 +118,80 @@ public class RolesTests
         web.Installed.Should().Contain(file => file.EndsWith("orders.zip", StringComparison.Ordinal));
     }
 
+    private const string Updaters = "memoria-updaters";
+
+    /// <summary>
+    /// Update writes a snapshot, and needs the Updater role — held outright, or included in
+    /// Administrator. A Reader is sent away with the role's name; an Updater is let through to
+    /// whatever the store then says, and is still turned away from Settings.
+    /// </summary>
+    [Theory]
+    [InlineData("memoria-readers", true)]
+    [InlineData(Updaters, false)]
+    [InlineData(Admins, false)]
+    public async Task Lets_only_an_updater_or_above_refresh_a_snapshot(string group, bool forbidden)
+    {
+        using var web = MemoriaWeb.SignedInAs("Ada Lovelace", ("roles", group))
+            .With("Authorization:Roles:Administrator", Admins)
+            .With("Authorization:Roles:Updater", Updaters);
+        var client = web.Client;
+        var page = await client.GetStringAsync("/");
+
+        var response = await client.PostAsync("/streamed/aggregates/update", new FormUrlEncodedContent(
+            new Dictionary<string, string>
+            {
+                [Forms.AntiforgeryField] = Forms.AntiforgeryToken(page),
+                ["type"] = "Nothing",
+                ["stream"] = "sample:1",
+                ["id"] = "sample-1:1",
+                ["returnUrl"] = "/streamed/aggregates"
+            }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Found);
+
+        if (forbidden)
+        {
+            Forbidden(response).Should().Be(("Updater", "/streamed/aggregates/update"));
+        }
+        else
+        {
+            response.Headers.Location!.OriginalString.Should().NotStartWith("/forbidden");
+        }
+    }
+
+    [Fact]
+    public async Task Turns_an_updater_away_from_settings()
+    {
+        using var web = MemoriaWeb.SignedInAs("Ada Lovelace", ("roles", Updaters))
+            .With("Authorization:Roles:Updater", Updaters);
+
+        var response = await web.Client.GetAsync("/settings");
+
+        Forbidden(response).Should().Be(("Administrator", "/settings"));
+    }
+
+    /// <summary>
+    /// The tab stays where it is for everyone, since it is on a page a Reader is already reading;
+    /// what changes is what it holds. A Reader is told which role the button needs, and gets no
+    /// button. An Updater gets the panel as it was.
+    /// </summary>
+    [Theory]
+    [InlineData("memoria-readers", true)]
+    [InlineData(Updaters, false)]
+    public async Task Tells_a_reader_on_the_update_tab_which_role_the_button_needs(string group, bool told)
+    {
+        using var web = MemoriaWeb.SignedInAs("Ada Lovelace", ("roles", group))
+            .With("Authorization:Roles:Updater", Updaters)
+            .WithSampleTypes();
+
+        var page = await web.Client.GetStringAsync(MemoriaWeb.SampleAggregateDetail("update"));
+
+        page.Should().Contain("id=\"tab-update\"");
+        page.Contains("needs the Updater role").Should().Be(told);
+        page.Contains("action=\"streamed/aggregates/update\"").Should().Be(!told,
+            "the form is offered to an Updater and withheld from a Reader");
+    }
+
     /// <summary>The role the redirect says was needed, and where the operator was going.</summary>
     private static (string Role, string ReturnUrl) Forbidden(HttpResponseMessage response)
     {

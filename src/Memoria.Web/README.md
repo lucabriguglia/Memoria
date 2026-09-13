@@ -27,9 +27,10 @@ and nothing answers anyone who has not, form posts included. The tool refuses to
 told which provider, or told in so many words to run open, which is what
 [`appsettings.Development.json`](appsettings.Development.json) does for `dotnet run` on localhost.
 
-There are no roles yet: everyone who can sign in can read every page, refresh every snapshot, and
-upload a `.dll` that this process will load and execute. Grant sign-in to the people you would give
-shell access on the host to. See
+Signed in, an operator is a Reader, an Updater or an Administrator, each including the one before:
+read every page; also press **Update**; also upload a `.dll` that this process will load and
+execute. Every operator is a Reader until a claim the provider sends is mapped to one of the other
+two, so map Administrator only to the people you would give shell access on the host to. See
 [Configuration](https://lucabriguglia.github.io/Memoria/tools/memoria-web-configuration.html#signing-operators-in)
 for the settings and
 [Deployment](https://lucabriguglia.github.io/Memoria/tools/memoria-web-deployment.html#signing-operators-in)
@@ -49,6 +50,9 @@ for what to register at the provider.
 | `Authentication:Oidc:ClientSecret` | Unless running open             | —                                    |
 | `Authentication:Oidc:Scopes`       | No                              | `openid profile email`               |
 | `Authentication:Disabled`          | Unless signing in               | —                                    |
+| `Authorization:RoleClaimType`      | No                              | `roles`                              |
+| `Authorization:Roles:Administrator` | No                             | —                                    |
+| `Authorization:Roles:Updater`      | No                              | —                                    |
 
 PostgreSQL, SQL Server and SQLite are read through Entity Framework Core and carry both consistency
 models. Cosmos DB is read through its own SDK and carries the streamed model only — there is no

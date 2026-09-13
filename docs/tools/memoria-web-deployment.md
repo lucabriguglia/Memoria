@@ -4,9 +4,11 @@
 repository, and you build it, publish it, and host it yourself.
 
 > **Read [Security](memoria-web.md#security) before deciding where to put it.** Operators sign in
-> through your OpenID Connect provider — see [Signing operators in](#signing-operators-in) — but
-> there are no roles yet: everyone who can sign in can upload an assembly this process will load
-> and execute. Grant sign-in to the people you would give shell access on the host to.
+> through your OpenID Connect provider — see [Signing operators in](#signing-operators-in) — and
+> what each may do is decided by a role mapped from a claim the provider sends. Until a mapping is
+> configured every operator is a Reader; map the Administrator role only to people you would give
+> shell access on the host to, because an Administrator uploads assemblies this process will load
+> and execute.
 
 ## Run it locally
 
@@ -155,9 +157,11 @@ Any provider that publishes a discovery document qualifies — Microsoft Entra I
 Google, Auth0, Okta, Keycloak, Zitadel, Authentik. The application never learns which; the choice
 of provider, and with it of cloud, is yours.
 
-**There are no roles in this release.** Everyone who can sign in can read every page, refresh every
-snapshot, and upload an assembly this process will load and execute. Grant sign-in to the people you
-would give shell access on the host to, and no one else, until roles arrive in the next release.
+**Map the roles.** Signed in, every operator is a Reader until a claim the provider sends is mapped
+to Updater or Administrator — see [Roles](memoria-web-configuration.md#roles). Map Administrator
+only to the people you would give shell access on the host to: an Administrator uploads an
+assembly this process will load and execute. The provider has to send the claim, too — a group
+claim, an app role, whatever it calls it — and the `Scopes` setting may need to ask for it.
 
 A proxy that authenticates in front of the application stays perfectly valid — as a second gate, not
 as the only one. It is no longer what stands between the internet and an upload form that runs

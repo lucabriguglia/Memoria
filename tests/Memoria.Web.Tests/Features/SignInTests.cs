@@ -1,6 +1,4 @@
 using System;
-using System.IO;
-using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -49,14 +47,14 @@ public class SignInTests
         using var web = MemoriaWeb.SigningIn();
         using var upload = new MultipartFormDataContent
         {
-            { new ByteArrayContent(Zip("Contoso.Orders.dll")), "files", "orders.zip" }
+            { new ByteArrayContent(Forms.Zip("Contoso.Orders.dll")), "files", "orders.zip" }
         };
 
         var response = await web.Client.PostAsync("/settings/upload", upload);
 
         response.StatusCode.Should().Be(HttpStatusCode.Found);
         response.Headers.Location!.GetLeftPart(UriPartial.Path).Should().Be(MemoriaWeb.Provider.AuthorizeEndpoint);
-        Installed(web).Should().BeEmpty();
+        web.Installed.Should().BeEmpty();
     }
 
     /// <summary>
@@ -71,7 +69,7 @@ public class SignInTests
         var response = await web.Client.GetAsync("/");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        Header(await response.Content.ReadAsStringAsync()).Should().Contain("Ada Lovelace");
+        Markup.Header(await response.Content.ReadAsStringAsync()).Should().Contain("Ada Lovelace");
     }
 
     [Fact]
@@ -124,32 +122,5 @@ public class SignInTests
             .Contain("Authentication:Oidc:ClientId").And
             .Contain("Authentication:Oidc:ClientSecret").And
             .Contain("Authentication:Disabled");
-    }
-
-    /// <summary>The page's header alone, so a name in the body does not stand in for one up there.</summary>
-    private static string Header(string page)
-    {
-        var start = page.IndexOf("<header", StringComparison.Ordinal);
-        var end = page.IndexOf("</header>", StringComparison.Ordinal);
-
-        return start >= 0 && end > start ? page[start..end] : string.Empty;
-    }
-
-    private static string[] Installed(MemoriaWeb web) =>
-        Directory.Exists(web.ExtensionsDirectory)
-            ? Directory.GetFiles(web.ExtensionsDirectory, "*", SearchOption.AllDirectories)
-            : [];
-
-    private static byte[] Zip(string entry)
-    {
-        using var bytes = new MemoryStream();
-
-        using (var archive = new ZipArchive(bytes, ZipArchiveMode.Create, leaveOpen: true))
-        {
-            using var content = archive.CreateEntry(entry).Open();
-            content.Write("not really an assembly"u8);
-        }
-
-        return bytes.ToArray();
     }
 }

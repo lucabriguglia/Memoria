@@ -27,7 +27,7 @@ public class SignOutTests
         var page = await client.GetStringAsync("/");
         using var form = new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["__RequestVerificationToken"] = AntiforgeryToken(page)
+            [Forms.AntiforgeryField] = Forms.AntiforgeryToken(page)
         });
 
         var response = await client.PostAsync("/logout", form);

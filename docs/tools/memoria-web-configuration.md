@@ -22,10 +22,13 @@ can be overridden without editing a file.
 | `Authentication:Oidc:ClientSecret` | Unless running open           | —                                     | What the tool proves that registration with      |
 | `Authentication:Oidc:Scopes`     | No                              | `openid profile email`                | What is asked of the provider, space-separated   |
 | `Authentication:Disabled`        | Unless signing in               | —                                     | `true` runs the tool open, with nobody signed in |
+| `Authorization:RoleClaimType`    | No                              | `roles`                               | The claim the provider puts its groups or roles in |
+| `Authorization:Roles:Administrator` | No                           | —                                     | Claim values that make an operator an Administrator, comma-separated |
+| `Authorization:Roles:Updater`    | No                              | —                                     | Claim values that make an operator an Updater, comma-separated |
 
 As environment variables, replace each `:` with a double underscore:
 `ConnectionStrings__Memoria`, `Database__Provider`, `Extensions__Directory`,
-`Authentication__Oidc__ClientSecret`.
+`Authentication__Oidc__ClientSecret`, `Authorization__Roles__Administrator`.
 
 ## The connection string
 
@@ -166,6 +169,63 @@ Which provider was chosen is logged at start-up, next to which store:
 ```
 info: Memoria.Web[0]  Operators sign in through https://login.example.com/realms/memoria.
 ```
+
+### Roles
+
+Signed in, an operator holds one of three roles, each including the one before it:
+
+| Role            | May                                                                        |
+| --------------- | -------------------------------------------------------------------------- |
+| Reader          | Read every page                                                            |
+| Updater         | Also press **Update** on a model's detail page, which writes a snapshot    |
+| Administrator   | Also install, remove and reread uploaded assemblies on the Settings page — running code on the host |
+
+Every signed-in operator is a Reader. The other two are granted by mapping the values of a claim
+the provider sends:
+
+```json
+{
+  "Authorization": {
+    "RoleClaimType": "roles",
+    "Roles": {
+      "Administrator": "memoria-admins",
+      "Updater": "memoria-updaters, memoria-support"
+    }
+  }
+}
+```
+
+`RoleClaimType` names the claim the provider puts its groups or roles in. Every provider does this
+differently — Entra ID sends app roles under `roles` and group ids under `groups`, Cognito sends
+`cognito:groups`, Keycloak sends realm roles nested under `realm_access` unless a mapper flattens
+them into a claim of their own — so the tool asks rather than guesses. The default is `roles`.
+
+Each of the two lists is comma-separated, so it fits in one environment variable:
+
+```bash
+Authorization__RoleClaimType=cognito:groups
+Authorization__Roles__Administrator=memoria-admins
+```
+
+An operator whose claim carries a mapped value holds that role; one whose claims match nothing is
+a Reader. A group the provider happens to call `Administrator` grants nothing until it is mapped
+here. An operator turned away from an address is told which role it needed and where they were
+going, on a page that says so, and the log lines at start-up say what was mapped:
+
+```
+info: Memoria.Web[0]  Roles are read off the roles claim: Administrator for memoria-admins, Updater for memoria-updaters, memoria-support.
+```
+
+With no `Authorization` section at all, every signed-in operator is a Reader — nobody can update a
+snapshot or use Settings — and start-up says so:
+
+```
+info: Memoria.Web[0]  No roles are mapped: every signed-in operator is a Reader, and nobody can update
+      a snapshot or use Settings. Set Authorization:Roles:Administrator and Authorization:Roles:Updater
+      to the claim values that grant them.
+```
+
+Running open, roles do not apply: there is nobody to hold one, and every page and button answers.
 
 ### Running open
 

@@ -51,10 +51,26 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
 
     private readonly string? _operator;
 
-    private MemoriaWeb(Dictionary<string, string?> settings, string? @operator = null)
+    private readonly (string Type, string Value)[] _claims;
+
+    private MemoriaWeb(
+        Dictionary<string, string?> settings,
+        string? @operator = null,
+        (string Type, string Value)[]? claims = null)
     {
         _settings = settings;
         _operator = @operator;
+        _claims = claims ?? [];
+    }
+
+    /// <summary>
+    /// The same instance with one more setting, said before it starts: the way a test hands it an
+    /// <c>Authorization</c> mapping alongside the provider.
+    /// </summary>
+    public MemoriaWeb With(string setting, string value)
+    {
+        _settings[setting] = value;
+        return this;
     }
 
     private static Dictionary<string, string?> ProviderSettings => new()
@@ -78,7 +94,8 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
     /// that point — the fallback policy, the pages, the header, sign-out — sees the principal it
     /// would have seen, with the name under the claim the real one carries it in.
     /// </remarks>
-    public static MemoriaWeb SignedInAs(string name) => new(ProviderSettings, name);
+    public static MemoriaWeb SignedInAs(string name, params (string Type, string Value)[] claims) =>
+        new(ProviderSettings, name, claims);
 
     /// <summary>An instance told, in so many words, to run open.</summary>
     public static MemoriaWeb Open() => new(new Dictionary<string, string?>
@@ -91,6 +108,12 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
 
     /// <summary>Where this instance keeps what is uploaded to it.</summary>
     public string ExtensionsDirectory => Path.Combine(_scratch, "extensions");
+
+    /// <summary>Every file an upload has left under the extensions directory, archives and assemblies alike.</summary>
+    public string[] Installed =>
+        Directory.Exists(ExtensionsDirectory)
+            ? Directory.GetFiles(ExtensionsDirectory, "*", SearchOption.AllDirectories)
+            : [];
 
     /// <summary>Everything the application has logged since it started, in order.</summary>
     public IReadOnlyList<LogEntry> Logged => _logged.ToArray();
@@ -159,7 +182,11 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
             }
 
             services.AddAuthentication()
-                .AddScheme<OperatorOptions, OperatorHandler>(OperatorHandler.Scheme, options => options.Name = _operator);
+                .AddScheme<OperatorOptions, OperatorHandler>(OperatorHandler.Scheme, options =>
+                {
+                    options.Name = _operator;
+                    options.Claims = _claims;
+                });
 
             // Asked first, in place of the cookie. The challenge and the sign-out stay the
             // application's own, so those are still what is proved.
@@ -171,6 +198,9 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
     private sealed class OperatorOptions : AuthenticationSchemeOptions
     {
         public string Name { get; set; } = string.Empty;
+
+        /// <summary>What else the provider said about them: the groups, under whatever claim.</summary>
+        public (string Type, string Value)[] Claims { get; set; } = [];
     }
 
     /// <summary>Signs every request in as the one operator it was told about.</summary>
@@ -189,6 +219,11 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
             var identity = new ClaimsIdentity(
                 [new Claim("sub", Options.Name.ToLowerInvariant()), new Claim("name", Options.Name)],
                 Scheme, nameType: "name", roleType: "roles");
+
+            foreach (var (type, value) in Options.Claims)
+            {
+                identity.AddClaim(new Claim(type, value));
+            }
 
             return Task.FromResult(AuthenticateResult.Success(
                 new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme)));

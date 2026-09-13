@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Memoria.Web.Security;
@@ -33,7 +34,8 @@ public static class SignInRegistration
     /// the same in both modes, but it has nobody to ask and nothing to require, and the tool
     /// answers as it did before it had either.
     /// </remarks>
-    public static IServiceCollection AddSignIn(this IServiceCollection services, AuthenticationSettings settings)
+    public static IServiceCollection AddSignIn(
+        this IServiceCollection services, AuthenticationSettings settings, AuthorizationSettings roles)
     {
         // What the layout asks to say who is signed in. Registered in both modes so the layout is
         // one layout: open, it is asked and answers nobody.
@@ -42,12 +44,39 @@ public static class SignInRegistration
         if (settings is not AuthenticationSettings.OpenIdConnect provider)
         {
             services.AddAuthentication();
-            services.AddAuthorization();
+
+            // The three policies exist so that the pages and posts naming them can be mapped, and
+            // each is met by anyone: open, there is nobody to hold a role, and nothing is kept
+            // from the nobody who is asking.
+            services.AddAuthorization(options =>
+            {
+                foreach (var role in new[] { Roles.Reader, Roles.Updater, Roles.Administrator })
+                {
+                    options.AddPolicy(role, policy => policy.RequireAssertion(_ => true));
+                }
+            });
+
             return services;
         }
 
+        services.AddSingleton(roles);
+        services.AddTransient<IClaimsTransformation, RoleClaims>();
+        services.AddSingleton<IAuthorizationHandler, RoleRequirement.Handler>();
+        services.AddSingleton<IAuthorizationMiddlewareResultHandler, ForbiddenRedirect>();
+
         services.AddAuthorization(options =>
-            options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+        {
+            options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+
+            // One policy per role, named after it, so a page or a post asks for the role by name
+            // and the refusal can say which it was.
+            foreach (var role in new[] { Roles.Reader, Roles.Updater, Roles.Administrator })
+            {
+                options.AddPolicy(role, policy => policy
+                    .RequireAuthenticatedUser()
+                    .AddRequirements(new RoleRequirement(role)));
+            }
+        });
 
         services.AddAuthentication(options =>
             {
@@ -55,7 +84,13 @@ public static class SignInRegistration
                 options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
             })
-            .AddCookie()
+            .AddCookie(options =>
+            {
+                // Where a signed-in operator lacking a role is sent. The redirect itself is built
+                // by ForbiddenRedirect, which adds the role; this is the framework's own fallback
+                // for a refusal that carries none.
+                options.AccessDeniedPath = ForbiddenRedirect.Path;
+            })
             .AddOpenIdConnect(options =>
             {
                 options.Authority = provider.Authority;
@@ -144,16 +179,34 @@ public static class SignInRegistration
     /// Open is a warning rather than a line among the others. It is a choice somebody wrote down,
     /// and the log is where whoever reads it later finds out it is still in force.
     /// </remarks>
-    public static void LogSignIn(this ILogger logger, AuthenticationSettings settings)
+    public static void LogSignIn(this ILogger logger, AuthenticationSettings settings, AuthorizationSettings roles)
     {
-        if (settings is AuthenticationSettings.OpenIdConnect provider)
+        if (settings is not AuthenticationSettings.OpenIdConnect provider)
         {
-            logger.LogInformation("Operators sign in through {Authority}.", provider.Authority);
+            logger.LogWarning(
+                "Running open: nobody is signed in and every page, including the upload form, answers " +
+                "anyone who can reach it, because {Setting} is true.", AuthenticationSettings.DisabledSetting);
             return;
         }
 
-        logger.LogWarning(
-            "Running open: nobody is signed in and every page, including the upload form, answers " +
-            "anyone who can reach it, because {Setting} is true.", AuthenticationSettings.DisabledSetting);
+        logger.LogInformation("Operators sign in through {Authority}.", provider.Authority);
+
+        if (roles.MapsAnyone)
+        {
+            logger.LogInformation(
+                "Roles are read off the {Claim} claim: Administrator for {Administrators}, Updater for {Updaters}.",
+                roles.RoleClaimType,
+                string.Join(", ", roles.Administrators),
+                string.Join(", ", roles.Updaters));
+            return;
+        }
+
+        // Said at start-up rather than discovered at the upload form. Silence is the safe reading,
+        // but an administrator who forgot the mapping should hear about it here first.
+        logger.LogInformation(
+            "No roles are mapped: every signed-in operator is a Reader, and nobody can update a " +
+            "snapshot or use Settings. Set {Administrator} and {Updater} to the claim values that grant them.",
+            AuthorizationSettings.AdministratorSetting,
+            AuthorizationSettings.UpdaterSetting);
     }
 }

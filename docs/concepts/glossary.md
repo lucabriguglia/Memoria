@@ -2,6 +2,10 @@
 
 Definitions for terms used across the Memoria documentation. See also [Overview](overview.md) and [Aggregates and Streams](aggregates-and-streams.md).
 
+## Administrator
+
+*Memoria Web.* The role that may also install, remove and reread the uploaded assemblies on the Settings page — which is running code on the host. Includes [Updater](#updater). Granted by mapping a claim value under `Authorization:Roles:Administrator` — see [Roles](../tools/memoria-web-configuration.md#roles).
+
 ## Aggregate
 
 A consistency boundary that derives its state by applying domain events. Inherits from `AggregateRoot`. Decides which events it cares about via `EventTypeFilter`, and produces new events via `Add(@event)`.
@@ -34,6 +38,10 @@ An aggregate reconstructed entirely from events, with no snapshot involved. Usef
 
 A fan-out message. Multiple `INotificationHandler<T>` handlers can be registered for the same notification; the dispatcher invokes them all and returns the list of results.
 
+## Operator
+
+*Memoria Web.* A person signed in to the tool. Every operator holds one of three roles, each including the one before it: [Reader](#reader), [Updater](#updater), [Administrator](#administrator).
+
 ## Projection
 
 A read model: a query-optimised view built by applying domain events. Inherits from `Projection` and, like an aggregate, declares an `EventTypeFilter` and `Apply` — but produces no events (no `Add`, no uncommitted events). Persisted and retrieved as a snapshot via `SaveProjection` / `GetProjection`. See [Projections](projections.md).
@@ -46,6 +54,10 @@ A unique identifier for a projection snapshot, serving as its persistence key. I
 
 Controls how `IDomainService.GetAggregate` reconstructs an aggregate. Four variants trade off freshness against I/O — see [Read Modes](read-modes.md).
 
+## Reader
+
+*Memoria Web.* The role every signed-in [operator](#operator) holds: may read every page and nothing more. An operator whose claims match no mapping is a Reader.
+
 ## Result Pattern
 
 `Result` and `Result<T>` are discriminated unions of `Success` / `Failure`. Memoria returns them from every handler and provider operation instead of throwing — see [Result Pattern](result-pattern.md).
@@ -57,3 +69,7 @@ The persisted latest state of an aggregate, stored alongside its event stream. S
 ## Stream Id
 
 A unique identifier for an event stream. Implements `IStreamId`. A stream typically groups events related to one entity (e.g. one customer, one tenant), but can hold events for multiple aggregates that filter the stream differently.
+
+## Updater
+
+*Memoria Web.* The role that may also press **Update** on a model's detail page, which writes a refreshed snapshot. Includes [Reader](#reader); included in [Administrator](#administrator). Granted by mapping a claim value under `Authorization:Roles:Updater` — see [Roles](../tools/memoria-web-configuration.md#roles).

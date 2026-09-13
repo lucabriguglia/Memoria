@@ -2,6 +2,7 @@ using Memoria.EventSourcing;
 using Memoria.EventSourcing.Dcb;
 using Memoria.Web.Components;
 using Memoria.Web.Extensibility;
+using Memoria.Web.Security;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 
@@ -81,7 +82,7 @@ public static class EndpointRegistration
             logger.LogCatalogue(types.Current);
 
             return Back(message: $"Uploaded {files.Count} file(s). {types.Current.Count} type(s) registered.");
-        });
+        }).RequireAuthorization(Roles.Administrator);
 
         app.MapPost("/settings/delete", (
             DomainTypeRegistry types,
@@ -106,7 +107,7 @@ public static class EndpointRegistration
             logger.LogCatalogue(types.Current);
 
             return Back(message: $"Removed {name}. {types.Current.Count} type(s) registered.");
-        });
+        }).RequireAuthorization(Roles.Administrator);
 
         app.MapPost("/settings/refresh", async (
             HttpContext context,
@@ -133,7 +134,7 @@ public static class EndpointRegistration
             logger.LogCatalogue(types.Current);
 
             return Back(message: $"{types.Current.Count} type(s) registered.", tab: "types");
-        }).DisableAntiforgery();
+        }).DisableAntiforgery().RequireAuthorization(Roles.Administrator);
     }
 
     /// <summary>

@@ -194,10 +194,11 @@ in so many words to run open. See [Configuration](memoria-web-configuration.md#s
 for the settings and [Deployment](memoria-web-deployment.md#signing-operators-in) for what to
 register at the provider.
 
-**There are no roles yet.** Every signed-in operator can read every page and press every button,
-including the ones that change what everyone else resolves. Grant sign-in to the people you would
-give shell access on the host to, and treat upload rights as exactly that, until roles arrive in the
-next release.
+**What an operator may do is their role.** A Reader reads every page; an Updater may also press
+**Update**; an Administrator may also use Settings. Every signed-in operator is a Reader until a
+claim the provider sends is mapped to one of the other two — see
+[Roles](memoria-web-configuration.md#roles). Map Administrator only to the people you would give
+shell access on the host to, and treat it as exactly that.
 
 Run it open — `Authentication:Disabled=true`, which is how `dotnet run` runs it on localhost — only
 on localhost or behind a proxy that authenticates every request including the form posts. Every

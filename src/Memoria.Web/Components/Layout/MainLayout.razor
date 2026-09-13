@@ -95,8 +95,13 @@
 }
 
         @* The theme is picked under Settings rather than up here: it is this browser's own
-           preference, which is what that tab holds, and the bar is for places to go. *@
-        <NavLink href="settings">Settings</NavLink>
+           preference, which is what that tab holds, and the bar is for places to go. And a place
+           only an Administrator can go is left out for everyone else: the bar is for places to
+           go, not places to be turned away from. Open, the policy is met by anyone and the link
+           is there as it always was. *@
+        <AuthorizeView Policy="@Roles.Administrator">
+            <NavLink href="settings">Settings</NavLink>
+        </AuthorizeView>
     </nav>
 
     @* Who the tool thinks is asking, and the way to stop being them. At the far end of the bar,

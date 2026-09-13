@@ -23,7 +23,10 @@ var database = DatabaseConnection.Of(
 // refuses to start, rather than starting open because nobody said otherwise.
 var authentication = AuthenticationSettings.Of(builder.Configuration);
 
-builder.Services.AddSignIn(authentication);
+// Which of the provider's claim values make an operator more than a Reader. Silence maps nobody.
+var roles = AuthorizationSettings.Of(builder.Configuration);
+
+builder.Services.AddSignIn(authentication, roles);
 
 builder.Services.AddMemoria(typeof(Program));
 
@@ -49,7 +52,7 @@ var app = builder.Build();
 // Logged because the provider is now read rather than fixed: a store that answers nothing is the
 // first thing anyone will suspect the connection string of, and this says how it was read.
 app.Logger.LogInformation("Store opened with {Provider}.", database.Provider);
-app.Logger.LogSignIn(authentication);
+app.Logger.LogSignIn(authentication, roles);
 
 var registry = app.Services.GetRequiredService<DomainTypeRegistry>();
 registry.Reload();

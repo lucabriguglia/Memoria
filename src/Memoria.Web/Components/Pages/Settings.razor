@@ -13,20 +13,17 @@
 </nav>
 
 <h1>Settings</h1>
-@* Two views of one setting — the archives that were uploaded and the types they turned out to hold
-   — and, after them, the settings that are this browser's rather than the server's. Switched by the
-   address rather than by script, the same way the aggregate pages switch theirs, so a view can be
-   linked to and the back button steps between them. Marked with aria-current because these are
-   places to go, not scripted tabs. *@
+@* Two views of one setting — the archives that were uploaded and the types they turned out to hold.
+   Switched by the address rather than by script, the same way the aggregate pages switch theirs,
+   so a view can be linked to and the back button steps between them. Marked with aria-current
+   because these are places to go, not scripted tabs. The browser's own settings used to be a third
+   tab here and are a page of their own now, under the operator's name: this page is an
+   Administrator's, and a preference is everybody's. *@
 <nav class="tabs" aria-label="Settings views">
     <a id="tab-@InstalledTab" href="settings?tab=@InstalledTab"
        aria-current="@(Tab == InstalledTab ? "page" : null)">Installed</a>
     <a id="tab-@TypesTab" href="settings?tab=@TypesTab"
        aria-current="@(Tab == TypesTab ? "page" : null)">Types</a>
-    @* Last of the three, and the only one that is nobody else's business: the two before it are the
-       server's state, read by everyone; this one is how this browser draws it. *@
-    <a id="tab-@PreferencesTab" href="settings?tab=@PreferencesTab"
-       aria-current="@(Tab == PreferencesTab ? "page" : null)">Preferences</a>
 </nav>
 
 @* Each panel is named by the tab that reaches it, so the label is written once. *@
@@ -253,89 +250,6 @@ else if (Tab == TypesTab)
         @Shared
     </section>
 }
-else
-{
-    <section class="tab-panel" aria-labelledby="tab-@PreferencesTab">
-        @* The settings in the card the other two tabs read their rows in: a preference is a name
-           with a value at the end of it, which is the shape of a row of stored data, and drawing it
-           a second way would make one page out of two. Divs rather than a table because there is
-           nothing to head — two rows of two, and the line under each is a sentence rather than a
-           third column. *@
-        <div class="preferences">
-            @* First, because it is the one preference that changes every page rather than the
-               tables on some of them.
-
-               Three choices rather than a switch between two: nothing chosen is its own answer —
-               the operating system's — and it is the one the page opens at, so a reader who has
-               never picked has something to go back to. That third state is stored as the absence
-               of the value rather than the word "system", which is why picking it clears the key
-               instead of writing to it.
-
-               Rendered at System and corrected to what was stored once the page is running, like
-               the two below. Without scripting the select does nothing, so it is hidden until the
-               script that drives it has run — and the page still follows the operating system,
-               which is what System says anyway. *@
-            <div class="preference" data-preference-row="theme" hidden>
-                <div class="control">
-                    <label for="theme">Theme</label>
-                    <select id="theme" data-preference="theme">
-                        <option value="system" selected>System</option>
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                    </select>
-                </div>
-                <p class="hint">
-                    How this application is coloured, in this browser. System follows the light or
-                    dark setting the operating system asks for and changes with it.
-                </p>
-            </div>
-
-            @* The same picker as the one under a table, carrying the same class, because it is the
-               same choice: what is picked here is what that picker opens at, and what is picked
-               there is what stands here afterwards. There is no form and nothing to submit — the
-               select is the setting, and it is written down as it changes.
-
-               Rendered at the default and corrected to what was stored once the page is running.
-               The server has no way to read this browser's storage, so the alternative is a select
-               that says nothing until it is opened. *@
-            <div class="preference">
-                <div class="control page-size">
-                    <label for="rows-per-page">Rows per page</label>
-                    <select id="rows-per-page" data-preference="rows-per-page">
-                        @foreach (var option in InstanceQuery.PageSizes)
-                        {
-                            <option value="@option" selected="@(option == InstanceQuery.DefaultPageSize)">@option</option>
-                        }
-                    </select>
-                </div>
-                <p class="hint">
-                    How much of a table one page holds, wherever a table is read. The picker under a
-                    table sets the same thing and opens at whatever stands here.
-                </p>
-            </div>
-
-            @* The same setting as the "Don't show this again" under the note itself, reachable
-               without having to meet the note again to change one's mind — which is the whole
-               difficulty with a dismissal: once hidden, the thing that offered to hide it is gone.
-               Unchecked as rendered and corrected once the page is running, like the picker above.
-
-               The box sits beside the label rather than inside it, so it stands where the picker
-               above it does and the two rows are read the same way round. It is still the label's
-               own control — for names it, so the words still toggle it. *@
-            <div class="preference">
-                <div class="control">
-                    <label for="hide-ordering-notice">Hide the note about approximate ordering</label>
-                    <input type="checkbox" id="hide-ordering-notice"
-                           data-preference="hide-ordering-notice" />
-                </div>
-                <p class="hint">
-                    Some stores cannot order a page fully and fall back to ordering by date alone. The
-                    events are all there; rows written at the same moment can move between pages.
-                </p>
-            </div>
-        </div>
-    </section>
-}
 
 @code {
 
@@ -346,7 +260,7 @@ else
     private string? Error { get; set; }
 
     /// <summary>
-    /// The three views the page offers, named as they appear in the address. Which one is showing is
+    /// The two views the page offers, named as they appear in the address. Which one is showing is
     /// the address's to say, so a view can be linked to, bookmarked, and gone back to — and so the
     /// redirect after an upload or a refresh comes back to the tab the button was pressed on.
     /// </summary>
@@ -355,15 +269,9 @@ else
     private const string TypesTab = "types";
 
     /// <summary>
-    /// This browser's own settings, which the server neither keeps nor is told about: the tab is
-    /// only the page they are set on. Named in the address like the other two, so it is somewhere
-    /// to be sent rather than a panel that has to be found.
-    /// </summary>
-    private const string PreferencesTab = "preferences";
-
-    /// <summary>
     /// Which view the address asks for. Taken as text and matched against the two the page has, so
-    /// anything else in the query string opens the one the page opens with rather than a blank page.
+    /// anything else in the query string — including the preferences tab this page used to have,
+    /// which is a page of its own now — opens the one the page opens with rather than a blank page.
     /// </summary>
     [SupplyParameterFromQuery(Name = "tab")]
     private string? TabAsked { get; set; }
@@ -371,7 +279,6 @@ else
     private string Tab => (TabAsked ?? string.Empty).ToLowerInvariant() switch
     {
         TypesTab => TypesTab,
-        PreferencesTab => PreferencesTab,
         _ => InstalledTab,
     };
 
@@ -380,8 +287,9 @@ else
     /// </summary>
     /// <remarks>
     /// Uploading, removing and refreshing all change what everyone on this server resolves, so the
-    /// warning belongs under both tabs that do them — and nowhere near Preferences, where it would
-    /// be a contradiction rather than a caution. Set smaller and in italic because it is the
+    /// warning belongs under both tabs that do them — which is every tab this page has, now that
+    /// the browser's own preferences, where it would have been a contradiction rather than a
+    /// caution, are a page of their own. Set smaller and in italic because it is the
     /// condition the tab is read under rather than part of it: a footnote to the panel, not the
     /// sentence it opens with. Written once and rendered by whichever panel is showing, the same
     /// way the notice above it is.

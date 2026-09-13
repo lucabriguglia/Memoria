@@ -38,8 +38,11 @@ public static class SignInRegistration
         this IServiceCollection services, AuthenticationSettings settings, AuthorizationSettings roles)
     {
         // What the layout asks to say who is signed in. Registered in both modes so the layout is
-        // one layout: open, it is asked and answers nobody.
+        // one layout: open, it is asked and answers nobody. The settings themselves are there too,
+        // for the one thing the layout draws differently open — the operator's corner of the bar,
+        // which has no operator to name.
         services.AddCascadingAuthenticationState();
+        services.AddSingleton(settings);
 
         if (settings is not AuthenticationSettings.OpenIdConnect provider)
         {

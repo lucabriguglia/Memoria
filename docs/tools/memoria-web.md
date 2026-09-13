@@ -163,7 +163,8 @@ menu does.
 
 Cosmos also cannot fully order a page of results, and falls back to ordering by date alone: every row
 is there, but rows written at the same moment can move between pages. Pages under that store say so,
-and the note can be turned off under **Settings → Preferences**.
+and the note can be turned off under **Preferences**, which opens from your name in the header
+(or stands in its place when the tool runs open).
 
 ## Everyone shares one set of types
 

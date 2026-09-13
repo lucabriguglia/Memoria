@@ -1,0 +1,68 @@
+using System.Net;
+using System.Threading.Tasks;
+using FluentAssertions;
+using Xunit;
+
+namespace Memoria.Web.Tests.Features;
+
+/// <summary>
+/// Preferences are this browser's own — theme, rows per page, the ordering note — and every
+/// operator has a browser, so they live on a page of their own that every signed-in operator can
+/// reach, not on the settings page that only an Administrator can. The way there is under the
+/// operator's name in the header, beside sign-out; open, with nobody to name, it is a plain link.
+/// </summary>
+public class PreferencesTests
+{
+    private const string Admins = "memoria-admins";
+
+    [Fact]
+    public async Task Shows_a_reader_their_preferences()
+    {
+        using var web = MemoriaWeb.SignedInAs("Ada Lovelace")
+            .With("Authorization:Roles:Administrator", Admins);
+
+        var response = await web.Client.GetAsync("/preferences");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await response.Content.ReadAsStringAsync()).Should()
+            .Contain("data-preference=\"theme\"").And
+            .Contain("data-preference=\"rows-per-page\"").And
+            .Contain("data-preference=\"hide-ordering-notice\"");
+    }
+
+    [Fact]
+    public async Task Keeps_the_preferences_off_the_settings_page()
+    {
+        using var web = MemoriaWeb.SignedInAs("Ada Lovelace", ("roles", Admins))
+            .With("Authorization:Roles:Administrator", Admins);
+
+        var page = await web.Client.GetStringAsync("/settings");
+
+        page.Should().NotContain("tab=preferences").And.NotContain("data-preference=\"theme\"");
+    }
+
+    /// <summary>
+    /// The name opens a menu, the way the section headings in the bar do, holding the two things
+    /// that are the operator's own: their preferences and their way out.
+    /// </summary>
+    [Fact]
+    public async Task Opens_preferences_and_sign_out_under_the_signed_in_operators_name()
+    {
+        using var web = MemoriaWeb.SignedInAs("Ada Lovelace");
+
+        var header = Markup.Header(await web.Client.GetStringAsync("/"));
+
+        header.Should().MatchRegex("<summary[^>]*>[^<]*Ada Lovelace");
+        header.Should().Contain("href=\"preferences\"").And.Contain("action=\"logout\"");
+    }
+
+    [Fact]
+    public async Task Links_to_preferences_in_place_of_the_operator_when_running_open()
+    {
+        using var web = MemoriaWeb.Open();
+
+        var header = Markup.Header(await web.Client.GetStringAsync("/"));
+
+        header.Should().Contain("href=\"preferences\"").And.NotContain("action=\"logout\"");
+    }
+}

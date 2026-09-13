@@ -62,20 +62,56 @@ header {
             font-weight: 600;
         }
 
-/* The signed-in operator and the button that ends their session, at the far end of the bar. Pushed
-   there by the margin rather than placed by the grid the bar does not have: the brand and the menu
-   stay where they are, and this takes whatever is left. */
+/* What is the operator's own, at the far end of the bar. Pushed there by the margin rather than
+   placed by the grid the bar does not have: the brand and the menu stay where they are, and this
+   takes whatever is left. Signed in it is a menu under the name, drawn by .menu like the section
+   headings; open it is one link, drawn like the bar's others. */
 .operator {
-    align-items: center;
-    display: flex;
     font-size: var(--text-md);
-    gap: 0.75rem;
     margin-left: auto;
 }
 
-    .operator .operator-name {
+    .operator ::deep a {
         color: var(--ink-soft);
+        text-decoration: none;
     }
+
+    .operator ::deep a:hover {
+        text-decoration: underline;
+    }
+
+    .operator ::deep a.active {
+        color: var(--accent);
+        font-weight: 600;
+    }
+
+    /* Hung from the right edge rather than the left: this is the last thing in the bar, and a
+       sheet opening leftwards from it stays on the page. */
+    .operator .submenu {
+        left: auto;
+        right: 0;
+    }
+
+    /* The one button among links, drawn as the links are: it is a way out beside a place to go,
+       and a bordered button in a column of links would read as the point of the menu. */
+    .operator .submenu button {
+        background: none;
+        border: 0;
+        color: var(--ink-soft);
+        cursor: pointer;
+        font: inherit;
+        padding: 0;
+        text-align: left;
+    }
+
+        .operator .submenu button:hover {
+            text-decoration: underline;
+        }
+
+        .operator .submenu button:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
 
 /* Admin and the pages under it. */
 .menu {

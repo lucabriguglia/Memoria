@@ -97,30 +97,56 @@ public class ManifestTests
         manifest.Services.Should().ContainSingle();
     }
 
+    /// <summary>
+    /// The name is whatever was written, kept as the service is shown; the address it is browsed
+    /// under is made from it — letters and digits kept, everything else dropped, each run of
+    /// spaces one dash, lower case.
+    /// </summary>
     [Theory]
-    [InlineData("orders")]
-    [InlineData("Orders-2")]
-    [InlineData("a")]
-    public void Accepts_a_name_of_letters_digits_and_hyphens(string name)
+    [InlineData("orders", "orders")]
+    [InlineData("Samples Streamed", "samples-streamed")]
+    [InlineData("Samples  Streamed", "samples-streamed")]
+    [InlineData("  Orders Team 2 ", "orders-team-2")]
+    [InlineData("e-commerce", "ecommerce")]
+    [InlineData("Orders (EU) / v2", "orders-eu-v2")]
+    public void Keeps_the_name_and_makes_the_address_from_it(string name, string slug)
     {
         var manifest = Manifest.Parse($$"""
             { "services": [ { "name": "{{name}}", "assemblies": ["Orders.dll"], "connectionString": "Orders" } ] }
             """);
 
-        manifest.Services.Single().Name.Should().Be(name);
+        var service = manifest.Services.Single();
+        using (new AssertionScope())
+        {
+            service.Name.Should().Be(name);
+            service.Slug.Should().Be(slug);
+        }
     }
 
     [Theory]
-    [InlineData("orders 2")]
-    [InlineData("orders/2")]
-    [InlineData("orders.2")]
-    public void Refuses_a_name_that_is_not_letters_digits_and_hyphens(string name)
+    [InlineData("!!!")]
+    [InlineData("- / -")]
+    public void Refuses_a_name_with_no_letter_or_digit_to_make_an_address_from(string name)
     {
         var parse = () => Manifest.Parse($$"""
             { "services": [ { "name": "{{name}}", "assemblies": ["Orders.dll"], "connectionString": "Orders" } ] }
             """);
 
-        parse.Should().Throw<InvalidDataException>().WithMessage("*name*letters, digits and hyphens*");
+        parse.Should().Throw<InvalidDataException>().WithMessage($"*'{name}'*no letter or digit*");
+    }
+
+    /// <summary>Two names that make one address are one service twice, whatever they look like.</summary>
+    [Fact]
+    public void Refuses_two_names_that_make_the_same_address()
+    {
+        var parse = () => Manifest.Parse("""
+            { "services": [
+                { "name": "Samples Streamed", "assemblies": ["Orders.dll"], "connectionString": "Orders" },
+                { "name": "samples   STREAMED ", "assemblies": ["More.dll"], "connectionString": "Orders" }
+            ] }
+            """);
+
+        parse.Should().Throw<InvalidDataException>().WithMessage("*'samples-streamed'*twice*");
     }
 
     [Theory]
@@ -144,7 +170,27 @@ public class ManifestTests
             ] }
             """);
 
-        parse.Should().Throw<InvalidDataException>().WithMessage("*'Orders'*twice*");
+        parse.Should().Throw<InvalidDataException>().WithMessage("*'orders'*twice*");
+    }
+
+    /// <summary>
+    /// A service's name is the address it is browsed under, so it cannot be one of the addresses
+    /// the tool already answers on.
+    /// </summary>
+    [Theory]
+    [InlineData("settings")]
+    [InlineData("Preferences")]
+    [InlineData("about")]
+    [InlineData("forbidden")]
+    [InlineData("Signed  Out")]
+    [InlineData("logout")]
+    public void Refuses_a_name_that_is_an_address_the_tool_already_uses(string name)
+    {
+        var parse = () => Manifest.Parse($$"""
+            { "services": [ { "name": "{{name}}", "assemblies": ["Orders.dll"], "connectionString": "Orders" } ] }
+            """);
+
+        parse.Should().Throw<InvalidDataException>().WithMessage($"*'{name}'*address*already*");
     }
 
     [Theory]

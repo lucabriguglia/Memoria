@@ -13,7 +13,7 @@ namespace Memoria.Web.Tests.Features;
 /// </summary>
 public class StreamListTests
 {
-    private const string Streams = "/streamed/streams";
+    private const string Streams = "/samples/streamed/streams";
 
     [Fact]
     public async Task Draws_the_streams_as_the_shared_index_with_its_filter()
@@ -24,7 +24,7 @@ public class StreamListTests
 
         Markup.IndexNames(page).Should().Contain(["SampleStreamId", "SamplePrefixedStreamId", "SampleOnlyStreamId"]);
         page.Should().Contain("<ul class=\"index-rows\">")
-            .And.Contain("<form class=\"index-filter\" method=\"get\" action=\"streamed/streams\">")
+            .And.Contain("<form class=\"index-filter\" method=\"get\" action=\"samples/streamed/streams\">")
             .And.MatchRegex(@"\d+ streams</p>");
     }
 
@@ -37,8 +37,8 @@ public class StreamListTests
 
         Markup.IndexNames(page).Should().Equal("SamplePrefixedStreamId");
         page.Should().MatchRegex(@"1 of \d+ streams</p>")
-            .And.Contain($"href=\"streamed/streams?type={typeof(SamplePrefixedStreamId).FullName}&amp;tab=info&amp;q=prefixed\"")
-            .And.Contain($"href=\"streamed/streams?type={typeof(SamplePrefixedStreamId).FullName}&amp;tab=state\">Clear</a>");
+            .And.Contain($"href=\"samples/streamed/streams?type={typeof(SamplePrefixedStreamId).FullName}&amp;tab=info&amp;q=prefixed\"")
+            .And.Contain($"href=\"samples/streamed/streams?type={typeof(SamplePrefixedStreamId).FullName}&amp;tab=state\">Clear</a>");
     }
 
     /// <summary>
@@ -53,12 +53,12 @@ public class StreamListTests
 
         var stream = typeof(SamplePrefixedStreamId).FullName;
         var page = Markup.Plain(await web.Client.GetStringAsync($"{Streams}?type={stream}"));
-        var overview = Markup.Plain(await web.Client.GetStringAsync("/streamed"));
+        var overview = Markup.Plain(await web.Client.GetStringAsync("/samples/streamed"));
         var row = Regex.Match(page, "<li class=\"current\">.*?</li>\\s*</ul>", RegexOptions.Singleline).Value;
 
-        row.Should().Contain($"href=\"streamed/events/data?stream={stream}\"")
-            .And.Contain($"href=\"streamed/aggregates/data?stream={stream}\"")
-            .And.Contain($"href=\"streamed/projections/data?stream={stream}\"");
+        row.Should().Contain($"href=\"samples/streamed/events/data?stream={stream}\"")
+            .And.Contain($"href=\"samples/streamed/aggregates/data?stream={stream}\"")
+            .And.Contain($"href=\"samples/streamed/projections/data?stream={stream}\"");
         MarkBefore(row, "Events").Should().Be(MarkBefore(overview, "Events"));
         MarkBefore(row, "Aggregates").Should().Be(MarkBefore(overview, "Aggregates"));
         MarkBefore(row, "Projections").Should().Be(MarkBefore(overview, "Projections"));

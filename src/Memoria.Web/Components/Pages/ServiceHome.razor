@@ -1,0 +1,175 @@
+@page "/{service}"
+@using Memoria.Web.Extensibility
+@inject CurrentService Current
+@inject Memoria.Web.Data.StoreCapabilities Store
+
+<PageTitle>@Current.Name</PageTitle>
+
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="">Home</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">@Current.Name</span>
+</nav>
+
+<h1>@Current.Name</h1>
+
+@* Laid out for the models the service has something registered under. Both: two columns, each
+   headed by its model and the way into it. One alone: that model's tiles as the page, with no
+   heading over them, because a heading names a choice and there is none to make. *@
+@if (Shown.Both)
+{
+    <p class="lede">
+        Two models of the same domain, side by side: streams addressed by aggregate, and dynamic
+        consistency boundaries addressed by identifier.
+    </p>
+
+    <div class="models">
+        <section class="model">
+            <h2><a href="@At("streamed")">Streamed</a></h2>
+            @StreamedTiles
+        </section>
+
+        <section class="model">
+            <h2><a href="@At("dcb")">DCB</a></h2>
+            @DcbTiles
+        </section>
+    </div>
+}
+else if (Shown.Streamed)
+{
+    <p class="lede">
+        Streams addressed by aggregate: the events, the models folded from them, and the streams
+        they are held in.
+    </p>
+
+    @StreamedTiles
+}
+else
+{
+    <p class="lede">
+        Dynamic consistency boundaries addressed by identifier: the events, and the models folded
+        from them.
+    </p>
+
+    @DcbTiles
+}
+
+@code {
+
+    /// <summary>The service this page is: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
+
+    private ShownModels Shown => ShownModels.Of(Current.Catalogue, Store);
+
+    /// <summary>An address under this service: the segment its name makes, then the page.</summary>
+    private string At(string path) => $"{Current.Segment}/{path}";
+
+    // The same tiles the rest of the site is entered by, one under the other because a column is
+    // half the page rather than the whole of it — and, alone, still one under the other, which is
+    // how the overview under them lays its own out. Each names a section and goes to it; what is
+    // under a section — the types the model declares and what has been stored of them — is on the
+    // page the tile leads to, which is where a reader is asked to choose between them rather than
+    // twice. Templates rather than components so the two layouts above draw the one markup.
+    //
+    // The Overview tile only while both models are laid out: it is the model's own page, the one
+    // its heading here leads to, and with one model alone there is no heading and nothing for the
+    // page to stand apart from — the sections it would count are the tiles beside it.
+    private RenderFragment StreamedTiles =>
+        @<ul class="tiles">
+            @if (Shown.Both)
+            {
+            <li>
+                <a href="@At("streamed")">
+                    <SectionMark Kind="SectionKind.Overview"/>
+                    <span class="body">
+                        <span class="name">Overview</span>
+                        <span class="detail">What is registered under the streamed model.</span>
+                    </span>
+                </a>
+            </li>
+            }
+            <li>
+                <a href="@At("streamed/events")">
+                    <SectionMark Kind="SectionKind.Events"/>
+                    <span class="body">
+                        <span class="name">Events</span>
+                        <span class="detail">The events the model can apply.</span>
+                    </span>
+                </a>
+            </li>
+            <li>
+                <a href="@At("streamed/aggregates")">
+                    <SectionMark Kind="SectionKind.Aggregates"/>
+                    <span class="body">
+                        <span class="name">Aggregates</span>
+                        <span class="detail">The write models they are held in.</span>
+                    </span>
+                </a>
+            </li>
+            <li>
+                <a href="@At("streamed/projections")">
+                    <SectionMark Kind="SectionKind.Projections"/>
+                    <span class="body">
+                        <span class="name">Projections</span>
+                        <span class="detail">The read models built from those events.</span>
+                    </span>
+                </a>
+            </li>
+            @* Last, and the one the DCB side has nothing to set against it: a boundary there is a
+               query over tags rather than a place events are kept. *@
+            <li>
+                <a href="@At("streamed/streams")">
+                    <SectionMark Kind="SectionKind.Streams"/>
+                    <span class="body">
+                        <span class="name">Streams</span>
+                        <span class="detail">The streams the events are held in.</span>
+                    </span>
+                </a>
+            </li>
+        </ul>;
+
+    private RenderFragment DcbTiles =>
+        @<ul class="tiles">
+            @if (Shown.Both)
+            {
+            <li>
+                <a href="@At("dcb")">
+                    <SectionMark Kind="SectionKind.Overview"/>
+                    <span class="body">
+                        <span class="name">Overview</span>
+                        <span class="detail">What is registered under the DCB model.</span>
+                    </span>
+                </a>
+            </li>
+            }
+            <li>
+                <a href="@At("dcb/events")">
+                    <SectionMark Kind="SectionKind.Events"/>
+                    <span class="body">
+                        <span class="name">Events</span>
+                        <span class="detail">The events the model can apply.</span>
+                    </span>
+                </a>
+            </li>
+            <li>
+                <a href="@At("dcb/aggregates")">
+                    <SectionMark Kind="SectionKind.Aggregates"/>
+                    <span class="body">
+                        <span class="name">Aggregates</span>
+                        <span class="detail">The write models they are addressed by.</span>
+                    </span>
+                </a>
+            </li>
+            <li>
+                <a href="@At("dcb/projections")">
+                    <SectionMark Kind="SectionKind.Projections"/>
+                    <span class="body">
+                        <span class="name">Projections</span>
+                        <span class="detail">The read models they are addressed by.</span>
+                    </span>
+                </a>
+            </li>
+        </ul>;
+
+}

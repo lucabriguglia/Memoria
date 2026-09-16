@@ -2,7 +2,7 @@
 @using Memoria.Web.Extensibility
 @inject NavigationManager Navigation
 @inject Memoria.Web.Data.StoreCapabilities Store
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 @inject AuthenticationSettings SignIn
 
 <header>
@@ -24,6 +24,14 @@
            the same whichever way it is reached. *@
         <NavLink href="" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Home"/>Home</NavLink>
 
+        @* The bar is the service's while a service is being read: its name, leading to its own
+           page, and then the menus over its models exactly as they were drawn for the one store.
+           Outside a service there are no models to menu — Home lists the services, and the
+           settings are the tool's — so the bar is Home and Settings alone. *@
+        @if (Current.Inside)
+        {
+        <NavLink href="@Current.Segment" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>@Current.Name</NavLink>
+
         @* <details> rather than a hover menu: it opens on touch and on the keyboard with no
            script, which matters because these pages render statically. *@
         @* Named only while both models are laid out. With one model alone there is no choice for
@@ -39,60 +47,60 @@
         <details class="menu">
             <summary class="@(InSection("streamed") ? "active" : null)"><SectionMark Kind="SectionKind.Streamed"/>Streamed</summary>
             <div class="submenu">
-                <NavLink href="streamed" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
+                <NavLink href="@At("streamed")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
 
                 <div class="submenu-group">
                     <span class="submenu-label">Events</span>
-                    <NavLink href="streamed/events" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
-                    <NavLink href="streamed/events/types" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
-                    <NavLink href="streamed/events/data" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
+                    <NavLink href="@At("streamed/events")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
+                    <NavLink href="@At("streamed/events/types")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
+                    <NavLink href="@At("streamed/events/data")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
                 </div>
 
                 <div class="submenu-group">
                     <span class="submenu-label">Aggregates</span>
-                    <NavLink href="streamed/aggregates" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
-                    <NavLink href="streamed/aggregates/types" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
-                    <NavLink href="streamed/aggregates/data" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
+                    <NavLink href="@At("streamed/aggregates")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
+                    <NavLink href="@At("streamed/aggregates/types")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
+                    <NavLink href="@At("streamed/aggregates/data")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
                 </div>
 
                 <div class="submenu-group">
                     <span class="submenu-label">Projections</span>
-                    <NavLink href="streamed/projections" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
-                    <NavLink href="streamed/projections/types" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
-                    <NavLink href="streamed/projections/data" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
+                    <NavLink href="@At("streamed/projections")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
+                    <NavLink href="@At("streamed/projections/types")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
+                    <NavLink href="@At("streamed/projections/data")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
                 </div>
 
                 @* One link rather than a group: a stream is declared and nothing else, so there is
                    no pair of pages to choose between. It follows the three because it is the one
                    thing here the DCB menu beside it has no answer to. *@
-                <NavLink href="streamed/streams" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Streams"/>Streams</NavLink>
+                <NavLink href="@At("streamed/streams")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Streams"/>Streams</NavLink>
             </div>
         </details>
 
         <details class="menu">
             <summary class="@(InSection("dcb") ? "active" : null)"><SectionMark Kind="SectionKind.Dcb"/>DCB</summary>
             <div class="submenu">
-                <NavLink href="dcb" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
+                <NavLink href="@At("dcb")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
 
                 <div class="submenu-group">
                     <span class="submenu-label">Events</span>
-                    <NavLink href="dcb/events" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
-                    <NavLink href="dcb/events/types" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
-                    <NavLink href="dcb/events/data" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
+                    <NavLink href="@At("dcb/events")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
+                    <NavLink href="@At("dcb/events/types")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
+                    <NavLink href="@At("dcb/events/data")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
                 </div>
 
                 <div class="submenu-group">
                     <span class="submenu-label">Aggregates</span>
-                    <NavLink href="dcb/aggregates" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
-                    <NavLink href="dcb/aggregates/types" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
-                    <NavLink href="dcb/aggregates/data" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
+                    <NavLink href="@At("dcb/aggregates")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
+                    <NavLink href="@At("dcb/aggregates/types")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
+                    <NavLink href="@At("dcb/aggregates/data")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
                 </div>
 
                 <div class="submenu-group">
                     <span class="submenu-label">Projections</span>
-                    <NavLink href="dcb/projections" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
-                    <NavLink href="dcb/projections/types" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
-                    <NavLink href="dcb/projections/data" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
+                    <NavLink href="@At("dcb/projections")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
+                    <NavLink href="@At("dcb/projections/types")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
+                    <NavLink href="@At("dcb/projections/data")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
                 </div>
             </div>
         </details>
@@ -101,18 +109,19 @@
         {
         @* One model alone: each section is its own heading on the bar, holding the three pages
            the group under the model heading held, and the streams stand as the one plain link
-           they were. The model's overview is not on the bar — Home is laid out for this model
-           alone now — though it is still reached from a tile there. *@
+           they were. The model's overview is not on the bar — the service's page is laid out
+           for this model alone now — though it is still reached from a tile there. *@
         @Section("streamed/events", "Events", SectionKind.Events)
         @Section("streamed/aggregates", "Aggregates", SectionKind.Aggregates)
         @Section("streamed/projections", "Projections", SectionKind.Projections)
-        <NavLink href="streamed/streams" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Streams"/>Streams</NavLink>
+        <NavLink href="@At("streamed/streams")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Streams"/>Streams</NavLink>
         }
         else
         {
         @Section("dcb/events", "Events", SectionKind.Events)
         @Section("dcb/aggregates", "Aggregates", SectionKind.Aggregates)
         @Section("dcb/projections", "Projections", SectionKind.Projections)
+        }
         }
 
         @* The theme is picked under Settings rather than up here: it is this browser's own
@@ -143,7 +152,7 @@
         <AuthorizeView>
             <Authorized>
                 <details class="menu operator">
-                    <summary class="@(InSection("preferences") ? "active" : null)"><SectionMark Kind="SectionKind.Operator"/>@context.User.Identity?.Name</summary>
+                    <summary class="@(InSection("preferences", underService: false) ? "active" : null)"><SectionMark Kind="SectionKind.Operator"/>@context.User.Identity?.Name</summary>
                     <div class="submenu">
                         <NavLink href="preferences" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Preferences"/>Preferences</NavLink>
                         <form method="post" action="logout">
@@ -196,22 +205,27 @@
 @code {
 
     /// <summary>
-    /// Which models the bar is laid out for. Read off the registry each time rather than held,
-    /// since an upload changes the answer without the layout being told. A store with no boundary
-    /// never lays the DCB model out, so its nine links are left off rather than shown leading to
-    /// pages with nothing to read; the pages are not found under such a store either — see
-    /// Routes.razor, which is what makes a bookmarked address agree with this bar.
+    /// Which models the bar is laid out for: the current service's, read off its own view of the
+    /// catalogue each time rather than held, since an upload changes the answer without the
+    /// layout being told. A store with no boundary never lays the DCB model out, so its nine
+    /// links are left off rather than shown leading to pages with nothing to read; the pages are
+    /// not found under such a store either — see Routes.razor, which is what makes a bookmarked
+    /// address agree with this bar.
     /// </summary>
-    private ShownModels Shown => ShownModels.Of(Types.Current, Store);
+    private ShownModels Shown => ShownModels.Of(Current.Catalogue, Store);
+
+    /// <summary>An address under the current service: the segment its pages sit under, then the page.</summary>
+    private string At(string path) => $"{Current.Segment}/{path}";
 
     /// <summary>
     /// Marks a menu current while anywhere under its section, so the section you are in is
     /// visible without opening it. The panel itself stays shut until asked for, rather than
-    /// sitting over the page.
+    /// sitting over the page. A section is under the current service unless said otherwise —
+    /// the operator's own pages are the tool's, and sit under no service.
     /// </summary>
-    private bool InSection(string section) => Navigation
+    private bool InSection(string section, bool underService = true) => Navigation
         .ToBaseRelativePath(Navigation.Uri)
-        .StartsWith(section, StringComparison.OrdinalIgnoreCase);
+        .StartsWith(underService ? At(section) : section, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// One section as a heading of its own on the bar, for when one model is laid out alone: the
@@ -223,9 +237,9 @@
         @<details class="menu">
             <summary class="@(InSection(href) ? "active" : null)"><SectionMark Kind="@mark"/>@label</summary>
             <div class="submenu">
-                <NavLink href="@href" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
-                <NavLink href="@($"{href}/types")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
-                <NavLink href="@($"{href}/data")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
+                <NavLink href="@At(href)" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>Overview</NavLink>
+                <NavLink href="@At($"{href}/types")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Types"/>Types</NavLink>
+                <NavLink href="@At($"{href}/data")" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Data"/>Data</NavLink>
             </div>
         </details>;
 

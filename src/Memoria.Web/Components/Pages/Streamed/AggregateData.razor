@@ -1,8 +1,8 @@
-@page "/streamed/aggregates/data"
+@page "/{service}/streamed/aggregates/data"
 @using Memoria.Web.Data
 @using Memoria.Web.Extensibility
 @using Microsoft.AspNetCore.WebUtilities
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 @inject IStreamedReads Store
 @inject NavigationManager Navigation
 
@@ -11,8 +11,10 @@
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="">Home</a>
     <span aria-hidden="true">/</span>
+    <a href="@Service">@Current.Name</a>
+    <span aria-hidden="true">/</span>
     <ModelCrumb Model="ModelStore.Streamed"/>
-    <a href="streamed/aggregates">Aggregates</a>
+    <a href="@Service/streamed/aggregates">Aggregates</a>
     <span aria-hidden="true">/</span>
     <span aria-current="page">Data</span>
 </nav>
@@ -23,14 +25,14 @@
 {
     <p class="alert" role="alert">
         That aggregate is not among the registered types. It may have been replaced by a later
-        upload — start again from <a href="streamed/aggregates/types">aggregates</a>.
+        upload — start again from <a href="@Service/streamed/aggregates/types">aggregates</a>.
     </p>
 }
 else if (Stream.Unknown)
 {
     <p class="alert" role="alert">
         That stream is not among the registered types. It may have been replaced by a later upload —
-        start again from <a href="streamed/streams">streams</a>.
+        start again from <a href="@Service/streamed/streams">streams</a>.
     </p>
 }
 else
@@ -55,7 +57,7 @@ else
 
        The dropdowns submit on change and the box is typed into, so the button is not only the
        fallback when scripting is off — it submits all three at once, which is what one form buys. *@
-    <form class="search" method="get" action="streamed/aggregates/data">
+    <form class="search" method="get" action="@Service/streamed/aggregates/data">
         @* The stream comes first, as it does in the table: it is where an aggregate's events were
            appended, and the type is what was folded from them. *@
         <label for="stream">Stream</label>
@@ -285,7 +287,7 @@ else
                is off. No page travels with it: a page number from a narrower page size would land
                somewhere a reader did not ask for, and the first page is what they can see they are
                getting. *@
-            <form class="page-size" method="get" action="streamed/aggregates/data">
+            <form class="page-size" method="get" action="@Service/streamed/aggregates/data">
                 <label for="size">Rows per page</label>
                 <select id="size" name="size" onchange="this.form.submit()">
                     @foreach (var option in InstanceQuery.PageSizes)
@@ -306,6 +308,10 @@ else
 
 @code {
 
+    /// <summary>The service this page sits under: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
+
     /// <summary>The request, for the rows-per-page size the browser remembers in a cookie.</summary>
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }
@@ -325,7 +331,7 @@ else
     /// The stream types the uploaded assemblies declare, which is what the first dropdown offers and
     /// what a name in the address is matched against.
     /// </summary>
-    private IReadOnlyList<Type> StreamTypes => Types.Current.StreamedStreamIds;
+    private IReadOnlyList<Type> StreamTypes => Current.Catalogue.StreamedStreamIds;
 
     /// <summary>
     /// Which of the two streamed models this page lists, which is what tells the reader shared with
@@ -334,7 +340,7 @@ else
     private const StreamedModelKind Kind = StreamedModelKind.Aggregate;
 
     /// <summary>The aggregates they declare, which is what the second offers.</summary>
-    private IReadOnlyList<Type> AggregateTypes => Types.Current.Streamed(Kind);
+    private IReadOnlyList<Type> AggregateTypes => Current.Catalogue.Streamed(Kind);
 
     /// <summary>
     /// Which identifier addressed the rows being looked at, or all of them.
@@ -353,7 +359,7 @@ else
     /// </summary>
     private IReadOnlyList<Type> Identifiers =>
         Choice.Chosen is { } aggregate
-            ? DomainTypeDescriber.IdentifiersOf(aggregate, Types.Current.Identifiers(Kind))
+            ? DomainTypeDescriber.IdentifiersOf(aggregate, Current.Catalogue.Identifiers(Kind))
             : [];
 
     /// <summary>
@@ -400,7 +406,7 @@ else
 
         var found = model is null
             ? []
-            : DomainTypeDescriber.IdentifiersOf(model, Types.Current.Identifiers(Kind));
+            : DomainTypeDescriber.IdentifiersOf(model, Current.Catalogue.Identifiers(Kind));
 
         _addressing[modelType] = found;
 
@@ -431,7 +437,7 @@ else
             return null;
         }
 
-        return "streamed/aggregates/detail" +
+        return $"{Service}/streamed/aggregates/detail" +
                $"?type={Uri.EscapeDataString(model.FullName ?? model.Name)}" +
                $"&stream={Uri.EscapeDataString(row.StreamId)}" +
                $"&id={Uri.EscapeDataString(row.StoreId)}";
@@ -589,7 +595,7 @@ else
         bool clearText = false,
         bool clearIdentifier = false)
     {
-        var link = $"streamed/aggregates/data?sort={sort.ToString().ToLowerInvariant()}" +
+        var link = $"{Service}/streamed/aggregates/data?sort={sort.ToString().ToLowerInvariant()}" +
                    $"&dir={(descending ? "desc" : "asc")}" +
                    $"&size={PageSize}" +
                    $"&page={page}";

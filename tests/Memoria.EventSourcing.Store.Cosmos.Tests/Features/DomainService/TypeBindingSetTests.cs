@@ -23,15 +23,14 @@ namespace Memoria.EventSourcing.Store.Cosmos.Tests.Features.DomainService;
 /// prove it.
 /// </summary>
 [Trait("Category", "Emulator")]
-public class TypeBindingSetTests : IDisposable
+public class TypeBindingSetTests
 {
     private readonly CosmosClientProvider _clientProvider;
     private readonly FakeTimeProvider _timeProvider = new();
 
-    private readonly Dictionary<string, Type> _originalEvents = TypeBindings.EventTypeBindings;
-    private readonly Dictionary<string, Type> _originalAggregates = TypeBindings.AggregateTypeBindings;
-    private readonly Dictionary<string, Type> _originalProjections = TypeBindings.ProjectionTypeBindings;
-
+    // Set and never restored, like every sibling class: a map captured at construction may be
+    // the empty one a class built first would see, and putting it back while another class reads
+    // the shared set in parallel takes that class's keys away.
     public TypeBindingSetTests()
     {
         var cosmosOptions = Substitute.For<IOptions<CosmosOptions>>();
@@ -64,14 +63,6 @@ public class TypeBindingSetTests : IDisposable
         {
             { "TestProjection:1", typeof(TestProjection) }
         };
-    }
-
-    public void Dispose()
-    {
-        TypeBindings.EventTypeBindings = _originalEvents;
-        TypeBindings.AggregateTypeBindings = _originalAggregates;
-        TypeBindings.ProjectionTypeBindings = _originalProjections;
-        GC.SuppressFinalize(this);
     }
 
     private IDomainService OnProcessWideBindings() => Service(new CosmosDataStore(

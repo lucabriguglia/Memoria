@@ -41,7 +41,7 @@ public class RowsPerPageTests
         using var web = MemoriaWeb.Open().WithSampleTypes();
         await SeedOneEvent(web);
 
-        var page = await Get(web, "/streamed/events/data", cookie: "50");
+        var page = await Get(web, "/samples/streamed/events/data", cookie: "50");
 
         page.Should().Contain("<option value=\"50\" selected").And.NotContain("<option value=\"10\" selected");
     }
@@ -52,7 +52,7 @@ public class RowsPerPageTests
         using var web = MemoriaWeb.Open().WithSampleTypes();
         await SeedOneEvent(web);
 
-        var page = await Get(web, "/streamed/events/data?size=25", cookie: "50");
+        var page = await Get(web, "/samples/streamed/events/data?size=25", cookie: "50");
 
         page.Should().Contain("<option value=\"25\" selected").And.NotContain("<option value=\"50\" selected");
     }

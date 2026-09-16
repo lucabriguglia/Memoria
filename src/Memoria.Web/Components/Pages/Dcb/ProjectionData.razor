@@ -1,8 +1,8 @@
-@page "/dcb/projections/data"
+@page "/{service}/dcb/projections/data"
 @using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore
 @using Memoria.Web.Extensibility
 @using Microsoft.AspNetCore.WebUtilities
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 @inject IDcbDbContext StoreContext
 @inject TotalsCache Totals
 @inject NavigationManager Navigation
@@ -12,8 +12,10 @@
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="">Home</a>
     <span aria-hidden="true">/</span>
+    <a href="@Service">@Current.Name</a>
+    <span aria-hidden="true">/</span>
     <ModelCrumb Model="ModelStore.Dcb"/>
-    <a href="dcb/projections">Projections</a>
+    <a href="@Service/dcb/projections">Projections</a>
     <span aria-hidden="true">/</span>
     <span aria-current="page">Data</span>
 </nav>
@@ -24,7 +26,7 @@
 {
     <p class="alert" role="alert">
         That projection is not among the registered types. It may have been replaced by a later
-        upload — start again from <a href="dcb/projections/types">projections</a>.
+        upload — start again from <a href="@Service/dcb/projections/types">projections</a>.
     </p>
 }
 else
@@ -44,7 +46,7 @@ else
 
        The two dropdowns submit on change and the box is typed into, so the button is the fallback
        when scripting is off — it submits all three at once, which is what one form buys. *@
-    <form class="search" method="get" action="dcb/projections/data">
+    <form class="search" method="get" action="@Service/dcb/projections/data">
         <label for="type">Projection</label>
         <select id="type" name="type" onchange="this.form.submit()">
             @* First and default, so a reader who has chosen nothing is looking at everything stored
@@ -211,7 +213,7 @@ else
             @* Its own GET form, so the choice lands in the address bar like the order and the
                filter. Submitting on change saves a click; the button is the fallback when
                scripting is off. *@
-            <form class="page-size" method="get" action="dcb/projections/data">
+            <form class="page-size" method="get" action="@Service/dcb/projections/data">
                 <label for="size">Rows per page</label>
                 <select id="size" name="size" onchange="this.form.submit()">
                     @foreach (var option in InstanceQuery.PageSizes)
@@ -231,6 +233,10 @@ else
 }
 
 @code {
+
+    /// <summary>The service this page sits under: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
 
     /// <summary>The request, for the rows-per-page size the browser remembers in a cookie.</summary>
     [CascadingParameter]
@@ -272,7 +278,7 @@ else
     private bool Descending { get; set; } = true;
 
     /// <summary>The projections the uploaded assemblies declare, which is what the first dropdown offers.</summary>
-    private IReadOnlyList<Type> Models => Types.Current.Models(Kind);
+    private IReadOnlyList<Type> Models => Current.Catalogue.Models(Kind);
 
     /// <summary>
     /// Which tags the chosen identifier's values live in, and so whether the table has a column per
@@ -421,7 +427,7 @@ else
         bool clearIdentifier = false,
         bool clearModel = false)
     {
-        var link = $"dcb/projections/data?sort={sort.ToString().ToLowerInvariant()}" +
+        var link = $"{Service}/dcb/projections/data?sort={sort.ToString().ToLowerInvariant()}" +
                    $"&dir={(descending ? "desc" : "asc")}" +
                    $"&size={PageSize}" +
                    $"&page={page}";
@@ -461,7 +467,7 @@ else
         var query = string.Join("&", values
             .Select(value => $"{Uri.EscapeDataString(value.Key)}={Uri.EscapeDataString(value.Value)}"));
 
-        return $"dcb/projections/detail?type={Uri.EscapeDataString(model.FullName ?? model.Name)}" +
+        return $"{Service}/dcb/projections/detail?type={Uri.EscapeDataString(model.FullName ?? model.Name)}" +
                $"&id={Uri.EscapeDataString(identifier.FullName ?? identifier.Name)}" +
                $"&{query}";
     }
@@ -538,8 +544,8 @@ else
 
         // Both names are matched against what is registered, so a name in the address can only ever
         // reach a type this application already knows about.
-        Choice = ModelChoice.Of(Models, Types.Current.Identifiers(Kind), Value("type"), Value("id"));
-        Stored = new StoredModels(Models, Types.Current.Identifiers(Kind));
+        Choice = ModelChoice.Of(Models, Current.Catalogue.Identifiers(Kind), Value("type"), Value("id"));
+        Stored = new StoredModels(Models, Current.Catalogue.Identifiers(Kind));
 
         Text = Value("text");
         Sort = InstanceQuery.SortOf(Value("sort"));

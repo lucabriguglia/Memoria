@@ -69,6 +69,19 @@ public sealed record DomainTypeCatalogue
     public IReadOnlyList<LoadedAssembly> Assemblies { get; init; } = [];
 
     /// <summary>
+    /// The application's own assembly, scanned alongside the uploads, under the file name a
+    /// manifest would name it by — so a service may claim what it declares the way it claims an
+    /// upload. Null when there is nothing of its own to contribute.
+    /// </summary>
+    public LoadedAssembly? Host { get; init; }
+
+    /// <summary>
+    /// The services the installed archives declared when this catalogue was built, in the order
+    /// the archives are listed. What Home lists and what every page under a service reads through.
+    /// </summary>
+    public IReadOnlyList<Service> Services { get; init; } = [];
+
+    /// <summary>
     /// What went wrong while loading, one line per assembly that could not be read. Held rather
     /// than thrown so a bad upload leaves the application running and able to say so.
     /// </summary>
@@ -76,6 +89,58 @@ public sealed record DomainTypeCatalogue
 
     /// <summary>Gets when this catalogue was built, or null before the first reload.</summary>
     public DateTime? ReloadedUtc { get; init; }
+
+    /// <summary>
+    /// The service browsed at that address — the segment a name makes, whatever case it was
+    /// typed in — or null when no service's name makes it. Never matched by the name as written,
+    /// which may carry what an address cannot.
+    /// </summary>
+    public Service? ServiceAt(string segment) =>
+        Services.FirstOrDefault(service => string.Equals(service.Slug, segment, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// This catalogue narrowed to one service: every list of types kept to the ones registered
+    /// from the assemblies the service names. What is not a list of types — the files, the
+    /// services, the errors, when it was built — is the whole catalogue's and stays.
+    /// </summary>
+    /// <remarks>
+    /// Which file a type came from is matched by file name, the name the manifest names it by and
+    /// the name the store extracted it under, without regard to case as the store matches it. The
+    /// file's assembly and the type's are matched by full name rather than by reference: an
+    /// assembly emitted at run time answers a type's <c>Assembly</c> with the runtime object
+    /// behind its builder, and two files carrying one assembly name and version carry the same
+    /// types, which then belong to whichever service names either. The event views are narrowed
+    /// like the rest, so a page under one service lists the events its own models apply and not
+    /// another's.
+    /// </remarks>
+    public DomainTypeCatalogue For(Service service)
+    {
+        var named = Assemblies
+            .Concat(Host is { } host ? [host] : [])
+            .Where(loaded => service.Assemblies.Contains(loaded.FileName, StringComparer.OrdinalIgnoreCase))
+            .Select(loaded => loaded.Assembly.FullName)
+            .OfType<string>()
+            .ToHashSet(StringComparer.Ordinal);
+
+        IReadOnlyList<Type> Own(IReadOnlyList<Type> types) =>
+            types.Where(type => type.Assembly.FullName is { } name && named.Contains(name)).ToList();
+
+        return this with
+        {
+            StreamedStreamIds = Own(StreamedStreamIds),
+            StreamedAggregates = Own(StreamedAggregates),
+            StreamedAggregateIds = Own(StreamedAggregateIds),
+            StreamedProjections = Own(StreamedProjections),
+            StreamedProjectionIds = Own(StreamedProjectionIds),
+            DcbAggregates = Own(DcbAggregates),
+            DcbAggregateIds = Own(DcbAggregateIds),
+            DcbProjections = Own(DcbProjections),
+            DcbProjectionIds = Own(DcbProjectionIds),
+            Events = Own(Events),
+            StreamedEvents = Own(StreamedEvents),
+            DcbEvents = Own(DcbEvents)
+        };
+    }
 
     /// <summary>
     /// The types registered from one assembly file, grouped under the kind of thing each is.

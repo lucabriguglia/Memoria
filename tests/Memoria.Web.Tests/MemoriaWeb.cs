@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
@@ -82,9 +83,28 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
 
     /// <summary>
     /// The assembly this instance knows the domain types of, as if it had been uploaded; null for
-    /// an instance knowing none.
+    /// an instance knowing none. Scanned as the application's own assembly is, and attributed to
+    /// the one service the instance declares, <see cref="ServiceName"/>, by a manifest-only
+    /// archive naming the file it would be called — so the types are browsed under
+    /// <c>/samples/...</c> the way an upload's would be.
     /// </summary>
     private System.Reflection.Assembly? _host;
+
+    /// <summary>The service every instance knowing types declares them under.</summary>
+    public const string ServiceName = "samples";
+
+    private readonly List<string> _services = [];
+
+    /// <summary>
+    /// The same instance declaring one more service, under the name given as a manifest would
+    /// write it, naming the same host assembly — so the same types are browsed under a second
+    /// address, made from that name.
+    /// </summary>
+    public MemoriaWeb WithService(string name)
+    {
+        _services.Add(name);
+        return this;
+    }
 
     /// <summary>
     /// The same instance knowing the sample domain types this test assembly carries, as if they
@@ -167,7 +187,7 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
 
     /// <summary>The address of the sample aggregate's detail page, on the tab asked for.</summary>
     public static string SampleAggregateDetail(string tab) =>
-        $"/streamed/aggregates/detail?type={typeof(SampleAggregate).FullName}&stream=sample:1&id=sample-1:1&tab={tab}";
+        $"/{ServiceName}/streamed/aggregates/detail?type={typeof(SampleAggregate).FullName}&stream=sample:1&id=sample-1:1&tab={tab}";
 
     private static Dictionary<string, string?> ProviderSettings => new()
     {
@@ -306,6 +326,26 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         Directory.CreateDirectory(_scratch);
+
+        if (_host is { } host)
+        {
+            // The service the host's types are declared under: a manifest-only archive put in the
+            // directory the way a zip from before manifests would be, naming the file the host
+            // would be called. Nothing is extracted from it; the registry scans the host it was
+            // given and attributes its types to this service by that name.
+            var zips = Path.Combine(ExtensionsDirectory, "zips");
+            Directory.CreateDirectory(zips);
+
+            foreach (var (name, index) in new[] { ServiceName }.Concat(_services).Select((name, index) => (name, index)))
+            {
+                using var archive = ZipFile.Open(Path.Combine(zips, $"service-{index}.zip"), ZipArchiveMode.Create);
+                using var manifest = new StreamWriter(archive.CreateEntry("memoria.json").Open());
+                manifest.Write($$"""
+                    { "services": [ { "name": "{{name}}", "assemblies": ["{{host.GetName().Name}}.dll"],
+                                      "connectionString": "Memoria" } ] }
+                    """);
+            }
+        }
 
         // Everything the application's own settings files say about authentication is unset
         // first, so that the development file's choice to run open does not reach these tests.

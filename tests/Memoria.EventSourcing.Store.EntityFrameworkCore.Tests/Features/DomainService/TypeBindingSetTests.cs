@@ -26,15 +26,14 @@ namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Tests.Features.DomainS
 /// Each test opens its own in-memory database, since the two contexts in a test must share one and
 /// no other test may.
 /// </remarks>
-public class TypeBindingSetTests : IDisposable
+public class TypeBindingSetTests
 {
     private readonly string _database = $"TypeBindingSet-{Guid.NewGuid()}";
     private readonly FakeTimeProvider _timeProvider = new();
 
-    private readonly Dictionary<string, Type> _originalEvents = TypeBindings.EventTypeBindings;
-    private readonly Dictionary<string, Type> _originalAggregates = TypeBindings.AggregateTypeBindings;
-    private readonly Dictionary<string, Type> _originalProjections = TypeBindings.ProjectionTypeBindings;
-
+    // Set and never restored, like every sibling class: a map captured at construction may be
+    // the empty one a class built first would see, and putting it back while another class reads
+    // the shared set in parallel takes that class's keys away.
     public TypeBindingSetTests()
     {
         // The process-wide set knows the shared models and nothing of the twins — the same maps
@@ -57,14 +56,6 @@ public class TypeBindingSetTests : IDisposable
         {
             { "TestProjection:1", typeof(TestProjection) }
         };
-    }
-
-    public void Dispose()
-    {
-        TypeBindings.EventTypeBindings = _originalEvents;
-        TypeBindings.AggregateTypeBindings = _originalAggregates;
-        TypeBindings.ProjectionTypeBindings = _originalProjections;
-        GC.SuppressFinalize(this);
     }
 
     private IDomainService OnProcessWideBindings() =>

@@ -12,7 +12,7 @@ namespace Memoria.Web.Tests.Features;
 /// </summary>
 public class TypeIndexTests
 {
-    private const string StreamedEvents = "/streamed/events/types";
+    private const string StreamedEvents = "/samples/streamed/events/types";
 
     [Fact]
     public async Task Lists_every_type_and_says_how_many_when_nothing_is_typed()
@@ -75,13 +75,13 @@ public class TypeIndexTests
             $"{StreamedEvents}?type={typeof(SampleCarriedEvent).FullName}&tab=state&q=sample"));
 
         page.Should()
-            .Contain($"href=\"streamed/events/types?type={typeof(SampleHappenedEvent).FullName}&amp;tab=state&amp;q=sample\"")
-            .And.Contain($"href=\"streamed/events/types?type={typeof(SampleCarriedEvent).FullName}&amp;tab=info&amp;q=sample\"")
-            .And.Contain("<form class=\"index-filter\" method=\"get\" action=\"streamed/events/types\">")
+            .Contain($"href=\"samples/streamed/events/types?type={typeof(SampleHappenedEvent).FullName}&amp;tab=state&amp;q=sample\"")
+            .And.Contain($"href=\"samples/streamed/events/types?type={typeof(SampleCarriedEvent).FullName}&amp;tab=info&amp;q=sample\"")
+            .And.Contain("<form class=\"index-filter\" method=\"get\" action=\"samples/streamed/events/types\">")
             .And.Contain("name=\"q\" value=\"sample\"")
             .And.Contain($"<input type=\"hidden\" name=\"type\" value=\"{typeof(SampleCarriedEvent).FullName}\" />")
             .And.Contain("<input type=\"hidden\" name=\"tab\" value=\"state\" />")
-            .And.Contain($"href=\"streamed/events/types?type={typeof(SampleCarriedEvent).FullName}&amp;tab=state\">Clear</a>");
+            .And.Contain($"href=\"samples/streamed/events/types?type={typeof(SampleCarriedEvent).FullName}&amp;tab=state\">Clear</a>");
     }
 
     [Fact]
@@ -136,7 +136,7 @@ public class TypeIndexTests
     {
         using var web = MemoriaWeb.Open().WithOneNamespace();
 
-        var page = await web.Client.GetStringAsync("/streamed/aggregates/types");
+        var page = await web.Client.GetStringAsync("/samples/streamed/aggregates/types");
 
         Markup.IndexGroups(page).Should().BeEmpty();
         Markup.IndexNames(page).Should().Equal("FirstAggregate", "SecondAggregate");
@@ -146,12 +146,12 @@ public class TypeIndexTests
     /// The same list on every Types page, so what is learned on one is true of the other five.
     /// </summary>
     [Theory]
-    [InlineData("/streamed/aggregates/types", "SampleAggregate", "aggregate")]
-    [InlineData("/streamed/projections/types", "SampleProjection", "projection")]
-    [InlineData("/dcb/aggregates/types", "SampleDcbAggregate", "aggregate")]
-    [InlineData("/dcb/projections/types", "SampleDcbProjection", "projection")]
-    [InlineData("/dcb/events/types", "SampleHappened", "event type")]
-    [InlineData("/streamed/streams", "SamplePrefixedStreamId", "stream")]
+    [InlineData("/samples/streamed/aggregates/types", "SampleAggregate", "aggregate")]
+    [InlineData("/samples/streamed/projections/types", "SampleProjection", "projection")]
+    [InlineData("/samples/dcb/aggregates/types", "SampleDcbAggregate", "aggregate")]
+    [InlineData("/samples/dcb/projections/types", "SampleDcbProjection", "projection")]
+    [InlineData("/samples/dcb/events/types", "SampleHappened", "event type")]
+    [InlineData("/samples/streamed/streams", "SamplePrefixedStreamId", "stream")]
     public async Task Narrows_every_types_page_the_same_way(string address, string name, string noun)
     {
         using var web = MemoriaWeb.Open().WithSampleTypes();

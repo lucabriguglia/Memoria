@@ -16,9 +16,9 @@ public class OneModelTests
     {
         using var web = MemoriaWeb.Open().WithSampleTypes();
 
-        var page = await web.Client.GetStringAsync("/");
+        var page = await web.Client.GetStringAsync("/samples");
 
-        Markup.MenuBar(page).Should().Equal("Home", "Streamed", "DCB", "Settings");
+        Markup.MenuBar(page).Should().Equal("Home", "samples", "Streamed", "DCB", "Settings");
     }
 
     [Fact]
@@ -26,10 +26,10 @@ public class OneModelTests
     {
         using var web = MemoriaWeb.Open().WithStreamedTypesOnly();
 
-        var page = await web.Client.GetStringAsync("/");
+        var page = await web.Client.GetStringAsync("/samples");
 
-        Markup.MenuBar(page).Should().Equal("Home", "Events", "Aggregates", "Projections", "Streams", "Settings");
-        Markup.Header(page).Should().Contain("href=\"streamed/events/types\"").And.NotContain("href=\"dcb");
+        Markup.MenuBar(page).Should().Equal("Home", "samples", "Events", "Aggregates", "Projections", "Streams", "Settings");
+        Markup.Header(page).Should().Contain("href=\"samples/streamed/events/types\"").And.NotContain("href=\"samples/dcb");
     }
 
     [Fact]
@@ -37,10 +37,10 @@ public class OneModelTests
     {
         using var web = MemoriaWeb.Open().WithDcbTypesOnly();
 
-        var page = await web.Client.GetStringAsync("/");
+        var page = await web.Client.GetStringAsync("/samples");
 
-        Markup.MenuBar(page).Should().Equal("Home", "Events", "Aggregates", "Projections", "Settings");
-        Markup.Header(page).Should().Contain("href=\"dcb/events/types\"").And.NotContain("href=\"streamed");
+        Markup.MenuBar(page).Should().Equal("Home", "samples", "Events", "Aggregates", "Projections", "Settings");
+        Markup.Header(page).Should().Contain("href=\"samples/dcb/events/types\"").And.NotContain("href=\"samples/streamed");
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ public class OneModelTests
     {
         using var web = MemoriaWeb.Open().WithStreamedTypesOnly();
 
-        var page = await web.Client.GetStringAsync("/streamed/aggregates/types");
+        var page = await web.Client.GetStringAsync("/samples/streamed/aggregates/types");
 
         Markup.Unmarked(Markup.Header(page)).Should().Contain("<summary class=\"active\">Aggregates</summary>")
             .And.NotContain("<summary class=\"active\">Events</summary>");
@@ -63,11 +63,11 @@ public class OneModelTests
     {
         using var web = MemoriaWeb.Open().WithSampleTypes();
 
-        var page = Markup.Plain(await web.Client.GetStringAsync("/"));
+        var page = Markup.Plain(await web.Client.GetStringAsync("/samples"));
 
         page.Should().Contain("class=\"models\"")
-            .And.Contain("<h2><a href=\"streamed\">Streamed</a></h2>")
-            .And.Contain("<h2><a href=\"dcb\">DCB</a></h2>")
+            .And.Contain("<h2><a href=\"samples/streamed\">Streamed</a></h2>")
+            .And.Contain("<h2><a href=\"samples/dcb\">DCB</a></h2>")
             .And.Contain("What is registered under the streamed model.")
             .And.Contain("What is registered under the DCB model.");
     }
@@ -81,11 +81,11 @@ public class OneModelTests
     {
         using var web = MemoriaWeb.Open().WithStreamedTypesOnly();
 
-        var page = Markup.Plain(await web.Client.GetStringAsync("/"));
+        var page = Markup.Plain(await web.Client.GetStringAsync("/samples"));
 
         page.Should().NotContain("class=\"models\"").And.NotContain("<h2>")
-            .And.Contain("href=\"streamed/streams\"").And.NotContain("href=\"dcb")
-            .And.NotContain("href=\"streamed\"").And.NotContain("What is registered under");
+            .And.Contain("href=\"samples/streamed/streams\"").And.NotContain("href=\"samples/dcb")
+            .And.NotContain("href=\"samples/streamed\"").And.NotContain("What is registered under");
     }
 
     [Fact]
@@ -93,11 +93,11 @@ public class OneModelTests
     {
         using var web = MemoriaWeb.Open().WithDcbTypesOnly();
 
-        var page = Markup.Plain(await web.Client.GetStringAsync("/"));
+        var page = Markup.Plain(await web.Client.GetStringAsync("/samples"));
 
         page.Should().NotContain("class=\"models\"").And.NotContain("<h2>")
-            .And.Contain("href=\"dcb/projections\"").And.NotContain("href=\"streamed")
-            .And.NotContain("href=\"dcb\"").And.NotContain("What is registered under");
+            .And.Contain("href=\"samples/dcb/projections\"").And.NotContain("href=\"samples/streamed")
+            .And.NotContain("href=\"samples/dcb\"").And.NotContain("What is registered under");
     }
 
     [Fact]
@@ -105,14 +105,14 @@ public class OneModelTests
     {
         using var web = MemoriaWeb.Open().WithSampleTypes();
 
-        var page = await web.Client.GetStringAsync("/streamed/events/types");
+        var page = await web.Client.GetStringAsync("/samples/streamed/events/types");
 
-        Markup.Breadcrumb(page).Should().Contain("<a href=\"streamed\">Streamed</a>");
+        Markup.Breadcrumb(page).Should().Contain("<a href=\"samples/streamed\">Streamed</a>");
     }
 
     [Theory]
-    [InlineData("/streamed/events/types", "<a href=\"streamed/events\">Events</a>")]
-    [InlineData("/streamed/streams", "aria-current=\"page\">Streams</span>")]
+    [InlineData("/samples/streamed/events/types", "<a href=\"samples/streamed/events\">Events</a>")]
+    [InlineData("/samples/streamed/streams", "aria-current=\"page\">Streams</span>")]
     public async Task With_only_streamed_types_the_breadcrumb_leaves_the_model_out(string address, string crumb)
     {
         using var web = MemoriaWeb.Open().WithStreamedTypesOnly();
@@ -129,9 +129,9 @@ public class OneModelTests
     {
         using var web = MemoriaWeb.Open().WithDcbTypesOnly();
 
-        var page = await web.Client.GetStringAsync("/dcb/aggregates/types");
+        var page = await web.Client.GetStringAsync("/samples/dcb/aggregates/types");
 
-        Markup.Breadcrumb(page).Should().Contain("<a href=\"dcb/aggregates\">Aggregates</a>")
+        Markup.Breadcrumb(page).Should().Contain("<a href=\"samples/dcb/aggregates\">Aggregates</a>")
             .And.NotContain(">DCB<");
     }
 
@@ -140,11 +140,11 @@ public class OneModelTests
     /// it rather than the model name, which nothing else on the site says any more.
     /// </summary>
     [Theory]
-    [InlineData("/streamed")]
-    [InlineData("/dcb")]
+    [InlineData("/samples/streamed")]
+    [InlineData("/samples/dcb")]
     public async Task With_one_model_the_overview_crumb_is_overview(string address)
     {
-        using var web = address == "/dcb"
+        using var web = address == "/samples/dcb"
             ? MemoriaWeb.Open().WithDcbTypesOnly()
             : MemoriaWeb.Open().WithStreamedTypesOnly();
 

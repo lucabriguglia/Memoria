@@ -1,13 +1,15 @@
-@page "/streamed"
+@page "/{service}/streamed"
 @using Memoria.Web.Extensibility
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 
 <PageTitle>Streamed @Heading</PageTitle>
 
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="">Home</a>
     <span aria-hidden="true">/</span>
-    <ModelCrumb Model="ModelStore.Streamed" Current="true"/>
+    <a href="@Service">@Current.Name</a>
+    <span aria-hidden="true">/</span>
+    <ModelCrumb Model="ModelStore.Streamed" IsCurrent="true"/>
 </nav>
 
 <h1>@Heading</h1>
@@ -22,7 +24,7 @@
    it: the same fact whichever of the pages under it you go on to open. *@
 <ul class="tiles">
     <li>
-        <a href="streamed/events">
+        <a href="@Service/streamed/events">
             <SectionMark Kind="SectionKind.Events"/>
             <span class="body">
                 <span class="name">Events</span>
@@ -31,7 +33,7 @@
         </a>
     </li>
     <li>
-        <a href="streamed/aggregates">
+        <a href="@Service/streamed/aggregates">
             <SectionMark Kind="SectionKind.Aggregates"/>
             <span class="body">
                 <span class="name">Aggregates</span>
@@ -43,7 +45,7 @@
         </a>
     </li>
     <li>
-        <a href="streamed/projections">
+        <a href="@Service/streamed/projections">
             <SectionMark Kind="SectionKind.Projections"/>
             <span class="body">
                 <span class="name">Projections</span>
@@ -58,7 +60,7 @@
        over tags rather than a place events are kept. Nothing else is stored of a stream, so this
        tile is the whole of the section and there are no pages under it. *@
     <li>
-        <a href="streamed/streams">
+        <a href="@Service/streamed/streams">
             <SectionMark Kind="SectionKind.Streams"/>
             <span class="body">
                 <span class="name">Streams</span>
@@ -78,6 +80,10 @@
 
 @code {
 
+    /// <summary>The service this page sits under: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
+
     /// <summary>
     /// What the page is, for the heading and the title. One value for both, so they cannot drift
     /// apart; the tab puts the section in front of it, because a tab is read away from the
@@ -85,7 +91,7 @@
     /// </summary>
     private const string Heading = "Overview";
 
-    private DomainTypeCatalogue Catalogue => Types.Current;
+    private DomainTypeCatalogue Catalogue => Current.Catalogue;
 
     private static string Count(int count, string noun) =>
         count == 1 ? $"1 {noun}" : $"{count} {noun}s";

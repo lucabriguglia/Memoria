@@ -1,13 +1,15 @@
-@page "/dcb"
+@page "/{service}/dcb"
 @using Memoria.Web.Extensibility
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 
 <PageTitle>DCB @Heading</PageTitle>
 
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="">Home</a>
     <span aria-hidden="true">/</span>
-    <ModelCrumb Model="ModelStore.Dcb" Current="true"/>
+    <a href="@Service">@Current.Name</a>
+    <span aria-hidden="true">/</span>
+    <ModelCrumb Model="ModelStore.Dcb" IsCurrent="true"/>
 </nav>
 
 <h1>@Heading</h1>
@@ -25,7 +27,7 @@
    than a place events are kept, so there are no streams here to hold them. *@
 <ul class="tiles">
     <li>
-        <a href="dcb/events">
+        <a href="@Service/dcb/events">
             <SectionMark Kind="SectionKind.Events"/>
             <span class="body">
                 <span class="name">Events</span>
@@ -34,7 +36,7 @@
         </a>
     </li>
     <li>
-        <a href="dcb/aggregates">
+        <a href="@Service/dcb/aggregates">
             <SectionMark Kind="SectionKind.Aggregates"/>
             <span class="body">
                 <span class="name">Aggregates</span>
@@ -46,7 +48,7 @@
         </a>
     </li>
     <li>
-        <a href="dcb/projections">
+        <a href="@Service/dcb/projections">
             <SectionMark Kind="SectionKind.Projections"/>
             <span class="body">
                 <span class="name">Projections</span>
@@ -69,6 +71,10 @@
 
 @code {
 
+    /// <summary>The service this page sits under: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
+
     /// <summary>
     /// What the page is, for the heading and the title. One value for both, so they cannot drift
     /// apart; the tab puts the section in front of it, because a tab is read away from the
@@ -77,7 +83,7 @@
     /// </summary>
     private const string Heading = "Overview";
 
-    private DomainTypeCatalogue Catalogue => Types.Current;
+    private DomainTypeCatalogue Catalogue => Current.Catalogue;
 
     private static string Count(int count, string noun) =>
         count == 1 ? $"1 {noun}" : $"{count} {noun}s";

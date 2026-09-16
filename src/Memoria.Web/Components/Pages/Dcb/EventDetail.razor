@@ -1,8 +1,8 @@
-@page "/dcb/events/detail"
+@page "/{service}/dcb/events/detail"
 @using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore
 @using Memoria.Web.Extensibility
 @using Microsoft.AspNetCore.WebUtilities
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 @inject IDcbDbContext StoreContext
 @inject NavigationManager Navigation
 
@@ -11,8 +11,10 @@
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="">Home</a>
     <span aria-hidden="true">/</span>
+    <a href="@Service">@Current.Name</a>
+    <span aria-hidden="true">/</span>
     <ModelCrumb Model="ModelStore.Dcb"/>
-    <a href="dcb/events">Events</a>
+    <a href="@Service/dcb/events">Events</a>
     <span aria-hidden="true">/</span>
     @* The list this row was opened from, narrowed to the event's type when a registered one
        claims it, so the step back arrives where the click came from. *@
@@ -29,7 +31,7 @@
     <h1>@Heading</h1>
     <p class="alert" role="alert">
         That address names no event: it carries no position, or one that is not a number. Start
-        again from <a href="dcb/events/data">events</a>.
+        again from <a href="@Service/dcb/events/data">events</a>.
     </p>
 }
 else
@@ -91,6 +93,10 @@ else
 
 @code {
 
+    /// <summary>The service this page sits under: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
+
     /// <summary>
     /// Where in the log the row sits, which is what makes it unique, or null when the address
     /// carries none or carries something that is not a number.
@@ -114,7 +120,7 @@ else
     private Type? EventType =>
         Stored is null
             ? null
-            : Types.Current.DcbEvents.FirstOrDefault(@event =>
+            : Current.Catalogue.DcbEvents.FirstOrDefault(@event =>
                 DomainTypeDescriber.BindingOf(@event)?.Key == Stored.Type);
 
     /// <summary>
@@ -150,13 +156,13 @@ else
     /// </summary>
     private string BackToList =>
         EventType is { } registered
-            ? $"dcb/events/data?type={Uri.EscapeDataString(registered.FullName ?? registered.Name)}"
-            : "dcb/events/data";
+            ? $"{Service}/dcb/events/data?type={Uri.EscapeDataString(registered.FullName ?? registered.Name)}"
+            : $"{Service}/dcb/events/data";
 
     /// <summary>
     /// What addresses the row itself: its position. The view is appended by whatever varies it.
     /// </summary>
-    private string Address => $"dcb/events/detail?position={Position}";
+    private string Address => $"{Service}/dcb/events/detail?position={Position}";
 
     /// <summary>
     /// One address for the whole page, so a link only changes what it means to change.

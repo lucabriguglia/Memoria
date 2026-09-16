@@ -1,7 +1,7 @@
-@page "/streamed/events/detail"
+@page "/{service}/streamed/events/detail"
 @using Memoria.Web.Extensibility
 @using Microsoft.AspNetCore.WebUtilities
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 @inject IStreamedReads Store
 @inject NavigationManager Navigation
 
@@ -10,8 +10,10 @@
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="">Home</a>
     <span aria-hidden="true">/</span>
+    <a href="@Service">@Current.Name</a>
+    <span aria-hidden="true">/</span>
     <ModelCrumb Model="ModelStore.Streamed"/>
-    <a href="streamed/events">Events</a>
+    <a href="@Service/streamed/events">Events</a>
     <span aria-hidden="true">/</span>
     @* The list this row was opened from, narrowed to the event's type when a registered one
        claims it, so the step back arrives where the click came from. *@
@@ -28,7 +30,7 @@
     <h1>@Heading</h1>
     <p class="alert" role="alert">
         That address names no event: it carries no stream, or no key. Start again from
-        <a href="streamed/events/data">events</a>.
+        <a href="@Service/streamed/events/data">events</a>.
     </p>
 }
 else
@@ -92,6 +94,10 @@ else
 
 @code {
 
+    /// <summary>The service this page sits under: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
+
     /// <summary>
     /// The stream the row was appended to, as the store holds it.
     /// </summary>
@@ -124,7 +130,7 @@ else
     private Type? EventType =>
         Stored is null
             ? null
-            : Types.Current.StreamedEvents.FirstOrDefault(@event =>
+            : Current.Catalogue.StreamedEvents.FirstOrDefault(@event =>
                 DomainTypeDescriber.BindingOf(@event)?.Key == Stored.Event.Type);
 
     /// <summary>
@@ -161,15 +167,15 @@ else
     /// </summary>
     private string BackToList =>
         EventType is { } registered
-            ? $"streamed/events/data?type={Uri.EscapeDataString(registered.FullName ?? registered.Name)}"
-            : "streamed/events/data";
+            ? $"{Service}/streamed/events/data?type={Uri.EscapeDataString(registered.FullName ?? registered.Name)}"
+            : $"{Service}/streamed/events/data";
 
     /// <summary>
     /// Everything that addresses the row itself: the stream and the key. The view is appended by
     /// whatever varies it.
     /// </summary>
     private string Address =>
-        $"streamed/events/detail?stream={Uri.EscapeDataString(StreamId ?? string.Empty)}" +
+        $"{Service}/streamed/events/detail?stream={Uri.EscapeDataString(StreamId ?? string.Empty)}" +
         $"&id={Uri.EscapeDataString(Id ?? string.Empty)}";
 
     /// <summary>

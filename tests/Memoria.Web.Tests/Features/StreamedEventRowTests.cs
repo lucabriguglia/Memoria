@@ -136,7 +136,7 @@ public class StreamedEventRowTests
         using var web = MemoriaWeb.Open().WithSampleTypes().WithReads(Holding(Row(FirstId, 1, "one")));
 
         var page = Markup.Plain(await web.Client.GetStringAsync(
-            $"/streamed/events/detail?stream=sample:1&id={Uri.EscapeDataString(FirstId)}&tab=info"));
+            $"/samples/streamed/events/detail?stream=sample:1&id={Uri.EscapeDataString(FirstId)}&tab=info"));
 
         page.Should().Contain("<dt>Stream Id</dt>")
             .And.Contain($"<dd><code>{FirstId}</code></dd>")

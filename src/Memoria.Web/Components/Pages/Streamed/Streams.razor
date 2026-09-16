@@ -1,11 +1,13 @@
-@page "/streamed/streams"
+@page "/{service}/streamed/streams"
 @using Memoria.Web.Extensibility
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 
 <PageTitle>Streamed @Heading</PageTitle>
 
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="">Home</a>
+    <span aria-hidden="true">/</span>
+    <a href="@Service">@Current.Name</a>
     <span aria-hidden="true">/</span>
     <ModelCrumb Model="ModelStore.Streamed"/>
     <span aria-current="page">Streams</span>
@@ -132,6 +134,10 @@ else
 
 @code {
 
+    /// <summary>The service this page sits under: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
+
     /// <summary>
     /// What the page is, for the heading and the title. One value for both, so they cannot drift
     /// apart; the tab puts the section in front of it, because a tab is read away from the
@@ -140,7 +146,7 @@ else
     private const string Heading = "Streams";
 
     /// <summary>The page's own address, which every link in the list and the tabs return to.</summary>
-    private const string Address = "streamed/streams";
+    private string Address => $"{Service}/streamed/streams";
 
     [SupplyParameterFromQuery(Name = "type")]
     private string? SelectedName { get; set; }
@@ -174,7 +180,7 @@ else
     /// Only the streamed model has them: a DCB boundary is a query over the tags an event carries,
     /// not a place events are put, so there is no page like this one under DCB.
     /// </remarks>
-    private IReadOnlyList<Type> StreamTypes => Types.Current.StreamedStreamIds;
+    private IReadOnlyList<Type> StreamTypes => Current.Catalogue.StreamedStreamIds;
 
     /// <summary>
     /// The stream being shown: the one asked for, or the first the list offers.
@@ -214,11 +220,11 @@ else
     /// the way those pages are entered everywhere else, so the three rows are told apart by their
     /// marks as well as by their words.
     /// </summary>
-    private static readonly IReadOnlyList<(string Label, string Page, SectionKind Mark)> DataPages =
+    private IReadOnlyList<(string Label, string Page, SectionKind Mark)> DataPages =>
     [
-        ("Events", "streamed/events/data", SectionKind.Events),
-        ("Aggregates", "streamed/aggregates/data", SectionKind.Aggregates),
-        ("Projections", "streamed/projections/data", SectionKind.Projections)
+        ("Events", $"{Service}/streamed/events/data", SectionKind.Events),
+        ("Aggregates", $"{Service}/streamed/aggregates/data", SectionKind.Aggregates),
+        ("Projections", $"{Service}/streamed/projections/data", SectionKind.Projections)
     ];
 
     /// <summary>
@@ -226,7 +232,7 @@ else
     /// under it. The stream is passed in rather than taken from the selection, because the list
     /// links rows that are not selected.
     /// </summary>
-    private static IReadOnlyList<TypeIndex.Link> Under(Type stream) =>
+    private IReadOnlyList<TypeIndex.Link> Under(Type stream) =>
         DataPages.Select(page => new TypeIndex.Link(DataLink(stream, page.Page), page.Label, page.Mark)).ToList();
 
     /// <summary>

@@ -1,9 +1,9 @@
-@page "/dcb/aggregates/detail"
+@page "/{service}/dcb/aggregates/detail"
 @using Memoria.EventSourcing.Dcb
 @using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore
 @using Memoria.Web.Extensibility
 @using Microsoft.AspNetCore.WebUtilities
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 @inject IDcbDbContext StoreContext
 @inject IDcbDomainService Folds
 @inject NavigationManager Navigation
@@ -13,8 +13,10 @@
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="">Home</a>
     <span aria-hidden="true">/</span>
+    <a href="@Service">@Current.Name</a>
+    <span aria-hidden="true">/</span>
     <ModelCrumb Model="ModelStore.Dcb"/>
-    <a href="dcb/aggregates">Aggregates</a>
+    <a href="@Service/dcb/aggregates">Aggregates</a>
     <span aria-hidden="true">/</span>
     @* The list this row was opened from, narrowed to the aggregate and the identifier that address
        it, so the step back arrives where the click came from. Neither of those is a crumb of its
@@ -33,7 +35,7 @@
     <h1>@Heading</h1>
     <p class="alert" role="alert">
         That aggregate and identifier are not among the registered types. They may have been
-        replaced by a later upload — start again from <a href="dcb/aggregates/types">aggregates</a>.
+        replaced by a later upload — start again from <a href="@Service/dcb/aggregates/types">aggregates</a>.
     </p>
 }
 else
@@ -315,7 +317,7 @@ else
                    The dropdown submits on change and the box is typed into, so the button is not
                    only the fallback when scripting is off — it submits both at once, which is what
                    one form buys. *@
-                <form class="search" method="get" action="dcb/aggregates/detail#@EventsAnchor">
+                <form class="search" method="get" action="@Service/dcb/aggregates/detail#@EventsAnchor">
                     <label for="event">Event type</label>
                     <select id="event" name="event" onchange="this.form.submit()">
                         @* First and default, so a reader who has chosen nothing is looking at the
@@ -561,7 +563,7 @@ else
                         <Pager Page="Events.Page" TotalPages="Events.TotalPages"
                                Href="@(page => EventsLink(Descending, page))"/>
 
-                        <form class="page-size" method="get" action="dcb/aggregates/detail#@EventsAnchor">
+                        <form class="page-size" method="get" action="@Service/dcb/aggregates/detail#@EventsAnchor">
                             <label for="size">Rows per page</label>
                             <select id="size" name="size" onchange="this.form.submit()">
                                 @foreach (var option in InstanceQuery.PageSizes)
@@ -610,7 +612,7 @@ else
            that the place a version was folded up to is a position in the one log. *@
         <ComparePanel Unavailable="Unfoldable" Comparison="Comparison" Noun="aggregate" PointLabel="Position"
                       StoredVersion="Stored?.Version" UpdateHref="@TabLink(UpdateTab)"
-                      Action="@($"dcb/aggregates/detail#tab-{CompareTab}")"
+                      Action="@($"{Service}/dcb/aggregates/detail#tab-{CompareTab}")"
                       Link="@(pair => DetailLink(CompareTab, Descending, Page, from: pair.From, to: pair.To))">
             <Carried>
                 <input type="hidden" name="type" value="@Aggregate?.FullName"/>
@@ -658,7 +660,7 @@ else
                     appended.
                 </p>
 
-                <form method="post" action="dcb/aggregates/update" class="refresh">
+                <form method="post" action="@Service/dcb/aggregates/update" class="refresh">
                     <AntiforgeryToken/>
                     <input type="hidden" name="type" value="@Aggregate.FullName"/>
                     <input type="hidden" name="id" value="@Identifier.FullName"/>
@@ -728,6 +730,10 @@ else
 }
 
 @code {
+
+    /// <summary>The service this page sits under: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
 
     /// <summary>The request, for the rows-per-page size the browser remembers in a cookie.</summary>
     [CascadingParameter]
@@ -848,7 +854,7 @@ else
     /// applies everything has no such list of its own, so it offers every registered DCB event —
     /// the same list the log's own page offers, and the widest thing its boundary could hold.
     /// </remarks>
-    private IReadOnlyList<Type> EventTypes => Applies ?? Types.Current.DcbEvents;
+    private IReadOnlyList<Type> EventTypes => Applies ?? Current.Catalogue.DcbEvents;
 
     /// <summary>
     /// Which of the history's events are being looked at: all of them, one type, or neither because
@@ -971,7 +977,7 @@ else
     /// the instance. The view and the table's own state are appended by whatever varies them.
     /// </summary>
     private string Address =>
-        $"dcb/aggregates/detail?type={Uri.EscapeDataString(Aggregate?.FullName ?? string.Empty)}" +
+        $"{Service}/dcb/aggregates/detail?type={Uri.EscapeDataString(Aggregate?.FullName ?? string.Empty)}" +
         $"&id={Uri.EscapeDataString(Identifier?.FullName ?? string.Empty)}" +
         string.Concat(Parameters.Select(parameter =>
             $"&{Uri.EscapeDataString(parameter.Name)}=" +
@@ -1060,7 +1066,7 @@ else
     /// </summary>
     private DomainTypeDescription? ViewedType =>
         !string.IsNullOrWhiteSpace(RequestedView) && Aggregate is { } aggregate
-            ? DomainTypeDescriber.Describe(aggregate, Types.Current.DcbAggregateIds)
+            ? DomainTypeDescriber.Describe(aggregate, Current.Catalogue.DcbAggregateIds)
             : null;
 
     /// <summary>
@@ -1151,7 +1157,7 @@ else
     /// page's own; only the identifier varies, which is what the column is one link per row for.
     /// </summary>
     private string TypeDataLink(Type identifier) =>
-        $"dcb/aggregates/data?type={Uri.EscapeDataString(Aggregate?.FullName ?? string.Empty)}" +
+        $"{Service}/dcb/aggregates/data?type={Uri.EscapeDataString(Aggregate?.FullName ?? string.Empty)}" +
         $"&id={Uri.EscapeDataString(identifier.FullName ?? identifier.Name)}";
 
     /// <summary>
@@ -1203,7 +1209,7 @@ else
             .Where(value => !string.IsNullOrWhiteSpace(value)));
 
     private string BackToList =>
-        $"dcb/aggregates/data?type={Uri.EscapeDataString(Aggregate?.FullName ?? string.Empty)}" +
+        $"{Service}/dcb/aggregates/data?type={Uri.EscapeDataString(Aggregate?.FullName ?? string.Empty)}" +
         $"&id={Uri.EscapeDataString(Identifier?.FullName ?? string.Empty)}";
 
     /// <summary>
@@ -1311,12 +1317,12 @@ else
 
         // Both are matched against what is registered, so a name in the address can only ever reach
         // a type this application already knows about.
-        Aggregate = DomainTypeDescriber.Select(Types.Current.DcbAggregates, Values.GetValueOrDefault("type"));
+        Aggregate = DomainTypeDescriber.Select(Current.Catalogue.DcbAggregates, Values.GetValueOrDefault("type"));
 
         Identifier = Aggregate is null
             ? null
             : DomainTypeDescriber
-                .Describe(Aggregate, Types.Current.DcbAggregateIds)
+                .Describe(Aggregate, Current.Catalogue.DcbAggregateIds)
                 .Identifiers
                 .FirstOrDefault(identifier => identifier.FullName == Values.GetValueOrDefault("id"));
 

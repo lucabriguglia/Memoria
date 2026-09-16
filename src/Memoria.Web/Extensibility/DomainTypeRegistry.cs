@@ -50,8 +50,11 @@ public sealed class DomainTypeRegistry(ExtensionStore store, Assembly? host = nu
             // names is scanned, so the manifest is what says whose types are whose. A file nothing
             // names — a dependency, or a stray no installed archive accounts for — registers
             // nothing even when it carries attributed types of its own.
-            var named = store.InstalledArchives()
+            var services = store.InstalledArchives()
                 .SelectMany(archive => archive.Services)
+                .ToList();
+
+            var named = services
                 .SelectMany(service => service.Assemblies)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -61,6 +64,11 @@ public sealed class DomainTypeRegistry(ExtensionStore store, Assembly? host = nu
             var assemblies = host is null
                 ? uploaded.ToList()
                 : new List<Assembly>([host, .. uploaded]);
+
+            // The host under the file name a manifest would name it by, so a service may claim
+            // what it declares the way it claims an upload; the name rather than the location,
+            // since an assembly emitted at run time has none.
+            var hostFile = host is null ? null : new LoadedAssembly($"{host.GetName().Name}.dll", host);
 
             var scanned = DomainTypeScanner.Scan(assemblies);
             var errors = new List<string>([.. loaded.Errors, .. scanned.Errors]);
@@ -80,6 +88,8 @@ public sealed class DomainTypeRegistry(ExtensionStore store, Assembly? host = nu
             Current = scanned with
             {
                 Assemblies = loaded.Assemblies,
+                Host = hostFile,
+                Services = services,
                 Errors = errors,
                 ReloadedUtc = DateTime.UtcNow
             };

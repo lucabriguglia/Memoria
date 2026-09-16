@@ -23,15 +23,14 @@ namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Tests.Features;
 /// in-memory provider models no transactions for the append path. Each test opens its own database
 /// so the two contexts in it share one and no other test does.
 /// </remarks>
-public class TypeBindingSetTests : IDisposable
+public class TypeBindingSetTests
 {
     private readonly string _database = $"Dcb-TypeBindingSet-{Guid.NewGuid()}";
     private readonly FakeTimeProvider _timeProvider = new(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero));
 
-    private readonly Dictionary<string, Type> _originalEvents = TypeBindings.EventTypeBindings;
-    private readonly Dictionary<string, Type> _originalAggregates = DcbTypeBindings.AggregateTypeBindings;
-    private readonly Dictionary<string, Type> _originalProjections = DcbTypeBindings.ProjectionTypeBindings;
-
+    // Set and never restored: a map captured at construction may be the empty one a class built
+    // first would see, and putting it back while another class reads the shared set in parallel
+    // takes that class's keys away.
     public TypeBindingSetTests()
     {
         // The process-wide set knows the shared models and nothing of the twins — the same event
@@ -51,14 +50,6 @@ public class TypeBindingSetTests : IDisposable
         {
             { "SeatSummary:1", typeof(SeatSummaryProjection) }
         };
-    }
-
-    public void Dispose()
-    {
-        TypeBindings.EventTypeBindings = _originalEvents;
-        DcbTypeBindings.AggregateTypeBindings = _originalAggregates;
-        DcbTypeBindings.ProjectionTypeBindings = _originalProjections;
-        GC.SuppressFinalize(this);
     }
 
     private static TypeBindingSet TwinBindings() => new()

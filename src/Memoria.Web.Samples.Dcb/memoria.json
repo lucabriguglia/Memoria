@@ -1,7 +1,7 @@
 {
   "services": [
     {
-      "name": "samples-dcb",
+      "name": "Samples DCB",
       "assemblies": ["Memoria.Web.Samples.Dcb.dll"],
       "connectionString": "Memoria"
     }

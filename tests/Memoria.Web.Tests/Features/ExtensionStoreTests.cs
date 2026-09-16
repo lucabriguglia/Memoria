@@ -196,11 +196,11 @@ public class ExtensionStoreTests : IDisposable
     public void Refuses_a_manifest_that_breaks_a_rule_and_installs_nothing()
     {
         var install = () => Store().Install("pack.zip",
-            ZipWith(ManifestOf("not a name", "Contoso.Domain.dll"), "Contoso.Domain.dll"));
+            ZipWith(ManifestOf("!!!", "Contoso.Domain.dll"), "Contoso.Domain.dll"));
 
         using (new AssertionScope())
         {
-            install.Should().Throw<InvalidDataException>().WithMessage("*letters, digits and hyphens*");
+            install.Should().Throw<InvalidDataException>().WithMessage("*no letter or digit*");
             FilesUnder("zips").Should().BeEmpty();
             FilesUnder("lib").Should().BeEmpty();
         }
@@ -250,6 +250,21 @@ public class ExtensionStoreTests : IDisposable
             FilesUnder("zips").Should().BeEquivalentTo("one.zip");
             FilesUnder("lib").Should().BeEquivalentTo("One.dll");
         }
+    }
+
+    /// <summary>
+    /// Two names that make one address are one service, so the second archive is refused however
+    /// differently its manifest spelt the name.
+    /// </summary>
+    [Fact]
+    public void Refuses_a_service_whose_address_another_archive_already_takes()
+    {
+        var store = Store();
+        store.Install("one.zip", ZipWith(ManifestOf("Samples Streamed", "One.dll"), "One.dll"));
+
+        var install = () => store.Install("two.zip", ZipWith(ManifestOf("samples  STREAMED", "Two.dll"), "Two.dll"));
+
+        install.Should().Throw<InvalidDataException>().WithMessage("*'samples-streamed'*already declared by one.zip*");
     }
 
     /// <summary>An archive uploaded again replaces its own services rather than colliding with them.</summary>

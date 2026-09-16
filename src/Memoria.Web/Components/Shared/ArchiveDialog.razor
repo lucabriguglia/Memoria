@@ -59,6 +59,10 @@
                         <h3>@service.Name</h3>
 
                         <dl class="facts">
+                            @* Where the service is browsed: the address its name makes, which is
+                               what a reader types and what the manifest never wrote. *@
+                            <dt>Address</dt>
+                            <dd><code>/@service.Slug</code></dd>
                             <dt>Connection string</dt>
                             @* The name the manifest gave and what the configuration makes of it,
                                beside each other: a name that meets nothing is the one fact on this

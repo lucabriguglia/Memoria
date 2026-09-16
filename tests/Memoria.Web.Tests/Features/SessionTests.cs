@@ -44,7 +44,7 @@ public class SessionTests
         using var web = MemoriaWeb.SigningIn();
         var now = DateTimeOffset.UtcNow;
 
-        var response = await Send(web, "/streamed",
+        var response = await Send(web, "/samples/streamed",
             web.SessionCookie("Ada Lovelace", now - Hour, now - TimeSpan.FromMinutes(1)));
 
         response.StatusCode.Should().Be(HttpStatusCode.Found);

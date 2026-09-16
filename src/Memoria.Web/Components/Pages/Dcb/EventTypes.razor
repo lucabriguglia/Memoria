@@ -1,14 +1,16 @@
-@page "/dcb/events/types"
+@page "/{service}/dcb/events/types"
 @using Memoria.Web.Extensibility
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 
 <PageTitle>DCB @Heading</PageTitle>
 
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="">Home</a>
     <span aria-hidden="true">/</span>
+    <a href="@Service">@Current.Name</a>
+    <span aria-hidden="true">/</span>
     <ModelCrumb Model="ModelStore.Dcb"/>
-    <a href="dcb/events">Events</a>
+    <a href="@Service/dcb/events">Events</a>
     <span aria-hidden="true">/</span>
     <span aria-current="page">Types</span>
 </nav>
@@ -133,6 +135,10 @@ else
 
 @code {
 
+    /// <summary>The service this page sits under: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
+
     /// <summary>
     /// What the page is, for the heading and the title. One value for both, so they cannot drift
     /// apart; the tab puts the section and the group in front of it, because a tab is read away
@@ -141,7 +147,7 @@ else
     private const string Heading = "Event Types";
 
     /// <summary>The page's own address, which every link in the list and the tabs return to.</summary>
-    private const string Address = "dcb/events/types";
+    private string Address => $"{Service}/dcb/events/types";
 
     [SupplyParameterFromQuery(Name = "type")]
     private string? SelectedName { get; set; }
@@ -177,7 +183,7 @@ else
     /// an event nothing here folds would be a row leading nowhere. Which model applies which is
     /// read off their filters once, when the assemblies are.
     /// </remarks>
-    private IReadOnlyList<Type> Events => Types.Current.DcbEvents;
+    private IReadOnlyList<Type> Events => Current.Catalogue.DcbEvents;
 
     /// <summary>
     /// The event being shown: the one asked for, or the first the list offers.
@@ -208,8 +214,8 @@ else
     /// Through to what has been stored of one event type. The type is passed in rather than taken
     /// from the selection, because the list links rows that are not selected.
     /// </summary>
-    private static string DataLink(Type @event) =>
-        $"dcb/events/data?type={Uri.EscapeDataString(@event.FullName ?? @event.Name)}";
+    private string DataLink(Type @event) =>
+        $"{Service}/dcb/events/data?type={Uri.EscapeDataString(@event.FullName ?? @event.Name)}";
 
     /// <summary>
     /// A tab of the event already chosen, keeping what was typed into the list.

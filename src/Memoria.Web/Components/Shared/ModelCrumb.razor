@@ -1,14 +1,15 @@
 @using Memoria.Web.Extensibility
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 @inject Memoria.Web.Data.StoreCapabilities Store
 
 @* The model's step in a breadcrumb: a link through to its overview, followed by the separator
    the next crumb needs, or — on the overview itself — the crumb being read. Only while both
    models are laid out. With one model alone nothing else on the site names it, so the trail runs
-   straight from Home to the section, and the overview is called what the home tile calls it. *@
+   straight from the service to the section, and the overview is called what the service's tile
+   calls it. *@
 @if (Shown.Both)
 {
-    if (Current)
+    if (IsCurrent)
     {
         <span aria-current="page">@Name</span>
     }
@@ -18,7 +19,7 @@
         <span aria-hidden="true">/</span>
     }
 }
-else if (Current)
+else if (IsCurrent)
 {
     <span aria-current="page">Overview</span>
 }
@@ -31,14 +32,15 @@ else if (Current)
 
     /// <summary>
     /// Whether the model's overview is the page being read, so the step is the end of the trail
-    /// rather than a link along it.
+    /// rather than a link along it. Named on the page as <c>Current</c>.
     /// </summary>
     [Parameter]
-    public bool Current { get; set; }
+    public bool IsCurrent { get; set; }
 
-    private ShownModels Shown => ShownModels.Of(Types.Current, Store);
+    private ShownModels Shown => ShownModels.Of(Current.Catalogue, Store);
 
-    private string Href => Model == ModelStore.Dcb ? "dcb" : "streamed";
+    /// <summary>The model's overview, under the service the page is inside.</summary>
+    private string Href => $"{Current.Segment}/{(Model == ModelStore.Dcb ? "dcb" : "streamed")}";
 
     private string Name => Model == ModelStore.Dcb ? "DCB" : "Streamed";
 

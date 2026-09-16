@@ -144,7 +144,8 @@ streamed projection OrderSummary          OrderSummaryId        o-a6f6     no sn
 The tool has no reference to these projects — it reads uploaded archives and nothing else. So
 build them and zip each domain assembly with its manifest, one archive per model. Each sample
 project carries a `memoria.json` that the build copies beside its assembly, declaring one service
-— `samples-streamed` and `samples-dcb` — over the `Memoria` connection string:
+each — **Samples Streamed** and **Samples DCB**, browsed at `/samples-streamed` and `/samples-dcb`
+— over the `Memoria` connection string:
 
 ```bash
 dotnet build src/Memoria.Web.Samples --configuration Release
@@ -169,9 +170,11 @@ Each archive holds its one `.dll` and its `memoria.json` at the root, and nothin
 without the manifest is refused. Never put a `Memoria*` core assembly in one — see
 [what to put in a zip](memoria-web-configuration.md#what-to-put-in-a-zip).
 
-Two archives rather than one so that you can upload one model alone. The tool lays itself out for
-the models it finds types under: with both uploaded the home page sets them side by side and the
-bar names each; with one, that model's sections take the bar and the home page directly.
+Two archives rather than one, each declaring a service of its own, so that you can upload one
+model alone. The home page lists whichever are installed, and each service's page is laid out for
+the model it registered types under: **Samples Streamed**, at `/samples-streamed`, for the streamed
+model; **Samples DCB**, at `/samples-dcb`, for dynamic consistency boundaries — each with that
+model's sections on the bar.
 
 ## 4. Point the tool at the same store
 
@@ -189,8 +192,10 @@ Then open `http://localhost:5159`.
 Go to **Settings → Installed → Upload**, choose a zip, and upload it — then the other, if you want
 both models. The page reports what registered; **Settings → Types** counts it per model. Nothing
 restarts. Each row of the installed table opens a sheet over its zip: the service the manifest
-declares, `samples-streamed` or `samples-dcb`, over the `Memoria` connection string, and the
-types registered from the assembly.
+declares, **Samples Streamed** or **Samples DCB**, the address it is browsed at, the `Memoria`
+connection string it reads over, and the types registered from the assembly. **Home** then lists the services installed; open one, and
+its page leads into its events, aggregates and projections — at `/samples-streamed/streamed/...`
+and `/samples-dcb/dcb/...`.
 
 Things worth opening first:
 

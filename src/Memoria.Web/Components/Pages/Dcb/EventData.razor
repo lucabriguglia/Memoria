@@ -1,8 +1,8 @@
-﻿@page "/dcb/events/data"
+﻿@page "/{service}/dcb/events/data"
 @using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore
 @using Memoria.Web.Extensibility
 @using Microsoft.AspNetCore.WebUtilities
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 @inject IDcbDbContext StoreContext
 @inject TotalsCache Totals
 @inject NavigationManager Navigation
@@ -12,8 +12,10 @@
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="">Home</a>
     <span aria-hidden="true">/</span>
+    <a href="@Service">@Current.Name</a>
+    <span aria-hidden="true">/</span>
     <ModelCrumb Model="ModelStore.Dcb"/>
-    <a href="dcb/events">Events</a>
+    <a href="@Service/dcb/events">Events</a>
     <span aria-hidden="true">/</span>
     <span aria-current="page">Data</span>
 </nav>
@@ -24,7 +26,7 @@
 {
     <p class="alert" role="alert">
         That event is not among the registered types. It may have been replaced by a later upload —
-        start again from <a href="dcb/events/types">events</a>.
+        start again from <a href="@Service/dcb/events/types">events</a>.
     </p>
 }
 else
@@ -49,7 +51,7 @@ else
 
        The dropdown submits on change and the box is typed into, so the button is not only the
        fallback when scripting is off — it submits both at once, which is what one form buys. *@
-    <form class="search" method="get" action="dcb/events/data">
+    <form class="search" method="get" action="@Service/dcb/events/data">
         <label for="type">Event type</label>
         <select id="type" name="type" onchange="this.form.submit()">
             @* First and default, so a reader who has chosen nothing is looking at the whole log
@@ -293,7 +295,7 @@ else
                Submitting on change saves a click; the button is the fallback when scripting is off.
                No page travels with it: a page number from a narrower page size would land somewhere
                a reader did not ask for, and the first page is what they can see they are getting. *@
-            <form class="page-size" method="get" action="dcb/events/data">
+            <form class="page-size" method="get" action="@Service/dcb/events/data">
                 <label for="size">Rows per page</label>
                 <select id="size" name="size" onchange="this.form.submit()">
                     @foreach (var option in InstanceQuery.PageSizes)
@@ -334,6 +336,10 @@ else
 }
 
 @code {
+
+    /// <summary>The service this page sits under: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
 
     /// <summary>The request, for the rows-per-page size the browser remembers in a cookie.</summary>
     [CascadingParameter]
@@ -406,7 +412,7 @@ else
     /// The same list the events page lists, for the same reason: an event nothing here folds would
     /// be a choice narrowing to rows no DCB model is made of.
     /// </remarks>
-    private IReadOnlyList<Type> EventTypes => Types.Current.DcbEvents;
+    private IReadOnlyList<Type> EventTypes => Current.Catalogue.DcbEvents;
 
     /// <summary>
     /// What an event is written into the log as, falling back to the class when it carries no
@@ -461,7 +467,7 @@ else
         bool clearText = false,
         bool? open = null)
     {
-        var link = $"dcb/events/data?dir={(descending ? "desc" : "asc")}" +
+        var link = $"{Service}/dcb/events/data?dir={(descending ? "desc" : "asc")}" +
                    $"&size={PageSize}" +
                    $"&page={page}";
 
@@ -485,7 +491,7 @@ else
     /// number rather than anything registered, so a row written under a type no uploaded assembly
     /// claims still opens, and is the row worth opening.
     /// </summary>
-    private static string DetailLink(long position) => $"dcb/events/detail?position={position}";
+    private string DetailLink(long position) => $"{Service}/dcb/events/detail?position={position}";
 
     /// <summary>
     /// Which row's payload is open over the page, by the position that names it in the log, or null

@@ -1,11 +1,13 @@
-@page "/dcb/events"
+@page "/{service}/dcb/events"
 @using Memoria.Web.Extensibility
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 
 <PageTitle>DCB @Heading</PageTitle>
 
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="">Home</a>
+    <span aria-hidden="true">/</span>
+    <a href="@Service">@Current.Name</a>
     <span aria-hidden="true">/</span>
     <ModelCrumb Model="ModelStore.Dcb"/>
     <span aria-current="page">Events</span>
@@ -16,7 +18,7 @@
     The events the DCB model can apply, and what has been stored of them.
 </p>
 
-<SectionTiles TypesHref="dcb/events/types" DataHref="dcb/events/data">
+<SectionTiles TypesHref="@($"{Service}/dcb/events/types")" DataHref="@($"{Service}/dcb/events/data")">
     <TypesDetail>
         @Count(Catalogue.DcbEvents.Count, "event") the model declares, and the state each one
         carries.
@@ -34,6 +36,10 @@
 
 @code {
 
+    /// <summary>The service this page sits under: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
+
     /// <summary>
     /// What the page is, for the heading and the title. One value for both, so they cannot drift
     /// apart; the tab puts the section in front of it, because a tab is read away from the
@@ -41,7 +47,7 @@
     /// </summary>
     private const string Heading = "Events";
 
-    private DomainTypeCatalogue Catalogue => Types.Current;
+    private DomainTypeCatalogue Catalogue => Current.Catalogue;
 
     private static string Count(int count, string noun) =>
         count == 1 ? $"1 {noun}" : $"{count} {noun}s";

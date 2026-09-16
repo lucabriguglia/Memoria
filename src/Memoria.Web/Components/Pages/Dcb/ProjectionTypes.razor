@@ -1,14 +1,16 @@
-@page "/dcb/projections/types"
+@page "/{service}/dcb/projections/types"
 @using Memoria.Web.Extensibility
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 
 <PageTitle>DCB @Heading</PageTitle>
 
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="">Home</a>
     <span aria-hidden="true">/</span>
+    <a href="@Service">@Current.Name</a>
+    <span aria-hidden="true">/</span>
     <ModelCrumb Model="ModelStore.Dcb"/>
-    <a href="dcb/projections">Projections</a>
+    <a href="@Service/dcb/projections">Projections</a>
     <span aria-hidden="true">/</span>
     <span aria-current="page">Types</span>
 </nav>
@@ -65,6 +67,10 @@ else
 
 @code {
 
+    /// <summary>The service this page sits under: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
+
     /// <summary>
     /// What the page is, for the heading and the title. One value for both, so they cannot drift
     /// apart; the tab puts the section and the group in front of it, because a tab is read away
@@ -73,7 +79,7 @@ else
     private const string Heading = "Projection Types";
 
     /// <summary>The page's own address, which every link in the list and the tabs return to.</summary>
-    private const string Address = "dcb/projections/types";
+    private string Address => $"{Service}/dcb/projections/types";
 
     [SupplyParameterFromQuery(Name = "type")]
     private string? SelectedName { get; set; }
@@ -91,14 +97,14 @@ else
     /// </summary>
     private string Tab => TypeView.Match(RequestedTab);
 
-    private IReadOnlyList<Type> Projections => Types.Current.DcbProjections;
+    private IReadOnlyList<Type> Projections => Current.Catalogue.DcbProjections;
 
     /// <summary>
     /// The projection being shown: the one asked for, or the first the list offers.
     /// </summary>
     private DomainTypeDescription? Selected =>
         TypeIndex.Choose(Projections, SelectedName, Query) is { } type
-            ? DomainTypeDescriber.Describe(type, Types.Current.DcbProjectionIds)
+            ? DomainTypeDescriber.Describe(type, Current.Catalogue.DcbProjectionIds)
             : null;
 
     /// <summary>
@@ -118,7 +124,7 @@ else
     /// what has been stored under that identifier.
     /// </summary>
     private IReadOnlyList<TypeIndex.Link> Under(Type projection) =>
-        DomainTypeDescriber.IdentifiersOf(projection, Types.Current.DcbProjectionIds)
+        DomainTypeDescriber.IdentifiersOf(projection, Current.Catalogue.DcbProjectionIds)
             .Select(identifier => new TypeIndex.Link(DataLink(projection, identifier), identifier.Name))
             .ToList();
 
@@ -127,8 +133,8 @@ else
     /// because an identifier alone does not say what it addresses — and it is passed in rather than
     /// taken from the selection, because the list links rows that are not selected.
     /// </summary>
-    private static string DataLink(Type projection, Type identifier) =>
-        "dcb/projections/data" +
+    private string DataLink(Type projection, Type identifier) =>
+        $"{Service}/dcb/projections/data" +
         $"?type={Uri.EscapeDataString(projection.FullName ?? string.Empty)}" +
         $"&id={Uri.EscapeDataString(identifier.FullName ?? string.Empty)}";
 

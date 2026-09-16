@@ -21,7 +21,7 @@ public class SignInTests
     {
         using var web = MemoriaWeb.SigningIn();
 
-        var response = await web.Client.GetAsync("/streamed");
+        var response = await web.Client.GetAsync("/samples/streamed");
 
         response.StatusCode.Should().Be(HttpStatusCode.Found);
 
@@ -75,9 +75,9 @@ public class SignInTests
     [Fact]
     public async Task Answers_anyone_when_told_to_run_open()
     {
-        using var web = MemoriaWeb.Open();
+        using var web = MemoriaWeb.Open().WithSampleTypes();
 
-        var response = await web.Client.GetAsync("/streamed");
+        var response = await web.Client.GetAsync("/samples/streamed");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -92,7 +92,7 @@ public class SignInTests
     {
         using var web = MemoriaWeb.Open();
 
-        await web.Client.GetAsync("/streamed");
+        await web.Client.GetAsync("/samples/streamed");
 
         web.Logged.Should().Contain(entry =>
             entry.Level == LogLevel.Warning && entry.Message.Contains("Authentication:Disabled"));
@@ -103,7 +103,7 @@ public class SignInTests
     {
         using var web = MemoriaWeb.SigningIn();
 
-        await web.Client.GetAsync("/streamed");
+        await web.Client.GetAsync("/samples/streamed");
 
         web.Logged.Should().Contain(entry =>
             entry.Level == LogLevel.Information && entry.Message.Contains(MemoriaWeb.Provider.Authority));

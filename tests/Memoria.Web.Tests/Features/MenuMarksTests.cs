@@ -17,10 +17,10 @@ public class MenuMarksTests
     {
         using var web = MemoriaWeb.Open().WithSampleTypes();
 
-        var items = Markup.MenuItems(await web.Client.GetStringAsync("/"));
+        var items = Markup.MenuItems(await web.Client.GetStringAsync("/samples"));
 
         items.Select(item => item.Label).Should().ContainInOrder(
-            "Home", "Streamed", "Overview", "Types", "Data", "Streams", "DCB", "Settings", "Preferences");
+            "Home", "samples", "Streamed", "Overview", "Types", "Data", "Streams", "DCB", "Settings", "Preferences");
         items.Should().OnlyContain(item => item.Marked, "each item is told apart by its mark before its words");
     }
 
@@ -29,9 +29,9 @@ public class MenuMarksTests
     {
         using var web = MemoriaWeb.Open().WithDcbTypesOnly();
 
-        var items = Markup.MenuItems(await web.Client.GetStringAsync("/"));
+        var items = Markup.MenuItems(await web.Client.GetStringAsync("/samples"));
 
-        items.Select(item => item.Label).Should().ContainInOrder("Home", "Events", "Aggregates", "Projections", "Settings");
+        items.Select(item => item.Label).Should().ContainInOrder("Home", "samples", "Events", "Aggregates", "Projections", "Settings");
         items.Should().OnlyContain(item => item.Marked);
     }
 

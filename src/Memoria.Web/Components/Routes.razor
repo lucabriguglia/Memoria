@@ -1,4 +1,7 @@
+@using Memoria.Web.Extensibility
 @inject Memoria.Web.Data.StoreCapabilities Store
+@inject DomainTypeRegistry Types
+@inject CurrentService Current
 @inject NavigationManager Navigation
 
 <Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
@@ -10,8 +13,14 @@
            Read off the page's namespace rather than the address: every page under
            Components/Pages/Dcb reads the dynamic consistency boundary and no page outside it does,
            so the routed type answers the question directly and a change of route does not quietly
-           move a page out of the rule. *@
-        @if (Store.HasDcb || !ReadsTheBoundary(routeData))
+           move a page out of the rule.
+
+           And a page under a service is under a declared one, or not found: the first segment of
+           every address that reads a store names a service, and a name no manifest declares has
+           nothing to read. Resolved here, once, so the layout and every page under it read the
+           same answer — and so the old addresses under no service, which no page answers on any
+           more, are not found the same way. *@
+        @if (Entered(routeData) && (Store.HasDcb || !ReadsTheBoundary(routeData)))
         {
             <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)"/>
             <FocusOnNavigate RouteData="routeData" Selector="h1"/>
@@ -33,5 +42,26 @@
 
     private static bool ReadsTheBoundary(RouteData routeData) =>
         routeData.PageType.Namespace == Boundary;
+
+    /// <summary>
+    /// Enters the service the address names, when it names one, and says whether the page may be
+    /// drawn: a page under no service always may, and a page under a service may when a manifest
+    /// declares it.
+    /// </summary>
+    private bool Entered(RouteData routeData)
+    {
+        if (!routeData.RouteValues.TryGetValue("service", out var value) || value is not string name)
+        {
+            return true;
+        }
+
+        if (Types.Current.ServiceAt(name) is not { } service)
+        {
+            return false;
+        }
+
+        Current.Enter(service, Types.Current);
+        return true;
+    }
 
 }

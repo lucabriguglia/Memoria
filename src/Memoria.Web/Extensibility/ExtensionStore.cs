@@ -60,15 +60,16 @@ public sealed class ExtensionStore(string root)
                         $"The service '{service.Name}' names {missing}, which is not in the archive.");
                 }
 
+                // By the address the name makes rather than the name: two names that make one
+                // address would be one page, whichever archive answered it.
                 var claimedBy = InstalledArchives()
                     .Where(installed => !string.Equals(installed.Name, archiveName, StringComparison.OrdinalIgnoreCase))
-                    .FirstOrDefault(installed => installed.Services.Any(declared =>
-                        string.Equals(declared.Name, service.Name, StringComparison.OrdinalIgnoreCase)));
+                    .FirstOrDefault(installed => installed.Services.Any(declared => declared.Slug == service.Slug));
 
                 if (claimedBy is not null)
                 {
                     throw new InvalidDataException(
-                        $"The service '{service.Name}' is already declared by {claimedBy.Name}.");
+                        $"The service '{service.Slug}' is already declared by {claimedBy.Name}.");
                 }
             }
 

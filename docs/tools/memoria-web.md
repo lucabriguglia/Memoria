@@ -69,7 +69,15 @@ attribute is the only place the domain says that.
 
 ## What it shows
 
-The two consistency models sit side by side from the home page, and each is laid out the same way:
+The home page lists the services installed — each a named set of domain assemblies, declared by
+the manifest in the zip that brought it — and each is browsed under its own name: a service called
+`orders` lives at `/orders`, its streamed events at `/orders/streamed/events`, and so on. A name no
+manifest declares is not found, and so is an address under no service at all. Inside a service the
+bar carries Home, the service's name, and the menus over its models; outside one, Home and Settings.
+
+A service's own page sets the two consistency models side by side when it registered types under
+both, and lays the one model out directly when it registered types under one alone. Each model is
+laid out the same way:
 
 - **Overview** — what is registered under that model, counted per section
 - **Events**, **Aggregates**, **Projections** (and **Streams**, streamed only) — each a section with

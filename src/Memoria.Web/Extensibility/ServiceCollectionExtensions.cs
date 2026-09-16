@@ -16,12 +16,13 @@ public static class ServiceCollectionExtensions
     /// <remarks>
     /// Nothing is loaded here. The registry is a singleton because the bindings it rebuilds are
     /// process-wide, and it is reloaded once the application is built and again on every upload or
-    /// refresh.
+    /// refresh. The service a request is inside is scoped, since a request is under one or none.
     /// </remarks>
     public static void AddDomainExtensions(
         this IServiceCollection services, ExtensionStore store, Assembly? host = null)
     {
         services.AddSingleton(store);
         services.AddSingleton(new DomainTypeRegistry(store, host));
+        services.AddScoped<CurrentService>();
     }
 }

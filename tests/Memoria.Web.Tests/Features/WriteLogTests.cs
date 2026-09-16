@@ -84,11 +84,11 @@ public class WriteLogTests
         using var web = Administrator().WithSampleTypes();
         var client = web.Client;
 
-        await client.PostAsync("/streamed/aggregates/update", await Form(client,
+        await client.PostAsync("/samples/streamed/aggregates/update", await Form(client,
             ("type", typeof(SampleAggregate).FullName!),
             ("stream", "sample:1"),
             ("id", "sample-1:1"),
-            ("returnUrl", "/streamed/aggregates")));
+            ("returnUrl", "/samples/streamed/aggregates")));
 
         var about = web.Logged
             .Where(entry => entry.Category == "Memoria.Web.Streamed" && entry.Message.Contains(nameof(SampleAggregate)))
@@ -121,7 +121,7 @@ public class WriteLogTests
         using var web = Administrator().WithSampleTypes().WithDomainService(Answering(new SampleAggregate()));
         var client = web.Client;
 
-        await client.PostAsync("/streamed/aggregates/update", await Update(client));
+        await client.PostAsync("/samples/streamed/aggregates/update", await Update(client));
 
         web.Logged.Should().ContainSingle(entry => entry.Event == "SnapshotRefreshed")
             .Which.Should().Match<MemoriaWeb.LogEntry>(entry =>
@@ -142,7 +142,7 @@ public class WriteLogTests
         using var web = Administrator().WithSampleTypes().WithDomainService(Answering((SampleAggregate?)null));
         var client = web.Client;
 
-        await client.PostAsync("/streamed/aggregates/update", await Update(client));
+        await client.PostAsync("/samples/streamed/aggregates/update", await Update(client));
 
         web.Logged.Should().NotContain(entry => entry.Event == "SnapshotRefreshed");
         web.Logged.Should().ContainSingle(entry => entry.Event == "SnapshotUpToDate")
@@ -156,7 +156,7 @@ public class WriteLogTests
             .WithDomainService(Answering(new Failure(Title: "The store is read-only.")));
         var client = web.Client;
 
-        await client.PostAsync("/streamed/aggregates/update", await Update(client));
+        await client.PostAsync("/samples/streamed/aggregates/update", await Update(client));
 
         web.Logged.Should().NotContain(entry => entry.Event == "SnapshotRefreshed");
         web.Logged.Should().ContainSingle(entry => entry.Event == "SnapshotNotRefreshed")
@@ -178,11 +178,11 @@ public class WriteLogTests
         using var web = Administrator().WithSampleTypes();
         var client = web.Client;
 
-        await client.PostAsync("/dcb/aggregates/update", await Form(client,
+        await client.PostAsync("/samples/dcb/aggregates/update", await Form(client,
             ("type", typeof(SampleCarryingDcbAggregate).FullName!),
             ("id", typeof(SampleCarryingId).FullName!),
             ("sampleId", "sample-7"),
-            ("returnUrl", "/dcb/aggregates")));
+            ("returnUrl", "/samples/dcb/aggregates")));
 
         web.Logged.Should().ContainSingle(entry => entry.Event != null && entry.Event.StartsWith("Snapshot"))
             .Which.Should().Match<MemoriaWeb.LogEntry>(entry =>
@@ -206,7 +206,7 @@ public class WriteLogTests
         var client = web.Client;
 
         await client.PostAsync("/settings/upload", await Upload(client));
-        await client.PostAsync("/streamed/aggregates/update", await Update(client));
+        await client.PostAsync("/samples/streamed/aggregates/update", await Update(client));
 
         var lines = web.Logged
             .Where(entry => entry.Event is "ExtensionInstalled" or "SnapshotRefreshed")
@@ -247,7 +247,7 @@ public class WriteLogTests
             ("type", typeof(SampleAggregate).FullName!),
             ("stream", "sample:1"),
             ("id", "sample-1:1"),
-            ("returnUrl", "/streamed/aggregates"));
+            ("returnUrl", "/samples/streamed/aggregates"));
 
     private static MemoriaWeb Administrator() =>
         MemoriaWeb.SignedInAs("Ada Lovelace", ("roles", Admins))

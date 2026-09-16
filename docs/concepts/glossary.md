@@ -68,7 +68,7 @@ Controls how `IDomainService.GetAggregate` reconstructs an aggregate. Four varia
 
 ## Service
 
-*Memoria Web.* A named set of domain assemblies read over one store — what a [manifest](#manifest) declares and what an [operator](#operator) picks on the home page. Its name is letters, digits and hyphens, unique across every installed archive, and is the address it is browsed under. Not the framework's `IDomainService`, which is the object a store is read through. See [Memoria Web](../tools/memoria-web.md).
+*Memoria Web.* A named set of domain assemblies read over one store — what a [manifest](#manifest) declares and what an [operator](#operator) picks on the home page. Its name is shown as the manifest wrote it; the address it is browsed under is made from the name — letters and digits kept, each run of spaces one dash, lower case, so `Samples Streamed` is browsed at `/samples-streamed` — and that address is unique across every installed archive. Not the framework's `IDomainService`, which is the object a store is read through. See [Memoria Web](../tools/memoria-web.md).
 
 ## Snapshot
 

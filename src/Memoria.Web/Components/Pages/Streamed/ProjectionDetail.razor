@@ -1,8 +1,8 @@
-@page "/streamed/projections/detail"
+@page "/{service}/streamed/projections/detail"
 @using Memoria.EventSourcing
 @using Memoria.Web.Extensibility
 @using Microsoft.AspNetCore.WebUtilities
-@inject DomainTypeRegistry Types
+@inject CurrentService Current
 @inject IStreamedReads Store
 @inject IDomainService Folds
 @inject Memoria.Web.Data.StoreCapabilities Capabilities
@@ -13,8 +13,10 @@
 <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="">Home</a>
     <span aria-hidden="true">/</span>
+    <a href="@Service">@Current.Name</a>
+    <span aria-hidden="true">/</span>
     <ModelCrumb Model="ModelStore.Streamed"/>
-    <a href="streamed/projections">Projections</a>
+    <a href="@Service/streamed/projections">Projections</a>
     <span aria-hidden="true">/</span>
     @* The list this row was opened from, narrowed to the projection and the identifier that address
        it, so the step back arrives where the click came from. Neither of those is a crumb of its
@@ -32,7 +34,7 @@
     <h1>@Heading</h1>
     <p class="alert" role="alert">
         That address names no projection this application knows about. It may have been replaced by a
-        later upload — start again from <a href="streamed/projections/data">projections</a>.
+        later upload — start again from <a href="@Service/streamed/projections/data">projections</a>.
     </p>
 }
 else
@@ -342,7 +344,7 @@ else
                    gone back to. Everything that addresses the projection travels in hidden fields,
                    along with the order and the fold, so narrowing does not silently reorder the
                    table or shut its payloads. *@
-                <form class="search" method="get" action="streamed/projections/detail#@EventsAnchor">
+                <form class="search" method="get" action="@Service/streamed/projections/detail#@EventsAnchor">
                     <label for="event">Event type</label>
                     <select id="event" name="event" onchange="this.form.submit()">
                         @* First and default, so a reader who has chosen nothing is looking at the
@@ -564,7 +566,7 @@ else
                         <Pager Page="Events.Page" TotalPages="Events.TotalPages"
                                Href="@(page => EventsLink(Descending, page))"/>
 
-                        <form class="page-size" method="get" action="streamed/projections/detail#@EventsAnchor">
+                        <form class="page-size" method="get" action="@Service/streamed/projections/detail#@EventsAnchor">
                             <label for="size">Rows per page</label>
                             <select id="size" name="size" onchange="this.form.submit()">
                                 @foreach (var option in InstanceQuery.PageSizes)
@@ -606,7 +608,7 @@ else
            page's to say is which model, where the form comes back to, and what carries the row. *@
         <ComparePanel Unavailable="Unfoldable" Comparison="Comparison" Noun="projection" StoredVersion="Stored?.Version"
                       UpdateHref="@TabLink(UpdateTab)"
-                      Action="@($"streamed/projections/detail#tab-{CompareTab}")"
+                      Action="@($"{Service}/streamed/projections/detail#tab-{CompareTab}")"
                       Link="@(pair => DetailLink(CompareTab, Descending, Page, from: pair.From, to: pair.To))">
             <Carried>
                 @Addressing
@@ -669,7 +671,7 @@ else
                     produces no events of its own, so the snapshot is the only thing this writes.
                 </p>
 
-                <form method="post" action="streamed/projections/update" class="refresh">
+                <form method="post" action="@Service/streamed/projections/update" class="refresh">
                     <AntiforgeryToken/>
                     @* The same three the reading forms carry, because they are what addresses the
                        row: the type it was folded into, and the two ids the store keys it by. *@
@@ -723,6 +725,10 @@ else
 }
 
 @code {
+
+    /// <summary>The service this page sits under: the first segment of its address.</summary>
+    [Parameter]
+    public string Service { get; set; } = string.Empty;
 
     /// <summary>The request, for the rows-per-page size the browser remembers in a cookie.</summary>
     [CascadingParameter]
@@ -902,7 +908,7 @@ else
     /// applies everything has no such list of its own, so it offers every registered streamed
     /// event — the same list the log's own page offers, and the widest thing its stream could hold.
     /// </remarks>
-    private IReadOnlyList<Type> EventTypes => Applies ?? Types.Current.StreamedEvents;
+    private IReadOnlyList<Type> EventTypes => Applies ?? Current.Catalogue.StreamedEvents;
 
     /// <summary>
     /// Which of the history's events are being looked at: all of them, one type, or neither because
@@ -1010,7 +1016,7 @@ else
     /// store keys it by. The view and the table's own state are appended by whatever varies them.
     /// </summary>
     private string Address =>
-        $"streamed/projections/detail?type={Uri.EscapeDataString(Projection?.FullName ?? string.Empty)}" +
+        $"{Service}/streamed/projections/detail?type={Uri.EscapeDataString(Projection?.FullName ?? string.Empty)}" +
         $"&stream={Uri.EscapeDataString(StreamId ?? string.Empty)}" +
         $"&id={Uri.EscapeDataString(StoreId ?? string.Empty)}";
 
@@ -1091,7 +1097,7 @@ else
     /// </summary>
     private DomainTypeDescription? ViewedType =>
         !string.IsNullOrWhiteSpace(RequestedView) && Projection is { } projection
-            ? DomainTypeDescriber.Describe(projection, Types.Current.StreamedProjectionIds)
+            ? DomainTypeDescriber.Describe(projection, Current.Catalogue.StreamedProjectionIds)
             : null;
 
     /// <summary>
@@ -1137,7 +1143,7 @@ else
     /// page's own; only the identifier varies, which is what the column is one link per row for.
     /// </summary>
     private string TypeDataLink(Type identifier) =>
-        $"streamed/projections/data?type={Uri.EscapeDataString(Projection?.FullName ?? string.Empty)}" +
+        $"{Service}/streamed/projections/data?type={Uri.EscapeDataString(Projection?.FullName ?? string.Empty)}" +
         $"&id={Uri.EscapeDataString(identifier.FullName ?? identifier.Name)}";
 
     /// <summary>
@@ -1194,7 +1200,7 @@ else
     /// identifier when one addresses it.
     /// </summary>
     private string BackToList =>
-        $"streamed/projections/data?type={Uri.EscapeDataString(Projection?.FullName ?? string.Empty)}" +
+        $"{Service}/streamed/projections/data?type={Uri.EscapeDataString(Projection?.FullName ?? string.Empty)}" +
         (Identifier is { } identifier ? $"&id={Uri.EscapeDataString(identifier.FullName ?? identifier.Name)}" : string.Empty);
 
     /// <summary>
@@ -1303,7 +1309,7 @@ else
         // Matched against what is registered, so a name in the address can only ever reach a type
         // this application already knows about. The two ids are not: they are the store's, and a
         // row addressed by something no uploaded type describes is still the store's own row.
-        Projection = DomainTypeDescriber.Select(Types.Current.StreamedProjections, Value("type"));
+        Projection = DomainTypeDescriber.Select(Current.Catalogue.StreamedProjections, Value("type"));
         StreamId = Value("stream") is { Length: > 0 } stream ? stream : null;
         StoreId = Value("id") is { Length: > 0 } id ? id : null;
 
@@ -1315,7 +1321,7 @@ else
         // The stream and the identifier behind the two ids the store keyed this row by, worked out
         // before it is read: the events tab narrows by what the identifier claims, the update tab
         // hands the pair to the store, and neither depends on a row being found.
-        Identity = StreamedIdentity.Of(Types.Current, Kind, Projection, StreamId, AddressedId);
+        Identity = StreamedIdentity.Of(Current.Catalogue, Kind, Projection, StreamId, AddressedId);
 
         var read = await Store.Model(new StreamedModelAddress(Kind, StreamId, StoreId));
 

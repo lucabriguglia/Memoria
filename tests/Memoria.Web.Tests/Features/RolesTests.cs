@@ -131,27 +131,27 @@ public class RolesTests
     [InlineData(Admins, false)]
     public async Task Lets_only_an_updater_or_above_refresh_a_snapshot(string group, bool forbidden)
     {
-        using var web = MemoriaWeb.SignedInAs("Ada Lovelace", ("roles", group))
+        using var web = MemoriaWeb.SignedInAs("Ada Lovelace", ("roles", group)).WithSampleTypes()
             .With("Authorization:Roles:Administrator", Admins)
             .With("Authorization:Roles:Updater", Updaters);
         var client = web.Client;
         var page = await client.GetStringAsync("/");
 
-        var response = await client.PostAsync("/streamed/aggregates/update", new FormUrlEncodedContent(
+        var response = await client.PostAsync("/samples/streamed/aggregates/update", new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
                 [Forms.AntiforgeryField] = Forms.AntiforgeryToken(page),
                 ["type"] = "Nothing",
                 ["stream"] = "sample:1",
                 ["id"] = "sample-1:1",
-                ["returnUrl"] = "/streamed/aggregates"
+                ["returnUrl"] = "/samples/streamed/aggregates"
             }));
 
         response.StatusCode.Should().Be(HttpStatusCode.Found);
 
         if (forbidden)
         {
-            Forbidden(response).Should().Be(("Updater", "/streamed/aggregates/update"));
+            Forbidden(response).Should().Be(("Updater", "/samples/streamed/aggregates/update"));
         }
         else
         {
@@ -188,7 +188,7 @@ public class RolesTests
 
         page.Should().Contain("id=\"tab-update\"");
         page.Contains("needs the Updater role").Should().Be(told);
-        page.Contains("action=\"streamed/aggregates/update\"").Should().Be(!told,
+        page.Contains("action=\"samples/streamed/aggregates/update\"").Should().Be(!told,
             "the form is offered to an Updater and withheld from a Reader");
     }
 

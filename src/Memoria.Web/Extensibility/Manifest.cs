@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace Memoria.Web.Extensibility;
 
@@ -14,14 +13,20 @@ namespace Memoria.Web.Extensibility;
 /// carries that this version does not read are ignored, so a later version may add to the shape
 /// without an older tool refusing what it wrote.
 /// </remarks>
-public sealed partial record Manifest(IReadOnlyList<Service> Services)
+public sealed record Manifest(IReadOnlyList<Service> Services)
 {
     /// <summary>The name the file is carried under, at the archive root.</summary>
     public const string FileName = "memoria.json";
 
-    /// <summary>What a service name may be made of: it is the address the service is browsed under.</summary>
-    [GeneratedRegex("^[A-Za-z0-9-]+$")]
-    private static partial Regex ServiceName();
+    /// <summary>
+    /// The first segments the tool already answers on, which a service cannot be browsed under:
+    /// its own pages, the sign-in and sign-out posts, and the framework's own assets.
+    /// </summary>
+    private static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "about", "error", "forbidden", "login", "logout", "not-found", "preferences", "settings",
+        "signed-out", "_framework", "_content"
+    };
 
     /// <summary>
     /// Reads a manifest, refusing one that breaks a rule.
@@ -67,9 +72,10 @@ public sealed partial record Manifest(IReadOnlyList<Service> Services)
             {
                 var service = ReadService(element);
 
-                if (!names.Add(service.Name))
+                // Two names that make one address are one service twice, whatever they look like.
+                if (!names.Add(service.Slug))
                 {
-                    throw new InvalidDataException($"{FileName} declares the service '{service.Name}' twice.");
+                    throw new InvalidDataException($"{FileName} declares the service '{service.Slug}' twice.");
                 }
 
                 services.Add(service);
@@ -87,10 +93,18 @@ public sealed partial record Manifest(IReadOnlyList<Service> Services)
             throw new InvalidDataException($"A service in {FileName} has no name.");
         }
 
-        if (!ServiceName().IsMatch(name))
+        var slug = Service.SlugOf(name);
+
+        if (slug.Length == 0)
         {
             throw new InvalidDataException(
-                $"The service name '{name}' is not letters, digits and hyphens, which is all a name may be made of.");
+                $"The service name '{name}' has no letter or digit to make an address from.");
+        }
+
+        if (Reserved.Contains(slug))
+        {
+            throw new InvalidDataException(
+                $"The service name '{name}' makes an address the tool already answers on, /{slug}, so a service cannot be browsed under it.");
         }
 
         var assemblies = Texts(element, "assemblies");
@@ -142,8 +156,9 @@ public sealed partial record Manifest(IReadOnlyList<Service> Services)
 /// may read and update it.
 /// </summary>
 /// <param name="Name">
-/// The name it is known and browsed under — letters, digits and hyphens, unique across every
-/// installed archive without regard to case.
+/// The name it is shown under, as the manifest wrote it. The address it is browsed under is made
+/// from it — see <see cref="Slug"/> — and it is that address that is unique across every
+/// installed archive.
 /// </param>
 /// <param name="Assemblies">
 /// The assembly files its domain types are read from, by file name. Nothing else in the archive
@@ -167,4 +182,21 @@ public sealed record Service(
     IReadOnlyList<string> Assemblies,
     string ConnectionString,
     IReadOnlyList<string> ReadRoles,
-    IReadOnlyList<string> UpdateRoles);
+    IReadOnlyList<string> UpdateRoles)
+{
+    /// <summary>
+    /// The address the service is browsed under — the first segment in front of every page that
+    /// reads its store — made from <see cref="Name"/>: letters and digits kept, everything else
+    /// dropped, each run of spaces one dash, lower case. <c>Samples Streamed</c> is browsed at
+    /// <c>/samples-streamed</c>.
+    /// </summary>
+    public string Slug { get; } = SlugOf(Name);
+
+    /// <summary>The address a name makes; empty when the name has no letter or digit in it.</summary>
+    public static string SlugOf(string name)
+    {
+        var kept = new string(name.Where(character => char.IsLetterOrDigit(character) || character == ' ').ToArray());
+
+        return string.Join('-', kept.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
+    }
+}

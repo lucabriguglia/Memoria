@@ -156,7 +156,8 @@ public static class EndpointRegistration
     /// </remarks>
     private static void MapDcbModels(this WebApplication app)
     {
-        app.MapPost("/dcb/aggregates/update", async (
+        app.MapPost("/{service}/dcb/aggregates/update", async (
+            string service,
             DomainTypeRegistry types,
             IDcbDomainService store,
             TotalsCache totals,
@@ -166,10 +167,11 @@ public static class EndpointRegistration
             [FromForm] string id,
             [FromForm] string returnUrl,
             ClaimsPrincipal user) =>
-            await Refresh(DcbModelKind.Aggregate, types, store, totals, loggerFactory, request, type, id, returnUrl, Operator.Of(user)))
+            Under(types, service) is { } catalogue ? await Refresh(DcbModelKind.Aggregate, catalogue, store, totals, loggerFactory, request, type, id, returnUrl, Operator.Of(user)) : Results.NotFound())
             .RequireAuthorization(Roles.Updater);
 
-        app.MapPost("/dcb/projections/update", async (
+        app.MapPost("/{service}/dcb/projections/update", async (
+            string service,
             DomainTypeRegistry types,
             IDcbDomainService store,
             TotalsCache totals,
@@ -179,7 +181,7 @@ public static class EndpointRegistration
             [FromForm] string id,
             [FromForm] string returnUrl,
             ClaimsPrincipal user) =>
-            await Refresh(DcbModelKind.Projection, types, store, totals, loggerFactory, request, type, id, returnUrl, Operator.Of(user)))
+            Under(types, service) is { } catalogue ? await Refresh(DcbModelKind.Projection, catalogue, store, totals, loggerFactory, request, type, id, returnUrl, Operator.Of(user)) : Results.NotFound())
             .RequireAuthorization(Roles.Updater);
     }
 
@@ -194,7 +196,8 @@ public static class EndpointRegistration
     /// </remarks>
     private static void MapStreamedModels(this WebApplication app)
     {
-        app.MapPost("/streamed/aggregates/update", async (
+        app.MapPost("/{service}/streamed/aggregates/update", async (
+            string service,
             DomainTypeRegistry types,
             IDomainService store,
             TotalsCache totals,
@@ -204,11 +207,12 @@ public static class EndpointRegistration
             [FromForm] string id,
             [FromForm] string returnUrl,
             ClaimsPrincipal user) =>
-            await RefreshStreamed(
-                StreamedModelKind.Aggregate, types, store, totals, loggerFactory, type, stream, id, returnUrl, Operator.Of(user)))
+            Under(types, service) is { } catalogue ? await RefreshStreamed(
+                StreamedModelKind.Aggregate, catalogue, store, totals, loggerFactory, type, stream, id, returnUrl, Operator.Of(user)) : Results.NotFound())
             .RequireAuthorization(Roles.Updater);
 
-        app.MapPost("/streamed/projections/update", async (
+        app.MapPost("/{service}/streamed/projections/update", async (
+            string service,
             DomainTypeRegistry types,
             IDomainService store,
             TotalsCache totals,
@@ -218,10 +222,18 @@ public static class EndpointRegistration
             [FromForm] string id,
             [FromForm] string returnUrl,
             ClaimsPrincipal user) =>
-            await RefreshStreamed(
-                StreamedModelKind.Projection, types, store, totals, loggerFactory, type, stream, id, returnUrl, Operator.Of(user)))
+            Under(types, service) is { } catalogue ? await RefreshStreamed(
+                StreamedModelKind.Projection, catalogue, store, totals, loggerFactory, type, stream, id, returnUrl, Operator.Of(user)) : Results.NotFound())
             .RequireAuthorization(Roles.Updater);
     }
+
+    /// <summary>
+    /// The catalogue a post under a service reads through: the service's own view of the types,
+    /// or null when no manifest declares the name — which the post answers as not found, the way
+    /// the pages under that name are.
+    /// </summary>
+    private static DomainTypeCatalogue? Under(DomainTypeRegistry types, string service) =>
+        types.Current.ServiceAt(service) is { } named ? types.Current.For(named) : null;
 
     // Back to the settings page carrying what happened, so the outcome survives the redirect.
     // The tab is carried back with the message because the settings page writes each one under the
@@ -247,7 +259,7 @@ public static class EndpointRegistration
     /// </remarks>
     private static async Task<IResult> Refresh(
         DcbModelKind kind,
-        DomainTypeRegistry types,
+        DomainTypeCatalogue catalogue,
         IDcbDomainService store,
         TotalsCache totals,
         ILoggerFactory loggerFactory,
@@ -262,11 +274,11 @@ public static class EndpointRegistration
         // Matched against what is registered, exactly as the page matches them, so a name posted here
         // can only ever reach a type this application already knows about — and only one of the two
         // kinds, so a projection cannot be refreshed through the aggregates' address.
-        var model = DomainTypeDescriber.Select(types.Current.Models(kind), type);
+        var model = DomainTypeDescriber.Select(catalogue.Models(kind), type);
 
         var identifierType = model is null
             ? null
-            : DomainTypeDescriber.Describe(model, types.Current.Identifiers(kind))
+            : DomainTypeDescriber.Describe(model, catalogue.Identifiers(kind))
                 .Identifiers.FirstOrDefault(candidate => candidate.FullName == id);
 
         if (model is null || identifierType is null)
@@ -312,7 +324,7 @@ public static class EndpointRegistration
     /// </remarks>
     private static async Task<IResult> RefreshStreamed(
         StreamedModelKind kind,
-        DomainTypeRegistry types,
+        DomainTypeCatalogue catalogue,
         IDomainService store,
         TotalsCache totals,
         ILoggerFactory loggerFactory,
@@ -327,7 +339,7 @@ public static class EndpointRegistration
         // Matched against what is registered, exactly as the page matches it, so a name posted here
         // can only ever reach a type this application already knows about — and only one of the two
         // kinds, so a projection cannot be refreshed through the aggregates' address.
-        var model = DomainTypeDescriber.Select(types.Current.Streamed(kind), type);
+        var model = DomainTypeDescriber.Select(catalogue.Streamed(kind), type);
 
         if (model is null)
         {
@@ -337,7 +349,7 @@ public static class EndpointRegistration
         // The id half of the store's key, which is what an identifier produced; the other half is
         // the type's version, and no identifier ever wrote it.
         var identity = StreamedIdentity.Of(
-            types.Current, kind, model, stream, DomainTypeDescriber.SplitKey(id).Name);
+            catalogue, kind, model, stream, DomainTypeDescriber.SplitKey(id).Name);
 
         if (identity.Stream is null)
         {

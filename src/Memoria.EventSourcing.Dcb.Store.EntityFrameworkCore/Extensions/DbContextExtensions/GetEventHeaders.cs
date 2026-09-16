@@ -22,7 +22,7 @@ public static partial class DcbDbContextExtensions
     public static Task<List<DcbEventHeader>> GetEventHeaders(this IDcbDbContext dcbDbContext,
         TagQuery query, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default) =>
         dcbDbContext.Inside(query)
-            .ApplyEventTypeFilter(eventTypeFilter)
+            .ApplyEventTypeFilter(eventTypeFilter, dcbDbContext.TypeBindings)
             .OrderBy(eventEntity => eventEntity.Position)
             .Select(eventEntity => new DcbEventHeader(eventEntity.Position, eventEntity.EventType, eventEntity.CreatedDate))
             .ToListAsync(cancellationToken);

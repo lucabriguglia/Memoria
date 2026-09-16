@@ -21,7 +21,7 @@ public static partial class IDomainDbContextExtensions
             return aggregate.Version > 0 ? aggregate : default;
         }
 
-        var newEvents = newEventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
+        var newEvents = newEventEntities.Select(eventEntity => eventEntity.ToDomainEvent(domainDbContext.TypeBindings)).ToList();
         aggregate.Apply(newEvents);
 
         AggregateDiagnostics.AddAggregateFoldedEvent(streamId, aggregateId,
@@ -68,7 +68,7 @@ public static partial class IDomainDbContextExtensions
             return projection.Version > 0 ? projection : default;
         }
 
-        var newEvents = newEventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
+        var newEvents = newEventEntities.Select(eventEntity => eventEntity.ToDomainEvent(domainDbContext.TypeBindings)).ToList();
         projection.Apply(newEvents);
 
         ProjectionDiagnostics.AddProjectionFoldedEvent(streamId, projectionId,

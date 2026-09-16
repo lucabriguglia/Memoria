@@ -111,7 +111,7 @@ public static partial class DcbDbContextExtensions
 
             if (snapshot is not null)
             {
-                var current = snapshot.ToAggregate<T>();
+                var current = snapshot.ToAggregate<T>(dcbDbContext.TypeBindings);
                 current.Tags = query.Tags;
 
                 if (readMode is ReadMode.SnapshotOnly or ReadMode.SnapshotOrCreate)
@@ -144,7 +144,7 @@ public static partial class DcbDbContextExtensions
             }
 
             var versionBefore = aggregate.Version;
-            aggregate.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
+            aggregate.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent(dcbDbContext.TypeBindings)));
 
             DcbDiagnostics.AddAggregateFoldedEvent(query, storeId,
                 appliedFromPosition: eventEntities[0].Position, appliedToPosition: eventEntities[^1].Position,
@@ -198,7 +198,7 @@ public static partial class DcbDbContextExtensions
             return aggregate.Version > 0 ? aggregate : default(T);
         }
 
-        aggregate.Apply(newEventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
+        aggregate.Apply(newEventEntities.Select(eventEntity => eventEntity.ToDomainEvent(dcbDbContext.TypeBindings)));
 
         DcbDiagnostics.AddAggregateFoldedEvent(query, aggregateId.ToStoreId(),
             appliedFromPosition: newEventEntities[0].Position,
@@ -247,7 +247,7 @@ public static partial class DcbDbContextExtensions
 
             if (snapshot is not null)
             {
-                var current = snapshot.ToProjection<T>();
+                var current = snapshot.ToProjection<T>(dcbDbContext.TypeBindings);
                 current.Tags = query.Tags;
 
                 if (readMode is ReadMode.SnapshotOnly or ReadMode.SnapshotOrCreate)
@@ -275,7 +275,7 @@ public static partial class DcbDbContextExtensions
             }
 
             var versionBefore = projection.Version;
-            projection.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
+            projection.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent(dcbDbContext.TypeBindings)));
 
             DcbDiagnostics.AddProjectionFoldedEvent(query, storeId,
                 appliedFromPosition: eventEntities[0].Position, appliedToPosition: eventEntities[^1].Position,
@@ -328,7 +328,7 @@ public static partial class DcbDbContextExtensions
             return projection.Version > 0 ? projection : default(T);
         }
 
-        projection.Apply(newEventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
+        projection.Apply(newEventEntities.Select(eventEntity => eventEntity.ToDomainEvent(dcbDbContext.TypeBindings)));
 
         DcbDiagnostics.AddProjectionFoldedEvent(query, projectionId.ToStoreId(),
             appliedFromPosition: newEventEntities[0].Position,

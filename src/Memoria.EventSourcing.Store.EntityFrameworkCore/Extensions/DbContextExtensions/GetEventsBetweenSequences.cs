@@ -26,6 +26,6 @@ public static partial class IDomainDbContextExtensions
     public static async Task<List<IEvent>> GetEventsBetweenSequences(this IDomainDbContext domainDbContext, IStreamId streamId, int fromSequence, int toSequence, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, IEventDataFilter? dataFilter = null, CancellationToken cancellationToken = default)
     {
         var eventEntities = await domainDbContext.GetEventEntitiesBetweenSequences(streamId, fromSequence, toSequence, eventTypeFilter, eventPropertyFilter, dataFilter, cancellationToken);
-        return eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
+        return eventEntities.Select(eventEntity => eventEntity.ToDomainEvent(domainDbContext.TypeBindings)).ToList();
     }
 }

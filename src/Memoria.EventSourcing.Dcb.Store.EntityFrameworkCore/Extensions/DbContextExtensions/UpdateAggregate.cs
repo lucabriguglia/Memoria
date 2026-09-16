@@ -37,7 +37,7 @@ public static partial class DcbDbContextExtensions
 
             // Starting from a fresh model when there is no snapshot is what lets this build one, and
             // is what the streamed store does.
-            var aggregate = snapshot is null ? new T() : snapshot.ToAggregate<T>();
+            var aggregate = snapshot is null ? new T() : snapshot.ToAggregate<T>(dcbDbContext.TypeBindings);
             aggregate.Tags = aggregateId.Boundary.Tags;
 
             return await dcbDbContext.RefreshAggregate(aggregateId, aggregate,

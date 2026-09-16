@@ -43,7 +43,7 @@ public static partial class DcbDbContextExtensions
     public static Task<List<DcbEventEntity>> GetEventEntities(this IDcbDbContext dcbDbContext,
         TagQuery query, Type[]? eventTypeFilter = null, CancellationToken cancellationToken = default) =>
         dcbDbContext.Inside(query)
-            .ApplyEventTypeFilter(eventTypeFilter)
+            .ApplyEventTypeFilter(eventTypeFilter, dcbDbContext.TypeBindings)
             .InPositionOrder(cancellationToken);
 
     /// <summary>
@@ -53,7 +53,7 @@ public static partial class DcbDbContextExtensions
         TagQuery query, long fromPosition, Type[]? eventTypeFilter = null,
         CancellationToken cancellationToken = default) =>
         dcbDbContext.Inside(query, fromPosition: fromPosition)
-            .ApplyEventTypeFilter(eventTypeFilter)
+            .ApplyEventTypeFilter(eventTypeFilter, dcbDbContext.TypeBindings)
             .InPositionOrder(cancellationToken);
 
     /// <summary>
@@ -63,7 +63,7 @@ public static partial class DcbDbContextExtensions
         TagQuery query, long upToPosition, Type[]? eventTypeFilter = null,
         CancellationToken cancellationToken = default) =>
         dcbDbContext.Inside(query, toPosition: upToPosition)
-            .ApplyEventTypeFilter(eventTypeFilter)
+            .ApplyEventTypeFilter(eventTypeFilter, dcbDbContext.TypeBindings)
             .InPositionOrder(cancellationToken);
 
     /// <summary>
@@ -73,7 +73,7 @@ public static partial class DcbDbContextExtensions
         TagQuery query, long fromPosition, long toPosition, Type[]? eventTypeFilter = null,
         CancellationToken cancellationToken = default) =>
         dcbDbContext.Inside(query, fromPosition, toPosition)
-            .ApplyEventTypeFilter(eventTypeFilter)
+            .ApplyEventTypeFilter(eventTypeFilter, dcbDbContext.TypeBindings)
             .InPositionOrder(cancellationToken);
 
     /// <summary>
@@ -84,7 +84,7 @@ public static partial class DcbDbContextExtensions
         CancellationToken cancellationToken = default) =>
         dcbDbContext.Inside(query)
             .Where(eventEntity => eventEntity.CreatedDate >= fromDate)
-            .ApplyEventTypeFilter(eventTypeFilter)
+            .ApplyEventTypeFilter(eventTypeFilter, dcbDbContext.TypeBindings)
             .InPositionOrder(cancellationToken);
 
     /// <summary>
@@ -95,7 +95,7 @@ public static partial class DcbDbContextExtensions
         CancellationToken cancellationToken = default) =>
         dcbDbContext.Inside(query)
             .Where(eventEntity => eventEntity.CreatedDate <= upToDate)
-            .ApplyEventTypeFilter(eventTypeFilter)
+            .ApplyEventTypeFilter(eventTypeFilter, dcbDbContext.TypeBindings)
             .InPositionOrder(cancellationToken);
 
     /// <summary>
@@ -106,6 +106,6 @@ public static partial class DcbDbContextExtensions
         CancellationToken cancellationToken = default) =>
         dcbDbContext.Inside(query)
             .Where(eventEntity => eventEntity.CreatedDate >= fromDate && eventEntity.CreatedDate <= toDate)
-            .ApplyEventTypeFilter(eventTypeFilter)
+            .ApplyEventTypeFilter(eventTypeFilter, dcbDbContext.TypeBindings)
             .InPositionOrder(cancellationToken);
 }

@@ -26,12 +26,21 @@ public class CosmosDataStore : ICosmosDataStore
     /// <param name="clientProvider">Provides the container backed by the shared Cosmos DB client.</param>
     /// <param name="timeProvider">The time provider for timestamp operations.</param>
     /// <param name="httpContextAccessor">The HTTP context accessor for retrieving user information.</param>
-    public CosmosDataStore(CosmosClientProvider clientProvider, TimeProvider timeProvider, IHttpContextAccessor httpContextAccessor)
+    /// <param name="typeBindings">
+    /// The set stored keys are resolved through, for a host that reads more than one bounded
+    /// context's store in one process. Null reads the process-wide set.
+    /// </param>
+    public CosmosDataStore(CosmosClientProvider clientProvider, TimeProvider timeProvider,
+        IHttpContextAccessor httpContextAccessor, TypeBindingSet? typeBindings = null)
     {
         _timeProvider = timeProvider;
         _httpContextAccessor = httpContextAccessor;
         _container = clientProvider.Container;
+        TypeBindings = typeBindings ?? TypeBindingSet.Default;
     }
+
+    /// <inheritdoc />
+    public TypeBindingSet TypeBindings { get; }
 
     /// <summary>
     /// Retrieves an aggregate document from Cosmos DB for the specified stream and aggregate.
@@ -94,7 +103,7 @@ public class CosmosDataStore : ICosmosDataStore
         var queryDefinition = new QueryDefinition(sql.ToString())
             .WithParameter("@streamId", streamId.Id)
             .WithParameter("@documentType", DocumentType.Event)
-            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter, TypeBindings);
 
         return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
             operation: "Get Event Documents", cancellationToken);
@@ -123,7 +132,7 @@ public class CosmosDataStore : ICosmosDataStore
             .WithParameter("@fromSequence", fromSequence)
             .WithParameter("@toSequence", toSequence)
             .WithParameter("@documentType", DocumentType.Event)
-            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter, TypeBindings);
 
         return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
             operation: "Get Event Documents Between Sequences", cancellationToken);
@@ -150,7 +159,7 @@ public class CosmosDataStore : ICosmosDataStore
             .WithParameter("@streamId", streamId.Id)
             .WithParameter("@fromSequence", fromSequence)
             .WithParameter("@documentType", DocumentType.Event)
-            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter, TypeBindings);
 
         return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
             operation: "Get Event Documents from Sequence", cancellationToken);
@@ -177,7 +186,7 @@ public class CosmosDataStore : ICosmosDataStore
             .WithParameter("@streamId", streamId.Id)
             .WithParameter("@upToSequence", upToSequence)
             .WithParameter("@documentType", DocumentType.Event)
-            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter, TypeBindings);
 
         return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
             operation: "Get Event Documents up to Sequence", cancellationToken);
@@ -204,7 +213,7 @@ public class CosmosDataStore : ICosmosDataStore
             .WithParameter("@streamId", streamId.Id)
             .WithParameter("@upToDate", upToDate)
             .WithParameter("@documentType", DocumentType.Event)
-            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter, TypeBindings);
 
         return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
             operation: "Get Event Documents up to Date", cancellationToken);
@@ -231,7 +240,7 @@ public class CosmosDataStore : ICosmosDataStore
             .WithParameter("@streamId", streamId.Id)
             .WithParameter("@fromDate", fromDate)
             .WithParameter("@documentType", DocumentType.Event)
-            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter, TypeBindings);
 
         return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
             operation: "Get Event Documents from Date", cancellationToken);
@@ -260,7 +269,7 @@ public class CosmosDataStore : ICosmosDataStore
             .WithParameter("@fromDate", fromDate)
             .WithParameter("@toDate", toDate)
             .WithParameter("@documentType", DocumentType.Event)
-            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter, TypeBindings);
 
         return await _container.QueryListAsync<EventDocument>(queryDefinition, streamId,
             operation: "Get Event Documents between Dates", cancellationToken);
@@ -280,7 +289,7 @@ public class CosmosDataStore : ICosmosDataStore
     /// <exception cref="Exception">Thrown when the aggregate type does not have an AggregateType attribute.</exception>
     public async Task<Result<T?>> UpdateAggregateDocument<T>(IStreamId streamId, IAggregateId<T> aggregateId, AggregateDocument? aggregateDocument, CancellationToken cancellationToken = default) where T : IAggregateRoot, new()
     {
-        var aggregate = aggregateDocument is null ? new T() : aggregateDocument.ToAggregate<T>();
+        var aggregate = aggregateDocument is null ? new T() : aggregateDocument.ToAggregate<T>(TypeBindings);
 
         var currentAggregateVersion = aggregate.Version;
 
@@ -295,7 +304,7 @@ public class CosmosDataStore : ICosmosDataStore
             return aggregate.Version > 0 ? aggregate : default;
         }
 
-        var newEvents = newEventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        var newEvents = newEventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(TypeBindings)).ToList();
         aggregate.Apply(newEvents);
 
         AggregateDiagnostics.AddAggregateFoldedEvent(streamId, aggregateId,
@@ -377,7 +386,7 @@ public class CosmosDataStore : ICosmosDataStore
         IProjectionId<T> projectionId, ProjectionDocument? projectionDocument,
         CancellationToken cancellationToken = default) where T : IProjection, new()
     {
-        var projection = projectionDocument is null ? new T() : projectionDocument.ToProjection<T>();
+        var projection = projectionDocument is null ? new T() : projectionDocument.ToProjection<T>(TypeBindings);
 
         var currentProjectionVersion = projection.Version;
 
@@ -395,7 +404,7 @@ public class CosmosDataStore : ICosmosDataStore
             return projection.Version > 0 ? projection : default;
         }
 
-        var newEvents = newEventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        var newEvents = newEventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(TypeBindings)).ToList();
         projection.Apply(newEvents);
 
         ProjectionDiagnostics.AddProjectionFoldedEvent(streamId, projectionId,

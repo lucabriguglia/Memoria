@@ -7,6 +7,19 @@ namespace Memoria.EventSourcing.Store.Cosmos;
 public interface ICosmosDataStore : IDisposable
 {
     /// <summary>
+    /// Gets the type bindings this store resolves stored keys through: which CLR type an event,
+    /// aggregate or projection key deserialises into, and which key a CLR type in an event filter
+    /// stands for.
+    /// </summary>
+    /// <remarks>
+    /// The process-wide <see cref="TypeBindingSet.Default"/> unless the store was given a set of its
+    /// own, which is what a host reading more than one bounded context's store in one process does.
+    /// A default so that an implementation written before this member existed still compiles and
+    /// behaves as it did.
+    /// </remarks>
+    TypeBindingSet TypeBindings => TypeBindingSet.Default;
+
+    /// <summary>
     /// Retrieves an aggregate document from the Cosmos data store.
     /// </summary>
     /// <typeparam name="T">The type of the aggregate.</typeparam>

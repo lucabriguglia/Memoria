@@ -44,7 +44,7 @@ public static partial class DcbDbContextExtensions
         }
 
         return await dcbDbContext.Inside(query)
-            .ApplyEventTypeFilter(eventTypeFilter)
+            .ApplyEventTypeFilter(eventTypeFilter, dcbDbContext.TypeBindings)
             .MaxAsync(eventEntity => (long?)eventEntity.Position, cancellationToken)
             ?? AppendCondition.NoEvents;
     }

@@ -1,4 +1,5 @@
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Entities;
+using Memoria.EventSourcing.Domain;
 using Memoria.Results;
 
 namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
@@ -18,7 +19,7 @@ public static partial class DcbDbContextExtensions
         var eventEntities = await dcbDbContext.GetEventEntities(aggregateId.Boundary, aggregate.EventTypeFilter,
             cancellationToken);
 
-        return Fold(aggregate, aggregateId, eventEntities);
+        return Fold(aggregate, aggregateId, eventEntities, dcbDbContext.TypeBindings);
     }
 
     /// <summary>
@@ -33,7 +34,7 @@ public static partial class DcbDbContextExtensions
         var eventEntities = await dcbDbContext.GetEventEntitiesUpToPosition(aggregateId.Boundary, upToPosition,
             aggregate.EventTypeFilter, cancellationToken);
 
-        return Fold(aggregate, aggregateId, eventEntities);
+        return Fold(aggregate, aggregateId, eventEntities, dcbDbContext.TypeBindings);
     }
 
     /// <summary>
@@ -48,7 +49,7 @@ public static partial class DcbDbContextExtensions
         var eventEntities = await dcbDbContext.GetEventEntitiesUpToDate(aggregateId.Boundary, upToDate,
             aggregate.EventTypeFilter, cancellationToken);
 
-        return Fold(aggregate, aggregateId, eventEntities);
+        return Fold(aggregate, aggregateId, eventEntities, dcbDbContext.TypeBindings);
     }
 
     /// <summary>
@@ -62,7 +63,7 @@ public static partial class DcbDbContextExtensions
     private static T NewAggregate<T>(IDcbAggregateId<T> aggregateId) where T : IDcbAggregateRoot, new() =>
         new() { Tags = aggregateId.Boundary.Tags };
 
-    private static T Fold<T>(T aggregate, IDcbAggregateId<T> aggregateId, List<DcbEventEntity> eventEntities)
+    private static T Fold<T>(T aggregate, IDcbAggregateId<T> aggregateId, List<DcbEventEntity> eventEntities, TypeBindingSet bindings)
         where T : IDcbAggregateRoot
     {
         if (eventEntities.Count == 0)
@@ -70,7 +71,7 @@ public static partial class DcbDbContextExtensions
             return aggregate;
         }
 
-        aggregate.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
+        aggregate.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent(bindings)));
 
         // Nothing was applied, so there is no identity or position worth claiming — the same
         // decision the streamed store makes, so an aggregate that ignored every event it was given

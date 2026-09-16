@@ -8,13 +8,14 @@ internal static class EventEntityQueryExtensions
 {
     private static readonly IEventDataFilter DefaultDataFilter = new SubstringEventDataFilter();
 
+    /// <param name="bindings">The set a requested CLR type is turned into its stored key through.</param>
     public static IQueryable<EventEntity> ApplyFilters(this IQueryable<EventEntity> query,
         Type[]? eventTypeFilter, IDictionary<string, string>? eventPropertyFilter,
-        IEventDataFilter? dataFilter = null)
+        IEventDataFilter? dataFilter, TypeBindingSet bindings)
     {
         if (eventTypeFilter is { Length: > 0 })
         {
-            var bindingKeysByType = TypeBindings.GetEventBindingKeysByType();
+            var bindingKeysByType = bindings.GetEventBindingKeysByType();
 
             var eventTypes = eventTypeFilter
                 .Select(bindingKeysByType.GetValueOrDefault)

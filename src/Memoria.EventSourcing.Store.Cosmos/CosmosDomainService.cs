@@ -63,7 +63,7 @@ public class CosmosDomainService : IDomainService
             switch (readMode)
             {
                 case ReadMode.SnapshotOnly or ReadMode.SnapshotOrCreate:
-                    return currentAggregateDocument.ToAggregate<T>();
+                    return currentAggregateDocument.ToAggregate<T>(_cosmosDataStore.TypeBindings);
                 case ReadMode.SnapshotWithNewEvents or ReadMode.SnapshotWithNewEventsOrCreate:
                     return await _cosmosDataStore.UpdateAggregateDocument(streamId, aggregateId,
                         currentAggregateDocument, cancellationToken);
@@ -90,7 +90,7 @@ public class CosmosDomainService : IDomainService
             return default(T);
         }
 
-        var events = eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        var events = eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(_cosmosDataStore.TypeBindings)).ToList();
         aggregate.Apply(events);
 
         AggregateDiagnostics.AddAggregateFoldedEvent(streamId, aggregateId,
@@ -136,7 +136,7 @@ public class CosmosDomainService : IDomainService
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_cosmosDataStore.TypeBindings)).ToList();
     }
 
     /// <summary>
@@ -164,7 +164,7 @@ public class CosmosDomainService : IDomainService
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_cosmosDataStore.TypeBindings)).ToList();
     }
 
     /// <summary>
@@ -188,7 +188,7 @@ public class CosmosDomainService : IDomainService
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_cosmosDataStore.TypeBindings)).ToList();
     }
 
     /// <summary>
@@ -212,7 +212,7 @@ public class CosmosDomainService : IDomainService
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_cosmosDataStore.TypeBindings)).ToList();
     }
 
     /// <summary>
@@ -236,7 +236,7 @@ public class CosmosDomainService : IDomainService
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_cosmosDataStore.TypeBindings)).ToList();
     }
 
     /// <summary>
@@ -260,7 +260,7 @@ public class CosmosDomainService : IDomainService
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_cosmosDataStore.TypeBindings)).ToList();
     }
 
     /// <summary>
@@ -286,7 +286,7 @@ public class CosmosDomainService : IDomainService
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_cosmosDataStore.TypeBindings)).ToList();
     }
 
     /// <summary>
@@ -317,7 +317,7 @@ public class CosmosDomainService : IDomainService
         aggregate.StreamId = streamId.Id;
         aggregate.AggregateId = aggregateId.ToStoreId();
         aggregate.LatestEventSequence = eventDocuments[^1].Sequence;
-        aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent()));
+        aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent(_cosmosDataStore.TypeBindings)));
 
         return aggregate;
     }
@@ -352,7 +352,7 @@ public class CosmosDomainService : IDomainService
         aggregate.StreamId = streamId.Id;
         aggregate.AggregateId = aggregateId.ToStoreId();
         aggregate.LatestEventSequence = eventDocuments[^1].Sequence;
-        aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent()));
+        aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent(_cosmosDataStore.TypeBindings)));
 
         return aggregate;
     }
@@ -389,7 +389,7 @@ public class CosmosDomainService : IDomainService
         aggregate.StreamId = streamId.Id;
         aggregate.AggregateId = aggregateId.ToStoreId();
         aggregate.LatestEventSequence = eventDocuments[^1].Sequence;
-        aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent()));
+        aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent(_cosmosDataStore.TypeBindings)));
 
         return aggregate;
     }
@@ -421,7 +421,7 @@ public class CosmosDomainService : IDomainService
             return projection;
         }
 
-        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()));
+        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(_cosmosDataStore.TypeBindings)));
         if (projection.Version == 0)
         {
             return projection;
@@ -462,7 +462,7 @@ public class CosmosDomainService : IDomainService
             return projection;
         }
 
-        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()));
+        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(_cosmosDataStore.TypeBindings)));
         if (projection.Version == 0)
         {
             return projection;
@@ -503,7 +503,7 @@ public class CosmosDomainService : IDomainService
             return projection;
         }
 
-        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()));
+        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(_cosmosDataStore.TypeBindings)));
         if (projection.Version == 0)
         {
             return projection;
@@ -542,7 +542,7 @@ public class CosmosDomainService : IDomainService
             switch (readMode)
             {
                 case ReadMode.SnapshotOnly or ReadMode.SnapshotOrCreate:
-                    return currentProjectionDocument.ToProjection<T>();
+                    return currentProjectionDocument.ToProjection<T>(_cosmosDataStore.TypeBindings);
                 case ReadMode.SnapshotWithNewEvents or ReadMode.SnapshotWithNewEventsOrCreate:
                     return await _cosmosDataStore.UpdateProjectionDocument(streamId, projectionId,
                         currentProjectionDocument, cancellationToken);
@@ -569,7 +569,7 @@ public class CosmosDomainService : IDomainService
             return default(T);
         }
 
-        var events = eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        var events = eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(_cosmosDataStore.TypeBindings)).ToList();
         var versionBefore = projection.Version;
         projection.Apply(events);
 
@@ -690,7 +690,7 @@ public class CosmosDomainService : IDomainService
         var queryDefinition = new QueryDefinition(sql.ToString())
             .WithParameter("@streamId", streamId.Id)
             .WithParameter("@documentType", DocumentType.Event)
-            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter);
+            .BindEventFilterParameters(eventTypeFilter, eventPropertyFilter, _cosmosDataStore.TypeBindings);
 
         try
         {

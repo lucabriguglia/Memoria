@@ -39,7 +39,7 @@ public static partial class IDomainDbContextExtensions
             return projection;
         }
 
-        projection.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
+        projection.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent(domainDbContext.TypeBindings)));
         if (projection.Version == 0)
         {
             return projection;
@@ -86,7 +86,7 @@ public static partial class IDomainDbContextExtensions
             return projection;
         }
 
-        projection.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
+        projection.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent(domainDbContext.TypeBindings)));
         if (projection.Version == 0)
         {
             return projection;
@@ -133,7 +133,7 @@ public static partial class IDomainDbContextExtensions
             return projection;
         }
 
-        projection.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
+        projection.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent(domainDbContext.TypeBindings)));
         if (projection.Version == 0)
         {
             return projection;

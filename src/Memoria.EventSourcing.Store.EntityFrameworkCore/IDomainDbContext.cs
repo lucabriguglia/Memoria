@@ -306,6 +306,19 @@ public interface IDomainDbContext : IDisposable, IAsyncDisposable
     DbSet<EventEntity> Events { get; set; }
 
     /// <summary>
+    /// Gets the type bindings this context resolves stored keys through: which CLR type an event,
+    /// aggregate or projection key deserialises into, and which key a CLR type in an event filter
+    /// stands for.
+    /// </summary>
+    /// <remarks>
+    /// The process-wide <see cref="TypeBindingSet.Default"/> unless the context was given a set of
+    /// its own, which is what a host reading more than one bounded context's store in one process
+    /// does. A default so that an implementation written before this member existed still compiles
+    /// and behaves as it did.
+    /// </remarks>
+    TypeBindingSet TypeBindings => TypeBindingSet.Default;
+
+    /// <summary>
     /// Gets or sets the DbSet for projection entities that store serialized projection (read model) snapshots.
     /// Projection snapshots are persisted independently of aggregate snapshots in their own table.
     /// </summary>

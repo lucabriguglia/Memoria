@@ -36,7 +36,7 @@ public static partial class IDomainDbContextExtensions
             .FirstOrDefaultAsync(entity => entity.Id == projectionId.ToStoreId(), cancellationToken);
         if (projectionEntity is not null)
         {
-            var currentProjection = projectionEntity.ToProjection<T>();
+            var currentProjection = projectionEntity.ToProjection<T>(domainDbContext.TypeBindings);
             switch (readMode)
             {
                 case ReadMode.SnapshotOnly or ReadMode.SnapshotOrCreate:
@@ -61,7 +61,7 @@ public static partial class IDomainDbContextExtensions
             return default(T);
         }
 
-        var events = eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
+        var events = eventEntities.Select(eventEntity => eventEntity.ToDomainEvent(domainDbContext.TypeBindings)).ToList();
         var versionBefore = projection.Version;
         projection.Apply(events);
 

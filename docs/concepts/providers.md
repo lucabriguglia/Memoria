@@ -51,6 +51,28 @@ The streamed model has no such problem, because a stream *is* a natural partitio
 [Cosmos DB](../reference/configuration/cosmos.md) remains a first-class store there. Relational
 engines have no equivalent obstacle: one transaction spans the whole table.
 
+## Reading more than one bounded context in one process
+
+A store resolves every key it holds — `OrderPlaced:1`, `Order:1` — into a CLR type through a set of
+type bindings, and turns the CLR types in an event filter back into keys through the same set. By
+default that set is one per process, `TypeBindingSet.Default`: `AddMemoriaEventSourcing` and
+`AddMemoriaDcb` fill it, and the static properties on `TypeBindings` and `DcbTypeBindings` read and
+write it. An application with one domain never needs to know it exists.
+
+A host reading several bounded contexts' stores in one process — an operations tool, a reporting
+service — may find two of them declaring an event or a model under the same name and version. One
+process-wide set cannot hold both, so each store can carry a `TypeBindingSet` of its own instead:
+
+- Entity Framework Core: set `TypeBindings` on the `DomainDbContext` or `DcbDbContext` when it is
+  constructed. Every read through that context, and every extension method on it, resolves through
+  that set.
+- Cosmos DB: pass the set to `CosmosDataStore`; the `CosmosDomainService` over it reads through the
+  same set. The in-memory variant takes it the same way.
+
+A store given no set reads `TypeBindingSet.Default`, exactly as before. Which set a store was given
+decides only what a stored key deserialises into and what a filter matches; what is *written* comes
+from each type's own attribute and is the same under any set.
+
 ## Related
 
 - [Configuration: Memoria Core](../reference/configuration/memoria.md)

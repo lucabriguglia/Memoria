@@ -55,14 +55,26 @@ public class DcbEventEntity : IAuditableEntity
 public static class DcbEventEntityExtensions
 {
     /// <summary>
-    /// Deserialises the stored payload back into its domain event.
+    /// Deserialises the stored payload back into its domain event, resolving its type through the
+    /// process-wide bindings.
     /// </summary>
     /// <param name="eventEntity">The stored event.</param>
     /// <returns>The domain event.</returns>
     /// <exception cref="InvalidOperationException">The event type is not registered.</exception>
-    public static IEvent ToDomainEvent(this DcbEventEntity eventEntity)
+    public static IEvent ToDomainEvent(this DcbEventEntity eventEntity) =>
+        eventEntity.ToDomainEvent(TypeBindingSet.Default);
+
+    /// <summary>
+    /// Deserialises the stored payload back into its domain event, resolving its type through the
+    /// given bindings.
+    /// </summary>
+    /// <param name="eventEntity">The stored event.</param>
+    /// <param name="bindings">The set the stored key is resolved through.</param>
+    /// <returns>The domain event.</returns>
+    /// <exception cref="InvalidOperationException">The event type is not registered.</exception>
+    public static IEvent ToDomainEvent(this DcbEventEntity eventEntity, TypeBindingSet bindings)
     {
-        var typeFound = TypeBindings.EventTypeBindings.TryGetValue(eventEntity.EventType, out var eventType);
+        var typeFound = bindings.EventTypeBindings.TryGetValue(eventEntity.EventType, out var eventType);
         if (typeFound is false)
         {
             throw new InvalidOperationException($"Event type {eventEntity.EventType} not found in TypeBindings");

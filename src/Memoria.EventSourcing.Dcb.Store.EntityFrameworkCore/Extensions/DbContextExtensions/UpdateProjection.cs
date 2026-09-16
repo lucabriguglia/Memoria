@@ -34,7 +34,7 @@ public static partial class DcbDbContextExtensions
             var snapshot = await dcbDbContext.GetSnapshotEntity(DcbSnapshotEntity.ProjectionKind,
                 projectionId.ToStoreId(), projectionId.Boundary, cancellationToken);
 
-            var projection = snapshot is null ? new T() : snapshot.ToProjection<T>();
+            var projection = snapshot is null ? new T() : snapshot.ToProjection<T>(dcbDbContext.TypeBindings);
             projection.Tags = projectionId.Boundary.Tags;
 
             return await dcbDbContext.RefreshProjection(projectionId, projection,

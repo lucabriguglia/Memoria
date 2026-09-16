@@ -1,4 +1,5 @@
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Entities;
+using Memoria.EventSourcing.Domain;
 using Memoria.Results;
 
 namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
@@ -16,7 +17,7 @@ public static partial class DcbDbContextExtensions
 
         var eventEntities = await dcbDbContext.GetEventEntities(projectionId.Boundary, projection.EventTypeFilter, cancellationToken);
 
-        return Fold(projection, projectionId, eventEntities);
+        return Fold(projection, projectionId, eventEntities, dcbDbContext.TypeBindings);
     }
 
     /// <summary>
@@ -31,7 +32,7 @@ public static partial class DcbDbContextExtensions
         var eventEntities = await dcbDbContext.GetEventEntitiesUpToPosition(projectionId.Boundary, upToPosition,
             projection.EventTypeFilter, cancellationToken);
 
-        return Fold(projection, projectionId, eventEntities);
+        return Fold(projection, projectionId, eventEntities, dcbDbContext.TypeBindings);
     }
 
     /// <summary>
@@ -46,7 +47,7 @@ public static partial class DcbDbContextExtensions
         var eventEntities = await dcbDbContext.GetEventEntitiesUpToDate(projectionId.Boundary, upToDate,
             projection.EventTypeFilter, cancellationToken);
 
-        return Fold(projection, projectionId, eventEntities);
+        return Fold(projection, projectionId, eventEntities, dcbDbContext.TypeBindings);
     }
 
     /// <summary>
@@ -56,7 +57,7 @@ public static partial class DcbDbContextExtensions
     private static T NewProjection<T>(IDcbProjectionId<T> projectionId) where T : IDcbProjection, new() =>
         new() { Tags = projectionId.Boundary.Tags };
 
-    private static T Fold<T>(T projection, IDcbProjectionId<T> projectionId, List<DcbEventEntity> eventEntities)
+    private static T Fold<T>(T projection, IDcbProjectionId<T> projectionId, List<DcbEventEntity> eventEntities, TypeBindingSet bindings)
         where T : IDcbProjection
     {
         if (eventEntities.Count == 0)
@@ -64,7 +65,7 @@ public static partial class DcbDbContextExtensions
             return projection;
         }
 
-        projection.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()));
+        projection.Apply(eventEntities.Select(eventEntity => eventEntity.ToDomainEvent(bindings)));
 
         if (projection.Version == 0)
         {

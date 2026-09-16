@@ -52,14 +52,24 @@ public class EventEntity : IAuditableEntity
 public static class EventEntityExtensions
 {
     /// <summary>
-    /// Converts an EventEntity to a event.
+    /// Converts an EventEntity to a event, resolving its type through the process-wide bindings.
     /// </summary>
     /// <param name="eventEntity">The entity.</param>
     /// <returns>The event.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the event type is not found.</exception>
-    public static IEvent ToDomainEvent(this EventEntity eventEntity)
+    public static IEvent ToDomainEvent(this EventEntity eventEntity) =>
+        eventEntity.ToDomainEvent(TypeBindingSet.Default);
+
+    /// <summary>
+    /// Converts an EventEntity to a event, resolving its type through the given bindings.
+    /// </summary>
+    /// <param name="eventEntity">The entity.</param>
+    /// <param name="bindings">The set the stored key is resolved through.</param>
+    /// <returns>The event.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the event type is not found.</exception>
+    public static IEvent ToDomainEvent(this EventEntity eventEntity, TypeBindingSet bindings)
     {
-        var typeFound = TypeBindings.EventTypeBindings.TryGetValue(eventEntity.EventType, out var eventType);
+        var typeFound = bindings.EventTypeBindings.TryGetValue(eventEntity.EventType, out var eventType);
         if (typeFound is false)
         {
             throw new InvalidOperationException($"Event type {eventEntity.EventType} not found in TypeBindings");

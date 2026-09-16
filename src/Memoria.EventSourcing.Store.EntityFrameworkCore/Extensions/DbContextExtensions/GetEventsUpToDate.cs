@@ -27,6 +27,6 @@ public static partial class IDomainDbContextExtensions
     public static async Task<List<IEvent>> GetEventsUpToDate(this IDomainDbContext domainDbContext, IStreamId streamId, DateTimeOffset upToDate, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, IEventDataFilter? dataFilter = null, CancellationToken cancellationToken = default)
     {
         var eventEntities = await domainDbContext.GetEventEntitiesUpToDate(streamId, upToDate, eventTypeFilter, eventPropertyFilter, dataFilter, cancellationToken);
-        return eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
+        return eventEntities.Select(eventEntity => eventEntity.ToDomainEvent(domainDbContext.TypeBindings)).ToList();
     }
 }

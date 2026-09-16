@@ -11,8 +11,22 @@ namespace Memoria.EventSourcing.Store.Cosmos.InMemory;
 /// In-memory implementation of ICosmosDataStore for fast testing.
 /// Uses shared InMemoryCosmosStorage for data persistence.
 /// </summary>
-public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider timeProvider, IHttpContextAccessor httpContextAccessor) : ICosmosDataStore
+/// <param name="storage">The shared in-memory documents.</param>
+/// <param name="timeProvider">The time provider for timestamps.</param>
+/// <param name="httpContextAccessor">HTTP context accessor for user information.</param>
+/// <param name="typeBindings">
+/// The set stored keys are resolved through, for a host that reads more than one bounded context's
+/// store in one process. Null reads the process-wide set.
+/// </param>
+public class InMemoryCosmosDataStore(
+    InMemoryCosmosStorage storage,
+    TimeProvider timeProvider,
+    IHttpContextAccessor httpContextAccessor,
+    TypeBindingSet? typeBindings = null) : ICosmosDataStore
 {
+    /// <inheritdoc />
+    public TypeBindingSet TypeBindings { get; } = typeBindings ?? TypeBindingSet.Default;
+
     public Task<Result<AggregateDocument?>> GetAggregateDocument<T>(
         IStreamId streamId,
         IAggregateId<T> aggregateId,
@@ -151,14 +165,14 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         return Task.FromResult(Result<List<EventDocument>>.Ok(documents));
     }
 
-    private static bool MatchesEventTypeFilter(EventDocument document, Type[]? eventTypeFilter)
+    private bool MatchesEventTypeFilter(EventDocument document, Type[]? eventTypeFilter)
     {
         if (eventTypeFilter is not { Length: > 0 })
         {
             return true;
         }
 
-        return eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t) == document.EventType);
+        return eventTypeFilter.Any(t => InMemoryCosmosStorage.GetEventTypeName(t, TypeBindings) == document.EventType);
     }
 
     private static bool MatchesEventPropertyFilter(EventDocument document, IDictionary<string, string>? eventPropertyFilter)
@@ -188,7 +202,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
     {
         var aggregateKey = InMemoryCosmosStorage.CreateAggregateKey(streamId, aggregateId);
 
-        var aggregate = aggregateDocument is null ? new T() : aggregateDocument.ToAggregate<T>();
+        var aggregate = aggregateDocument is null ? new T() : aggregateDocument.ToAggregate<T>(TypeBindings);
 
         var currentAggregateVersion = aggregate.Version;
 
@@ -203,7 +217,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
             return aggregate.Version > 0 ? aggregate : default;
         }
 
-        var newEvents = newEventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        var newEvents = newEventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(TypeBindings)).ToList();
         aggregate.Apply(newEvents);
 
         AggregateDiagnostics.AddAggregateFoldedEvent(streamId, aggregateId,
@@ -246,7 +260,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
         IProjectionId<T> projectionId, ProjectionDocument? projectionDocument,
         CancellationToken cancellationToken = default) where T : IProjection, new()
     {
-        var projection = projectionDocument is null ? new T() : projectionDocument.ToProjection<T>();
+        var projection = projectionDocument is null ? new T() : projectionDocument.ToProjection<T>(TypeBindings);
 
         var currentProjectionVersion = projection.Version;
 
@@ -264,7 +278,7 @@ public class InMemoryCosmosDataStore(InMemoryCosmosStorage storage, TimeProvider
             return projection.Version > 0 ? projection : default;
         }
 
-        var newEvents = newEventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        var newEvents = newEventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(TypeBindings)).ToList();
         projection.Apply(newEvents);
 
         var foldedSequences = newEventDocuments.Select(eventDocument => eventDocument.Sequence).ToList();

@@ -25,6 +25,6 @@ public static partial class IDomainDbContextExtensions
     public static async Task<List<IEvent>> GetEventsUpToSequence(this IDomainDbContext domainDbContext, IStreamId streamId, int upToSequence, Type[]? eventTypeFilter = null, IDictionary<string, string>? eventPropertyFilter = null, IEventDataFilter? dataFilter = null, CancellationToken cancellationToken = default)
     {
         var eventEntities = await domainDbContext.GetEventEntitiesUpToSequence(streamId, upToSequence, eventTypeFilter, eventPropertyFilter, dataFilter, cancellationToken);
-        return eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
+        return eventEntities.Select(eventEntity => eventEntity.ToDomainEvent(domainDbContext.TypeBindings)).ToList();
     }
 }

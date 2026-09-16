@@ -53,11 +53,19 @@ public static class SnapshotExtensions
     }
 
     /// <summary>
-    /// Rebuilds an aggregate from its snapshot row.
+    /// Rebuilds an aggregate from its snapshot row, resolving its type through the process-wide bindings.
     /// </summary>
-    public static T ToAggregate<T>(this DcbSnapshotEntity snapshot) where T : IDcbAggregateRoot
+    public static T ToAggregate<T>(this DcbSnapshotEntity snapshot) where T : IDcbAggregateRoot =>
+        snapshot.ToAggregate<T>(TypeBindingSet.Default);
+
+    /// <summary>
+    /// Rebuilds an aggregate from its snapshot row, resolving its type through the given bindings.
+    /// </summary>
+    /// <param name="snapshot">The snapshot row.</param>
+    /// <param name="bindings">The set the stored key is resolved through.</param>
+    public static T ToAggregate<T>(this DcbSnapshotEntity snapshot, TypeBindingSet bindings) where T : IDcbAggregateRoot
     {
-        var found = DcbTypeBindings.AggregateTypeBindings.TryGetValue(snapshot.ModelType, out var modelType);
+        var found = bindings.DcbAggregateTypeBindings.TryGetValue(snapshot.ModelType, out var modelType);
         if (found is false)
         {
             throw new InvalidOperationException(
@@ -72,11 +80,19 @@ public static class SnapshotExtensions
     }
 
     /// <summary>
-    /// Rebuilds a projection from its snapshot row.
+    /// Rebuilds a projection from its snapshot row, resolving its type through the process-wide bindings.
     /// </summary>
-    public static T ToProjection<T>(this DcbSnapshotEntity snapshot) where T : IDcbProjection
+    public static T ToProjection<T>(this DcbSnapshotEntity snapshot) where T : IDcbProjection =>
+        snapshot.ToProjection<T>(TypeBindingSet.Default);
+
+    /// <summary>
+    /// Rebuilds a projection from its snapshot row, resolving its type through the given bindings.
+    /// </summary>
+    /// <param name="snapshot">The snapshot row.</param>
+    /// <param name="bindings">The set the stored key is resolved through.</param>
+    public static T ToProjection<T>(this DcbSnapshotEntity snapshot, TypeBindingSet bindings) where T : IDcbProjection
     {
-        var found = DcbTypeBindings.ProjectionTypeBindings.TryGetValue(snapshot.ModelType, out var modelType);
+        var found = bindings.DcbProjectionTypeBindings.TryGetValue(snapshot.ModelType, out var modelType);
         if (found is false)
         {
             throw new InvalidOperationException(

@@ -113,9 +113,21 @@ public static class AggregateDocumentExtensions
     /// <exception cref="InvalidOperationException">
     /// Thrown if the aggregate type specified in the <see cref="AggregateDocument"/> is not found in the type bindings.
     /// </exception>
-    public static T ToAggregate<T>(this AggregateDocument aggregateDocument) where T : IAggregateRoot
+    public static T ToAggregate<T>(this AggregateDocument aggregateDocument) where T : IAggregateRoot =>
+        aggregateDocument.ToAggregate<T>(TypeBindingSet.Default);
+
+    /// <summary>
+    /// Converts an <see cref="AggregateDocument"/> to an aggregate of a specified type, resolving
+    /// its type through the given bindings.
+    /// </summary>
+    /// <typeparam name="T">The type of aggregate to which the document is converted.</typeparam>
+    /// <param name="aggregateDocument">The <see cref="AggregateDocument"/> to be converted.</param>
+    /// <param name="bindings">The set the stored key is resolved through.</param>
+    /// <returns>The aggregate of type <typeparamref name="T"/> populated with data from the document.</returns>
+    /// <exception cref="InvalidOperationException">The stored aggregate type is not bound.</exception>
+    public static T ToAggregate<T>(this AggregateDocument aggregateDocument, TypeBindingSet bindings) where T : IAggregateRoot
     {
-        var typeFound = TypeBindings.AggregateTypeBindings.TryGetValue(aggregateDocument.AggregateType, out var aggregateType);
+        var typeFound = bindings.AggregateTypeBindings.TryGetValue(aggregateDocument.AggregateType, out var aggregateType);
         if (typeFound is false)
         {
             throw new InvalidOperationException($"Aggregate type {aggregateDocument.AggregateType} not found in TypeBindings");

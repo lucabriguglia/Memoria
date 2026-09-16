@@ -20,5 +20,5 @@ public static partial class DcbDbContextExtensions
     /// </remarks>
     public static IQueryable<DcbEventEntity> QueryEvents(this IDcbDbContext dcbDbContext,
         TagQuery query, Type[]? eventTypeFilter = null) =>
-        dcbDbContext.Inside(query).ApplyEventTypeFilter(eventTypeFilter);
+        dcbDbContext.Inside(query).ApplyEventTypeFilter(eventTypeFilter, dcbDbContext.TypeBindings);
 }

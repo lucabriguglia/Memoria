@@ -32,7 +32,7 @@ public static partial class IDomainDbContextExtensions
             .Where(eventEntity =>
                 eventEntity.StreamId == streamId.Id &&
                 eventEntity.CreatedDate <= upToDate)
-            .ApplyFilters(eventTypeFilter, eventPropertyFilter, dataFilter)
+            .ApplyFilters(eventTypeFilter, eventPropertyFilter, dataFilter, domainDbContext.TypeBindings)
             .OrderBy(eventEntity => eventEntity.Sequence)
             .ToListAsync(cancellationToken);
     }

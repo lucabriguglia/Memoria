@@ -30,7 +30,7 @@ public static partial class IDomainDbContextExtensions
     {
         return await domainDbContext.Events.AsNoTracking()
             .Where(eventEntity => eventEntity.StreamId == streamId.Id)
-            .ApplyFilters(eventTypeFilter, eventPropertyFilter, dataFilter)
+            .ApplyFilters(eventTypeFilter, eventPropertyFilter, dataFilter, domainDbContext.TypeBindings)
             .OrderBy(eventEntity => eventEntity.Sequence)
             .ToListAsync(cancellationToken);
     }

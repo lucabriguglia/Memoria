@@ -7,13 +7,25 @@ using Microsoft.AspNetCore.Http;
 
 namespace Memoria.EventSourcing.Store.Cosmos.InMemory;
 
+/// <summary>
+/// The in-memory stand-in for <c>CosmosDomainService</c>, for tests that want the Cosmos store's
+/// behaviour without an emulator.
+/// </summary>
+/// <param name="storage">The shared in-memory documents.</param>
+/// <param name="timeProvider">The time provider for timestamps.</param>
+/// <param name="httpContextAccessor">HTTP context accessor for user information.</param>
+/// <param name="typeBindings">
+/// The set stored keys are resolved through, for a host that reads more than one bounded context's
+/// store in one process. Null reads the process-wide set.
+/// </param>
 public class InMemoryCosmosDomainService(
     InMemoryCosmosStorage storage,
     TimeProvider timeProvider,
-    IHttpContextAccessor httpContextAccessor)
+    IHttpContextAccessor httpContextAccessor,
+    TypeBindingSet? typeBindings = null)
     : IDomainService
 {
-    private readonly InMemoryCosmosDataStore _dataStore = new(storage, timeProvider, httpContextAccessor);
+    private readonly InMemoryCosmosDataStore _dataStore = new(storage, timeProvider, httpContextAccessor, typeBindings);
 
     public async Task<Result<T?>> GetAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId,
         ReadMode readMode = ReadMode.SnapshotOnly, CancellationToken cancellationToken = default)
@@ -31,7 +43,7 @@ public class InMemoryCosmosDomainService(
             switch (readMode)
             {
                 case ReadMode.SnapshotOnly or ReadMode.SnapshotOrCreate:
-                    return currentAggregateDocument.ToAggregate<T>();
+                    return currentAggregateDocument.ToAggregate<T>(_dataStore.TypeBindings);
                 case ReadMode.SnapshotWithNewEvents or ReadMode.SnapshotWithNewEventsOrCreate:
                     return await _dataStore.UpdateAggregateDocument(streamId, aggregateId, currentAggregateDocument,
                         cancellationToken);
@@ -58,7 +70,7 @@ public class InMemoryCosmosDomainService(
             return default(T);
         }
 
-        var events = eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        var events = eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(_dataStore.TypeBindings)).ToList();
         aggregate.Apply(events);
 
         AggregateDiagnostics.AddAggregateFoldedEvent(streamId, aggregateId,
@@ -111,7 +123,7 @@ public class InMemoryCosmosDomainService(
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_dataStore.TypeBindings)).ToList();
     }
 
     public async Task<Result<List<IEvent>>> GetEventsBetweenSequences(IStreamId streamId, int fromSequence,
@@ -125,7 +137,7 @@ public class InMemoryCosmosDomainService(
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_dataStore.TypeBindings)).ToList();
     }
 
     public async Task<Result<List<IEvent>>> GetEventsFromSequence(IStreamId streamId, int fromSequence,
@@ -139,7 +151,7 @@ public class InMemoryCosmosDomainService(
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_dataStore.TypeBindings)).ToList();
     }
 
     public async Task<Result<List<IEvent>>> GetEventsUpToSequence(IStreamId streamId, int upToSequence,
@@ -153,7 +165,7 @@ public class InMemoryCosmosDomainService(
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_dataStore.TypeBindings)).ToList();
     }
 
     public async Task<Result<List<IEvent>>> GetEventsUpToDate(IStreamId streamId, DateTimeOffset upToDate,
@@ -167,7 +179,7 @@ public class InMemoryCosmosDomainService(
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_dataStore.TypeBindings)).ToList();
     }
 
     public async Task<Result<List<IEvent>>> GetEventsFromDate(IStreamId streamId, DateTimeOffset fromDate,
@@ -181,7 +193,7 @@ public class InMemoryCosmosDomainService(
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_dataStore.TypeBindings)).ToList();
     }
 
     public async Task<Result<List<IEvent>>> GetEventsBetweenDates(IStreamId streamId, DateTimeOffset fromDate,
@@ -196,7 +208,7 @@ public class InMemoryCosmosDomainService(
             return eventDocumentsResult.Failure!;
         }
 
-        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        return eventDocumentsResult.Value!.Select(eventDocument => eventDocument.ToDomainEvent(_dataStore.TypeBindings)).ToList();
     }
 
     public async Task<Result<T>> GetInMemoryAggregate<T>(IStreamId streamId, IAggregateId<T> aggregateId,
@@ -220,7 +232,7 @@ public class InMemoryCosmosDomainService(
         aggregate.StreamId = streamId.Id;
         aggregate.AggregateId = aggregateId.ToStoreId();
         aggregate.LatestEventSequence = eventDocuments.OrderBy(eventEntity => eventEntity.Sequence).Last().Sequence;
-        aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent()));
+        aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent(_dataStore.TypeBindings)));
 
         return aggregate;
     }
@@ -246,7 +258,7 @@ public class InMemoryCosmosDomainService(
         aggregate.StreamId = streamId.Id;
         aggregate.AggregateId = aggregateId.ToStoreId();
         aggregate.LatestEventSequence = eventDocuments.OrderBy(eventEntity => eventEntity.Sequence).Last().Sequence;
-        aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent()));
+        aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent(_dataStore.TypeBindings)));
 
         return aggregate;
     }
@@ -273,7 +285,7 @@ public class InMemoryCosmosDomainService(
         aggregate.StreamId = streamId.Id;
         aggregate.AggregateId = aggregateId.ToStoreId();
         aggregate.LatestEventSequence = eventDocuments.OrderBy(eventEntity => eventEntity.Sequence).Last().Sequence;
-        aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent()));
+        aggregate.Apply(eventDocuments.Select(eventEntity => eventEntity.ToDomainEvent(_dataStore.TypeBindings)));
 
         return aggregate;
     }
@@ -296,7 +308,7 @@ public class InMemoryCosmosDomainService(
             return projection;
         }
 
-        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()));
+        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(_dataStore.TypeBindings)));
         if (projection.Version == 0)
         {
             return projection;
@@ -327,7 +339,7 @@ public class InMemoryCosmosDomainService(
             return projection;
         }
 
-        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()));
+        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(_dataStore.TypeBindings)));
         if (projection.Version == 0)
         {
             return projection;
@@ -358,7 +370,7 @@ public class InMemoryCosmosDomainService(
             return projection;
         }
 
-        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()));
+        projection.Apply(eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(_dataStore.TypeBindings)));
         if (projection.Version == 0)
         {
             return projection;
@@ -388,7 +400,7 @@ public class InMemoryCosmosDomainService(
             switch (readMode)
             {
                 case ReadMode.SnapshotOnly or ReadMode.SnapshotOrCreate:
-                    return currentProjectionDocument.ToProjection<T>();
+                    return currentProjectionDocument.ToProjection<T>(_dataStore.TypeBindings);
                 case ReadMode.SnapshotWithNewEvents or ReadMode.SnapshotWithNewEventsOrCreate:
                     return await _dataStore.UpdateProjectionDocument(streamId, projectionId,
                         currentProjectionDocument, cancellationToken);
@@ -415,7 +427,7 @@ public class InMemoryCosmosDomainService(
             return default(T);
         }
 
-        var events = eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent()).ToList();
+        var events = eventDocuments.Select(eventDocument => eventDocument.ToDomainEvent(_dataStore.TypeBindings)).ToList();
         var versionBefore = projection.Version;
         projection.Apply(events);
 

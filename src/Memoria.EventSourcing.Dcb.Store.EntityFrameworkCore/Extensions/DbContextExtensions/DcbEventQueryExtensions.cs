@@ -184,17 +184,29 @@ internal static class DcbEventQueryExtensions
     }
 
     /// <summary>
-    /// Narrows a query to the given event types.
+    /// Narrows a query to the given event types, turning each into its stored key through the
+    /// process-wide bindings.
     /// </summary>
     public static IQueryable<DcbEventEntity> ApplyEventTypeFilter(
-        this IQueryable<DcbEventEntity> query, Type[]? eventTypeFilter)
+        this IQueryable<DcbEventEntity> query, Type[]? eventTypeFilter) =>
+        query.ApplyEventTypeFilter(eventTypeFilter, TypeBindingSet.Default);
+
+    /// <summary>
+    /// Narrows a query to the given event types, turning each into its stored key through the
+    /// given bindings.
+    /// </summary>
+    /// <param name="query">The query to narrow.</param>
+    /// <param name="eventTypeFilter">The CLR types to keep, or null or empty to keep every event.</param>
+    /// <param name="bindings">The set a CLR type is turned into its stored key through.</param>
+    public static IQueryable<DcbEventEntity> ApplyEventTypeFilter(
+        this IQueryable<DcbEventEntity> query, Type[]? eventTypeFilter, TypeBindingSet bindings)
     {
         if (eventTypeFilter is not { Length: > 0 })
         {
             return query;
         }
 
-        var bindingKeysByType = TypeBindings.GetEventBindingKeysByType();
+        var bindingKeysByType = bindings.GetEventBindingKeysByType();
 
         // An unregistered type contributes a null key, which matches nothing — the same behaviour
         // the streamed store has, so a filter naming a type nobody registered narrows to empty

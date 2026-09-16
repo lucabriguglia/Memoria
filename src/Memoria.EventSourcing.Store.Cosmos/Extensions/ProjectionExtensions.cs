@@ -47,9 +47,21 @@ public static class ProjectionExtensions
     /// <param name="projectionDocument">The snapshot document.</param>
     /// <returns>The projection.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the projection type is not registered in TypeBindings.</exception>
-    public static T ToProjection<T>(this ProjectionDocument projectionDocument) where T : IProjection
+    public static T ToProjection<T>(this ProjectionDocument projectionDocument) where T : IProjection =>
+        projectionDocument.ToProjection<T>(TypeBindingSet.Default);
+
+    /// <summary>
+    /// Converts a <see cref="ProjectionDocument"/> snapshot back to a projection, resolving its type
+    /// through the given bindings.
+    /// </summary>
+    /// <typeparam name="T">The projection type.</typeparam>
+    /// <param name="projectionDocument">The snapshot document.</param>
+    /// <param name="bindings">The set the stored key is resolved through.</param>
+    /// <returns>The projection.</returns>
+    /// <exception cref="InvalidOperationException">The stored projection type is not bound.</exception>
+    public static T ToProjection<T>(this ProjectionDocument projectionDocument, TypeBindingSet bindings) where T : IProjection
     {
-        var typeFound = TypeBindings.ProjectionTypeBindings.TryGetValue(projectionDocument.ProjectionType, out var projectionType);
+        var typeFound = bindings.ProjectionTypeBindings.TryGetValue(projectionDocument.ProjectionType, out var projectionType);
         if (typeFound is false)
         {
             throw new InvalidOperationException($"Projection type {projectionDocument.ProjectionType} not found in TypeBindings");

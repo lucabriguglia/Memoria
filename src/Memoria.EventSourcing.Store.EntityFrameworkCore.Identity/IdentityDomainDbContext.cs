@@ -35,6 +35,9 @@ public abstract class IdentityDomainDbContext(
     public DbSet<EventEntity> Events { get; set; } = null!;
     public DbSet<ProjectionEntity> Projections { get; set; } = null!;
 
+    /// <inheritdoc />
+    public TypeBindingSet TypeBindings { get; init; } = TypeBindingSet.Default;
+
     public void DetachAggregate<T>(IAggregateId<T> aggregateId, T aggregate) where T : IAggregateRoot
     {
         foreach (var entityEntry in ChangeTracker.Entries())

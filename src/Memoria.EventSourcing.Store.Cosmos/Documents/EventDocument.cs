@@ -85,9 +85,20 @@ public static class EventDocumentExtensions
     /// <param name="eventDocument">The event document to convert.</param>
     /// <returns>The deserialized event instance.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the event type is not found in TypeBindings.</exception>
-    public static IEvent ToDomainEvent(this EventDocument eventDocument)
+    public static IEvent ToDomainEvent(this EventDocument eventDocument) =>
+        eventDocument.ToDomainEvent(TypeBindingSet.Default);
+
+    /// <summary>
+    /// Converts an <see cref="EventDocument"/> to its corresponding <see cref="IEvent"/> instance,
+    /// resolving its type through the given bindings.
+    /// </summary>
+    /// <param name="eventDocument">The event document to convert.</param>
+    /// <param name="bindings">The set the stored key is resolved through.</param>
+    /// <returns>The deserialized event instance.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the event type is not found.</exception>
+    public static IEvent ToDomainEvent(this EventDocument eventDocument, TypeBindingSet bindings)
     {
-        var typeFound = TypeBindings.EventTypeBindings.TryGetValue(eventDocument.EventType, out var eventType);
+        var typeFound = bindings.EventTypeBindings.TryGetValue(eventDocument.EventType, out var eventType);
         if (typeFound is false)
         {
             throw new InvalidOperationException($"Event type {eventDocument.EventType} not found in TypeBindings");

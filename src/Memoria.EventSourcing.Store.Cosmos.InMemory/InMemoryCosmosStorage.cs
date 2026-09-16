@@ -26,7 +26,14 @@ public class InMemoryCosmosStorage
     }
 
     public static string GetEventTypeName(Type eventType) =>
-        TypeBindings.GetEventBindingKeysByType().GetValueOrDefault(eventType) ?? eventType.Name;
+        GetEventTypeName(eventType, TypeBindingSet.Default);
+
+    /// <summary>
+    /// The stored key a CLR type stands for in the given bindings, or its bare name when nothing
+    /// binds it — which matches no stored document, as an unregistered type in a filter should.
+    /// </summary>
+    public static string GetEventTypeName(Type eventType, TypeBindingSet bindings) =>
+        bindings.GetEventBindingKeysByType().GetValueOrDefault(eventType) ?? eventType.Name;
 
     /// <summary>
     /// Clears all stored data. Useful for test cleanup.

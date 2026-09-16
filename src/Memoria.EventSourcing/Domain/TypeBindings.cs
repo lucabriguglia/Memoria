@@ -6,22 +6,39 @@ namespace Memoria.EventSourcing.Domain;
 /// <summary>
 /// Provides type-binding dictionaries for domain events and aggregates.
 /// </summary>
+/// <remarks>
+/// The three maps here are views over <see cref="TypeBindingSet.Default"/>, the process-wide set:
+/// reading or assigning one reads or assigns the default set's map. A store given a
+/// <see cref="TypeBindingSet"/> of its own never consults these.
+/// </remarks>
 public static class TypeBindings
 {
     /// <summary>
-    /// Gets or sets the event type bindings.
+    /// Gets or sets the event type bindings of the process-wide set.
     /// </summary>
-    public static Dictionary<string, Type> EventTypeBindings { get; set; } = new();
+    public static Dictionary<string, Type> EventTypeBindings
+    {
+        get => TypeBindingSet.Default.EventTypeBindings;
+        set => TypeBindingSet.Default.EventTypeBindings = value;
+    }
 
     /// <summary>
-    /// Gets or sets the aggregate type bindings.
+    /// Gets or sets the aggregate type bindings of the process-wide set.
     /// </summary>
-    public static Dictionary<string, Type> AggregateTypeBindings { get; set; } = new();
+    public static Dictionary<string, Type> AggregateTypeBindings
+    {
+        get => TypeBindingSet.Default.AggregateTypeBindings;
+        set => TypeBindingSet.Default.AggregateTypeBindings = value;
+    }
 
     /// <summary>
-    /// Gets or sets the projection type bindings.
+    /// Gets or sets the projection type bindings of the process-wide set.
     /// </summary>
-    public static Dictionary<string, Type> ProjectionTypeBindings { get; set; } = new();
+    public static Dictionary<string, Type> ProjectionTypeBindings
+    {
+        get => TypeBindingSet.Default.ProjectionTypeBindings;
+        set => TypeBindingSet.Default.ProjectionTypeBindings = value;
+    }
 
     /// <summary>
     /// Gets the type binding key.
@@ -136,50 +153,11 @@ public static class TypeBindings
 
     /// <summary>
     /// Gets <see cref="EventTypeBindings"/> inverted, for looking up a binding key by CLR type.
+    /// The process-wide set's inversion; see <see cref="TypeBindingSet.GetEventBindingKeysByType"/>.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Event type filters arrive as CLR types but are stored as binding keys, so every filtered read
-    /// needs this direction. Scanning <see cref="EventTypeBindings"/> for each requested type is
-    /// O(bindings) per type, per query.
-    /// </para>
-    /// <para>
-    /// The cache is keyed on the dictionary <em>instance</em>, so assigning a new
-    /// <see cref="EventTypeBindings"/> rebuilds it. Publication is a single reference assignment, so
-    /// a concurrent rebuild wastes work but cannot be observed half-built.
-    /// </para>
-    /// <para>
-    /// When several keys bind the same CLR type the first one wins, matching the scan this replaced.
-    /// A type with no binding is simply absent; callers use <c>GetValueOrDefault</c> and get null,
-    /// which is also what the scan produced.
-    /// </para>
-    /// </remarks>
     /// <returns>Binding keys by CLR type.</returns>
-    public static Dictionary<Type, string> GetEventBindingKeysByType()
-    {
-        var source = EventTypeBindings;
-
-        var cached = _cachedEventBindingKeysByType;
-        if (cached is not null && ReferenceEquals(cached.Source, source))
-        {
-            return cached.BindingKeysByType;
-        }
-
-        var bindingKeysByType = new Dictionary<Type, string>();
-        foreach (var binding in source)
-        {
-            bindingKeysByType.TryAdd(binding.Value, binding.Key);
-        }
-
-        _cachedEventBindingKeysByType = new ReverseEventTypeBindings(source, bindingKeysByType);
-        return bindingKeysByType;
-    }
-
-    private sealed record ReverseEventTypeBindings(
-        Dictionary<string, Type> Source,
-        Dictionary<Type, string> BindingKeysByType);
-
-    private static ReverseEventTypeBindings? _cachedEventBindingKeysByType;
+    public static Dictionary<Type, string> GetEventBindingKeysByType() =>
+        TypeBindingSet.Default.GetEventBindingKeysByType();
 
     private static readonly ConcurrentDictionary<Type, string> EventBindingKeys = new();
     private static readonly ConcurrentDictionary<Type, string> AggregateBindingKeys = new();

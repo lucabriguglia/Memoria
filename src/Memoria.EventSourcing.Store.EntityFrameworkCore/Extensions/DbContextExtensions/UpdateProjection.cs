@@ -40,7 +40,7 @@ public static partial class IDomainDbContextExtensions
         var projectionEntity = await domainDbContext.Projections.AsNoTracking()
             .FirstOrDefaultAsync(entity => entity.Id == projectionId.ToStoreId(), cancellationToken);
 
-        var projection = projectionEntity is null ? new T() : projectionEntity.ToProjection<T>();
+        var projection = projectionEntity is null ? new T() : projectionEntity.ToProjection<T>(domainDbContext.TypeBindings);
 
         return await domainDbContext.UpdateProjection(streamId, projectionId, projection, cancellationToken);
     }

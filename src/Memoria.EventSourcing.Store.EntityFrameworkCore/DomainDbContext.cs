@@ -120,6 +120,14 @@ public abstract class DomainDbContext(
     IHttpContextAccessor httpContextAccessor)
     : DbContext(options), IDomainDbContext
 {
+    /// <inheritdoc />
+    /// <remarks>
+    /// Set when the context is constructed, for a host that reads more than one bounded context's
+    /// store in one process and scans each into a set of its own. Left alone, the context reads the
+    /// process-wide set the <c>AddMemoria*</c> registrations fill.
+    /// </remarks>
+    public TypeBindingSet TypeBindings { get; init; } = TypeBindingSet.Default;
+
     /// <summary>
     /// Configures the database context with event sourcing-specific interceptors and settings.
     /// This method sets up the audit functionality and can be overridden to add custom configurations.

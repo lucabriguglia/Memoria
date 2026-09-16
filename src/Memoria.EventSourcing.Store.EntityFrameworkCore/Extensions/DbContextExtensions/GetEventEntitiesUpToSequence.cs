@@ -29,7 +29,7 @@ public static partial class IDomainDbContextExtensions
             .Where(eventEntity =>
                 eventEntity.StreamId == streamId.Id &&
                 eventEntity.Sequence <= upToSequence)
-            .ApplyFilters(eventTypeFilter, eventPropertyFilter, dataFilter)
+            .ApplyFilters(eventTypeFilter, eventPropertyFilter, dataFilter, domainDbContext.TypeBindings)
             .OrderBy(eventEntity => eventEntity.Sequence)
             .ToListAsync(cancellationToken);
     }

@@ -27,12 +27,28 @@ internal static class EventFilterQueryExtensions
         return sql;
     }
 
+    /// <summary>
+    /// Binds the filter's values as parameters, turning each CLR type in the event type filter into
+    /// its stored key through the process-wide bindings.
+    /// </summary>
     public static QueryDefinition BindEventFilterParameters(this QueryDefinition queryDefinition,
-        Type[]? eventTypeFilter, IDictionary<string, string>? eventPropertyFilter)
+        Type[]? eventTypeFilter, IDictionary<string, string>? eventPropertyFilter) =>
+        queryDefinition.BindEventFilterParameters(eventTypeFilter, eventPropertyFilter, TypeBindingSet.Default);
+
+    /// <summary>
+    /// Binds the filter's values as parameters, turning each CLR type in the event type filter into
+    /// its stored key through the given bindings.
+    /// </summary>
+    /// <param name="queryDefinition">The query to bind on.</param>
+    /// <param name="eventTypeFilter">The CLR types to keep, or null or empty to keep every event.</param>
+    /// <param name="eventPropertyFilter">The property values to match, or null to match every event.</param>
+    /// <param name="bindings">The set a CLR type is turned into its stored key through.</param>
+    public static QueryDefinition BindEventFilterParameters(this QueryDefinition queryDefinition,
+        Type[]? eventTypeFilter, IDictionary<string, string>? eventPropertyFilter, TypeBindingSet bindings)
     {
         if (eventTypeFilter is { Length: > 0 })
         {
-            var bindingKeysByType = TypeBindings.GetEventBindingKeysByType();
+            var bindingKeysByType = bindings.GetEventBindingKeysByType();
             var eventTypes = eventTypeFilter
                 .Select(bindingKeysByType.GetValueOrDefault)
                 .ToList();

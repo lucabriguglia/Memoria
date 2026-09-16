@@ -1,6 +1,7 @@
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Configurations;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Entities;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Interceptors;
+using Memoria.EventSourcing.Domain;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,6 +34,14 @@ public abstract class DcbDbContext(
     IHttpContextAccessor httpContextAccessor)
     : DbContext(options), IDcbDbContext
 {
+    /// <inheritdoc />
+    /// <remarks>
+    /// Set when the context is constructed, for a host that reads more than one bounded context's
+    /// store in one process and scans each into a set of its own. Left alone, the context reads the
+    /// process-wide set the <c>AddMemoria*</c> registrations fill.
+    /// </remarks>
+    public TypeBindingSet TypeBindings { get; init; } = TypeBindingSet.Default;
+
     /// <summary>
     /// Gets the collation applied to the tag column, or null to leave the database default.
     /// </summary>

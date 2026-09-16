@@ -28,6 +28,6 @@ public static partial class IDomainDbContextExtensions
     {
         var eventEntities =
             await domainDbContext.GetEventEntities(streamId, eventTypeFilter, eventPropertyFilter, dataFilter, cancellationToken);
-        return eventEntities.Select(eventEntity => eventEntity.ToDomainEvent()).ToList();
+        return eventEntities.Select(eventEntity => eventEntity.ToDomainEvent(domainDbContext.TypeBindings)).ToList();
     }
 }

@@ -1,4 +1,5 @@
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Entities;
+using Memoria.EventSourcing.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -29,6 +30,18 @@ public interface IDcbDbContext
     /// Gets the persisted folds of a boundary into an aggregate or a projection.
     /// </summary>
     DbSet<DcbSnapshotEntity> DcbSnapshots { get; }
+
+    /// <summary>
+    /// Gets the type bindings this context resolves stored keys through: which CLR type an event or
+    /// snapshot key deserialises into, and which key a CLR type in an event filter stands for.
+    /// </summary>
+    /// <remarks>
+    /// The process-wide <see cref="TypeBindingSet.Default"/> unless the context was given a set of
+    /// its own, which is what a host reading more than one bounded context's store in one process
+    /// does. A default so that an implementation written before this member existed still compiles
+    /// and behaves as it did.
+    /// </remarks>
+    TypeBindingSet TypeBindings => TypeBindingSet.Default;
 
     /// <summary>
     /// Gets the change tracker.

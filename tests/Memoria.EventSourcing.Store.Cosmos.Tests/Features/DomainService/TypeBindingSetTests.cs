@@ -44,15 +44,21 @@ public class TypeBindingSetTests : IDisposable
         _clientProvider = new CosmosClientProvider(cosmosOptions);
         _ = new CosmosSetup(cosmosOptions, _clientProvider).CreateDatabaseAndContainerIfNotExist();
 
-        // The process-wide set knows the shared models and nothing of the twins.
+        // The process-wide set knows the shared models and nothing of the twins — the same maps
+        // every other test class in this process sets, to the entry, because the classes run in
+        // parallel over one static set and a smaller map here would be a missing key there.
         TypeBindings.EventTypeBindings = new Dictionary<string, Type>
         {
             { "TestAggregateCreated:1", typeof(TestAggregateCreatedEvent) },
-            { "TestAggregateUpdated:1", typeof(TestAggregateUpdatedEvent) }
+            { "TestAggregateUpdated:1", typeof(TestAggregateUpdatedEvent) },
+            { "SomethingHappened:1", typeof(SomethingHappenedEvent) },
+            { "SomethingHappened:2", typeof(SomethingHappenedEvent2) }
         };
         TypeBindings.AggregateTypeBindings = new Dictionary<string, Type>
         {
-            { "TestAggregate1:1", typeof(TestAggregate1) }
+            { "TestAggregate1:1", typeof(TestAggregate1) },
+            { "TestAggregate2:1", typeof(TestAggregate2) },
+            { "TestAggregateWithNoTypeFilter:1", typeof(TestAggregateWithNoTypeFilter) }
         };
         TypeBindings.ProjectionTypeBindings = new Dictionary<string, Type>
         {

@@ -2,7 +2,7 @@
 
     <!-- The sample ecommerce domain in the streamed model, and nothing else: this assembly is what
          gets zipped and uploaded to Memoria Web, on its own or beside the DCB one. It carries no
-         seeding and no store, so the archive holds one file. -->
+         seeding and no store, so the archive holds one file and the manifest that names it. -->
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
@@ -13,6 +13,12 @@
     <ItemGroup>
         <ProjectReference Include="..\Memoria\Memoria.csproj" />
         <ProjectReference Include="..\Memoria.EventSourcing\Memoria.EventSourcing.csproj" />
+    </ItemGroup>
+
+    <!-- The manifest the tool requires at the root of the zip, copied beside the assembly so the
+         zip is built by zipping the output. -->
+    <ItemGroup>
+        <None Include="memoria.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>

@@ -124,9 +124,9 @@ See the [Event Sourcing Quickstart](https://lucabriguglia.github.io/Memoria/gett
 ## 🔎 Memoria Web
 
 A browser tool for reading a Memoria store. Point it at a database, upload a zip of **your own**
-domain assemblies, and it shows you the events that were appended, the aggregates and projections
-snapshotted from them, and the types both were written through — both consistency models, side by
-side.
+domain assemblies — with a `memoria.json` at its root naming the services in it — and it shows you
+the events that were appended, the aggregates and projections snapshotted from them, and the types
+both were written through — both consistency models, side by side.
 
 ```bash
 dotnet run --project src/Memoria.Web

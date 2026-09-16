@@ -34,6 +34,10 @@ The sequence number a writer expects the stream to be at when persisting new eve
 
 An aggregate reconstructed entirely from events, with no snapshot involved. Useful for auditing, historical replay, or rebuilding state at a specific point in time (`upToSequence` or `upToDate`).
 
+## Manifest
+
+*Memoria Web.* The file a zip must carry at its root, `memoria.json`, declaring the [services](#service) the archive brings: for each, its name, the assemblies holding its domain types, the name of the connection string it is read over, and the claim values that may read and update it. An upload without one, or with one that breaks a rule, is refused with the rule. See [What to put in a zip](../tools/memoria-web-configuration.md#what-to-put-in-a-zip).
+
 ## Notification
 
 A fan-out message. Multiple `INotificationHandler<T>` handlers can be registered for the same notification; the dispatcher invokes them all and returns the list of results.
@@ -61,6 +65,10 @@ Controls how `IDomainService.GetAggregate` reconstructs an aggregate. Four varia
 ## Result Pattern
 
 `Result` and `Result<T>` are discriminated unions of `Success` / `Failure`. Memoria returns them from every handler and provider operation instead of throwing — see [Result Pattern](result-pattern.md).
+
+## Service
+
+*Memoria Web.* A named set of domain assemblies read over one store — what a [manifest](#manifest) declares and what an [operator](#operator) picks on the home page. Its name is letters, digits and hyphens, unique across every installed archive, and is the address it is browsed under. Not the framework's `IDomainService`, which is the object a store is read through. See [Memoria Web](../tools/memoria-web.md).
 
 ## Snapshot
 

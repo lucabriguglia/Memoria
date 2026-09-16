@@ -8,21 +8,20 @@
 }
 
     .grid.archives .col-file {
-        width: 42%;
+        width: 36%;
     }
 
     .grid.archives .col-size {
-        width: 12%;
+        width: 10%;
     }
 
     .grid.archives .col-uploaded {
-        width: 32%;
+        width: 26%;
     }
 
-    /* The way into what a row brought, and nothing else: a mark and the word above it. Taken from
-       the file, which is the column with room to spare. */
-    .grid.archives .col-types {
-        width: 6%;
+    /* The services the manifest declares, by name: what the row is about, said in the row. */
+    .grid.archives .col-services {
+        width: 20%;
     }
 
     .grid.archives .col-actions {
@@ -35,11 +34,47 @@
         font-family: var(--font);
     }
 
-    /* The row's one link, held at the end of the row it acts on. */
+    /* The services are names too, chosen by whoever wrote the manifest. */
+    .grid.archives .services {
+        font-family: var(--font);
+    }
+
+    /* The mark on an archive that declares nothing, beside its name so it is not mistaken for one
+       that is installed: the sheet says why. Set the way the site marks a retired type — a small
+       word in a soft box — rather than as an alert, since nothing failed; something is missing. */
+    .grid.archives .flag {
+        background: var(--sunk);
+        border: 1px solid var(--rule);
+        border-radius: 0.25rem;
+        color: var(--ink-soft);
+        font-size: var(--text-sm);
+        margin-left: 0.5rem;
+        padding: 0.05rem 0.4rem;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    /* The row's one other control, held at the end of the row it acts on, and not the row's link:
+       app.css moves a clickable row's padding onto the anchor that fills each cell, and this cell
+       keeps the padding an ordinary cell has, with the bin at its own size inside it. */
     .grid.archives td.actions {
         text-align: right;
         white-space: nowrap;
     }
+
+    .grid.archives tr.clickable td.actions {
+        padding: 0.5rem 1rem;
+    }
+
+        .grid.archives tr.clickable td.actions .icon-link {
+            color: var(--ink-soft);
+            display: inline-flex;
+            padding: 0.25rem;
+        }
+
+            .grid.archives tr.clickable td.actions .icon-link:hover {
+                color: var(--accent);
+            }
 
 /* The space under the pair, which the tables used to carry themselves. Moved up here because a
    table's own bottom margin is measured below each of them — which is right when they are stacked

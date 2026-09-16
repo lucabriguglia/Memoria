@@ -31,9 +31,9 @@
 {
     <section class="tab-panel" aria-labelledby="tab-@InstalledTab">
         <p class="lede">
-            The zips of assemblies uploaded, each holding domain types. They are read as
-            soon as they arrive — the application does not restart. The mark on a row opens the
-            assemblies in that zip and the types registered from each.
+            The zips uploaded, each carrying a manifest that names the services in it and the
+            assemblies holding their domain types. They are read as soon as they arrive — the
+            application does not restart. A row opens what that zip declares.
         </p>
 
         @if (Archives.Count == 0)
@@ -44,17 +44,15 @@
         {
             @* The same table the stored data is read in, because a list of what is installed is a
                list of rows the server holds and there is no reason for it to be a second kind of
-               table. The columns are declared so the file keeps the room and the three facts beside
-               it stay where they are however long a name happens to be. *@
+               table. The columns are declared so the file keeps the room and the facts beside it
+               stay where they are however long a name happens to be. *@
             <table class="grid archives">
                 <thead>
                 <tr>
                     <th scope="col" class="col-file">File</th>
                     <th scope="col" class="col-size">Size</th>
                     <th scope="col" class="col-uploaded">Uploaded</th>
-                    @* The way into what a row brought, and nothing else: a mark and the word
-                       above it, like the JSON column on a page of the log. *@
-                    <th scope="col" class="col-types marked">Types</th>
+                    <th scope="col" class="col-services">Services</th>
                     <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
                 </thead>
@@ -63,24 +61,28 @@
                 {
                     var archive = Archives[index];
                     var dialog = $"delete-{index}";
+                    var link = ArchiveLink(archive);
 
-                    <tr>
-                        <td class="name">@archive.Name</td>
-                        <td>@($"{archive.Length / 1024:n0} KB")</td>
-                        <td>@archive.UploadedUtc.ToLocalTime().ToString("g")</td>
-                        @* A mark rather than a word: the column is one link per row and the word
-                           repeats down it. The name it is read out by tells a row from the one
-                           above, which its place in the column alone would not. The site's mark for
-                           a declaration, because a list of types is what opens. Offered on every
-                           row, including one that brought nothing: that is exactly the row worth
-                           looking into. *@
-                        <td class="marked">
-                            <a class="icon-link" href="@TypesLink(archive)"
-                               aria-label="View the types registered from @archive.Name"
-                               title="View the types registered from @archive.Name">
-                                <SectionMark Kind="SectionKind.Types"/>
+                    @* The whole row is the way into the sheet, so every cell but the last carries
+                       the same link. Only the first is reachable by keyboard or read out: the rest
+                       repeat it. The last cell holds the row's one other control, and is not the
+                       row's link. *@
+                    <tr class="clickable">
+                        <td class="name">
+                            <a href="@link">
+                                @archive.Name
+                                @if (archive.Refusal is not null)
+                                {
+                                    @* An archive that declares nothing, marked in the row so it
+                                       is not mistaken for one that is installed: the sheet says
+                                       why. *@
+                                    <span class="flag">No manifest</span>
+                                }
                             </a>
                         </td>
+                        <td>@Cell((link, $"{archive.Length / 1024:n0} KB"))</td>
+                        <td>@Cell((link, archive.UploadedUtc.ToLocalTime().ToString("g")))</td>
+                        <td class="services">@Cell((link, ServicesOf(archive)))</td>
                         <td class="actions">
                             @* Asked before it happens, because removing an archive takes the types it
                                brought away from everyone, not just from whoever pressed it. Opened the same
@@ -103,8 +105,8 @@
                             <dialog id="@dialog" class="dialog" open="@(DeleteAsked == archive.Name)">
                                 <h2>Remove @archive.Name?</h2>
                                 <p>
-                                    The types it brought are unregistered for everyone using this server.
-                                    Anything it holds can be uploaded again afterwards.
+                                    The services it declares and the types they brought are unregistered for
+                                    everyone using this server. Anything it holds can be uploaded again afterwards.
                                 </p>
                                 <form method="post" action="settings/delete" class="dialog-actions">
                                     <AntiforgeryToken/>
@@ -140,7 +142,9 @@
                 <label for="files">Zip files</label>
                 <input id="files" name="files" type="file" accept=".zip,application/zip" multiple required/>
                 <p class="hint">
-                    Assemblies are taken from anywhere in the archive and stored under one name each. An
+                    Each zip must carry a <code>memoria.json</code> at its root naming its services, the
+                    assemblies holding their domain types, and the connection string each reads over.
+                    Assemblies are taken from anywhere in the archive and stored under one name each; an
                     assembly of the same name from an earlier upload is replaced.
                 </p>
                 <div class="dialog-actions">
@@ -151,12 +155,12 @@
             </form>
         </dialog>
 
-        @* One archive's contents, opened over the table it was listed in. Last in the markup because
+        @* One archive's sheet, opened over the table it was listed in. Last in the markup because
            it covers the panel rather than sitting anywhere in it, and drawn only when the address
            names an archive that is installed — so the table behind it is the table a reader left. *@
         @if (Opened is { } opened)
         {
-            <ArchiveTypesDialog Archive="opened" Catalogue="Catalogue" CloseLink="@InstalledLink"/>
+            <ArchiveDialog Archive="opened" Catalogue="Catalogue" CloseLink="@InstalledLink"/>
         }
     </section>
 }
@@ -166,8 +170,8 @@ else if (Tab == TypesTab)
         @* What the tab is, then when it was last true — one paragraph, because the second sentence
            is only worth reading against the first. *@
         <p class="lede">
-            The domain types found in the uploaded assemblies, counted for each model that can use
-            them. @Registered
+            The domain types found in the assemblies the installed services name, counted for each
+            model that can use them. @Registered
         </p>
 
         @if (Catalogue.Count == 0)
@@ -319,6 +323,13 @@ else if (Tab == TypesTab)
         </text>;
 
     /// <summary>
+    /// One cell of a row, inside the row's link: neither reachable by keyboard nor read out, since
+    /// the row is one target and the first cell is the one that carries it.
+    /// </summary>
+    private RenderFragment<(string Link, string Text)> Cell => cell =>
+        @<a href="@cell.Link" tabindex="-1" aria-hidden="true">@cell.Text</a>;
+
+    /// <summary>
     /// Whether the upload form should already be open. Asked for in the address so the page decides
     /// it, rather than the dialog's visibility depending on script having run.
     /// </summary>
@@ -335,28 +346,34 @@ else if (Tab == TypesTab)
     [SupplyParameterFromQuery(Name = "delete")]
     private string? DeleteAsked { get; set; }
 
-    /// <summary>The archive whose contents the address asks to see, when it asks for one.</summary>
-    [SupplyParameterFromQuery(Name = "types")]
-    private string? TypesAsked { get; set; }
+    /// <summary>The archive whose sheet the address asks to see, when it asks for one.</summary>
+    [SupplyParameterFromQuery(Name = "archive")]
+    private string? ArchiveAsked { get; set; }
 
     /// <summary>
-    /// The archive the address asks to see the contents of, or null when it asks for nothing or
+    /// The archive the address asks to see the sheet of, or null when it asks for nothing or
     /// for a name that is not installed — a name typed into the address bar opens nothing rather
     /// than an empty sheet.
     /// </summary>
     private InstalledArchive? Opened =>
-        Archives.FirstOrDefault(archive => archive.Name == TypesAsked);
+        Archives.FirstOrDefault(archive => archive.Name == ArchiveAsked);
 
     /// <summary>The Installed tab with nothing asked for, which is what closes the sheet.</summary>
     private static string InstalledLink => $"settings?tab={InstalledTab}";
 
     /// <summary>
-    /// The address that opens one archive's contents over the Installed tab. Lands on the sheet,
-    /// so on a long list the reader arrives at what they opened rather than at the top of the
-    /// page.
+    /// The address that opens one archive's sheet over the Installed tab. Lands on the sheet, so
+    /// on a long list the reader arrives at what they opened rather than at the top of the page.
     /// </summary>
-    private static string TypesLink(InstalledArchive archive) =>
-        $"{InstalledLink}&types={Uri.EscapeDataString(archive.Name)}#{ArchiveTypesDialog.Anchor}";
+    private static string ArchiveLink(InstalledArchive archive) =>
+        $"{InstalledLink}&archive={Uri.EscapeDataString(archive.Name)}#{ArchiveDialog.Anchor}";
+
+    /// <summary>
+    /// The services an archive declares, named in the row; an archive that declares none is
+    /// marked in its first cell and says nothing here.
+    /// </summary>
+    private static string ServicesOf(InstalledArchive archive) =>
+        string.Join(", ", archive.Services.Select(service => service.Name));
 
     private DomainTypeCatalogue Catalogue => Types.Current;
 

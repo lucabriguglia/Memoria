@@ -141,28 +141,33 @@ streamed projection OrderSummary          OrderSummaryId        o-a6f6     no sn
 
 ## 3. Package the sample assemblies
 
-The tool has no reference to these projects — it reads uploaded assemblies and nothing else. So
-build them and zip each domain assembly on its own, one archive per model:
+The tool has no reference to these projects — it reads uploaded archives and nothing else. So
+build them and zip each domain assembly with its manifest, one archive per model. Each sample
+project carries a `memoria.json` that the build copies beside its assembly, declaring one service
+— `samples-streamed` and `samples-dcb` — over the `Memoria` connection string:
 
 ```bash
 dotnet build src/Memoria.Web.Samples --configuration Release
 ```
 
 ```powershell
-Compress-Archive -Path src\Memoria.Web.Samples.Streamed\bin\Release\net10.0\Memoria.Web.Samples.Streamed.dll `
+Compress-Archive -Path src\Memoria.Web.Samples.Streamed\bin\Release\net10.0\Memoria.Web.Samples.Streamed.dll, `
+                       src\Memoria.Web.Samples.Streamed\bin\Release\net10.0\memoria.json `
                  -DestinationPath Memoria.Web.Samples.Streamed.zip -Force
-Compress-Archive -Path src\Memoria.Web.Samples.Dcb\bin\Release\net10.0\Memoria.Web.Samples.Dcb.dll `
+Compress-Archive -Path src\Memoria.Web.Samples.Dcb\bin\Release\net10.0\Memoria.Web.Samples.Dcb.dll, `
+                       src\Memoria.Web.Samples.Dcb\bin\Release\net10.0\memoria.json `
                  -DestinationPath Memoria.Web.Samples.Dcb.zip -Force
 ```
 
 ```bash
 # bash
-cd src/Memoria.Web.Samples.Streamed/bin/Release/net10.0 && zip ~/Memoria.Web.Samples.Streamed.zip Memoria.Web.Samples.Streamed.dll
-cd src/Memoria.Web.Samples.Dcb/bin/Release/net10.0 && zip ~/Memoria.Web.Samples.Dcb.zip Memoria.Web.Samples.Dcb.dll
+cd src/Memoria.Web.Samples.Streamed/bin/Release/net10.0 && zip ~/Memoria.Web.Samples.Streamed.zip Memoria.Web.Samples.Streamed.dll memoria.json
+cd src/Memoria.Web.Samples.Dcb/bin/Release/net10.0 && zip ~/Memoria.Web.Samples.Dcb.zip Memoria.Web.Samples.Dcb.dll memoria.json
 ```
 
-Each archive holds its one `.dll` and nothing else. Never put a `Memoria*` core assembly in one —
-see [what to put in a zip](memoria-web-configuration.md#what-to-put-in-a-zip).
+Each archive holds its one `.dll` and its `memoria.json` at the root, and nothing else. A zip
+without the manifest is refused. Never put a `Memoria*` core assembly in one — see
+[what to put in a zip](memoria-web-configuration.md#what-to-put-in-a-zip).
 
 Two archives rather than one so that you can upload one model alone. The tool lays itself out for
 the models it finds types under: with both uploaded the home page sets them side by side and the
@@ -183,7 +188,9 @@ Then open `http://localhost:5159`.
 
 Go to **Settings → Installed → Upload**, choose a zip, and upload it — then the other, if you want
 both models. The page reports what registered; **Settings → Types** counts it per model. Nothing
-restarts.
+restarts. Each row of the installed table opens a sheet over its zip: the service the manifest
+declares, `samples-streamed` or `samples-dcb`, over the `Memoria` connection string, and the
+types registered from the assembly.
 
 Things worth opening first:
 

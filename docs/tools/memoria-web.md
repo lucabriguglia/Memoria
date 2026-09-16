@@ -1,8 +1,9 @@
 # Memoria Web
 
 Memoria Web is a browser tool for reading a Memoria store. Point it at a database, upload a zip of
-your own domain assemblies, and it shows you the events that were appended, the aggregates and
-projections snapshotted from them, and the types both were written through.
+your own domain assemblies — with a `memoria.json` at its root naming the services in it — and it
+shows you the events that were appended, the aggregates and projections snapshotted from them, and
+the types both were written through.
 
 It is not a sample application and not a package. It lives in the repository at
 [`src/Memoria.Web`](https://github.com/lucabriguglia/Memoria/tree/main/src/Memoria.Web), and you
@@ -47,10 +48,19 @@ The assemblies are read from bytes rather than from their path, and the registra
 from scratch on every upload, removal and refresh. Nothing restarts, and a type you removed from a
 rebuilt assembly stops being offered rather than lingering from the previous load.
 
-The Settings page lists what each archive brought. A **Types** mark on each row of the installed
-archives table opens every assembly file in that zip and, under each, the domain types registered
-from it — and a file that registered nothing says so on a line of its own, which is the case worth
-noticing: a dependency the domain needs, or an assembly that did not load.
+Every zip carries a manifest, `memoria.json`, declaring the services in it — each a name, the
+assembly files its domain types are read from, the name of the connection string it is read over,
+and who may read and update it. Only the assemblies a service names are scanned; the rest of the
+zip is loaded as dependencies and registers nothing. A zip without a manifest is refused. See
+[What to put in a zip](memoria-web-configuration.md#what-to-put-in-a-zip).
+
+The Settings page lists what each archive declares. Every row of the installed archives table opens
+a sheet over that zip: its size and upload time, then each service by name — the connection string
+it reads over and whether that is configured, who may read and update it, and its assemblies with
+the domain types registered from each. A file that registered nothing says so on a line of its own,
+which is the case worth noticing: an assembly that did not load, or one built against another
+Memoria. A zip already there without a manifest is listed, marked **No manifest**, and its sheet
+says why.
 
 A type carrying `[Obsolete]` is marked as such wherever it is named, and says the attribute's own
 message wherever it is opened. Retired is not the same as old: a type with a later version beside it

@@ -1,0 +1,9 @@
+{
+  "services": [
+    {
+      "name": "samples-streamed",
+      "assemblies": ["Memoria.Web.Samples.Streamed.dll"],
+      "connectionString": "Memoria"
+    }
+  ]
+}

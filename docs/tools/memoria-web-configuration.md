@@ -301,8 +301,44 @@ directory does.
 
 ### What to put in a zip
 
-The assembly holding your domain types, plus any dependency of its own that the tool does not already
-carry — a validation library, say. The loader resolves those from `lib/`.
+Three things: a manifest, the assemblies holding your domain types, and any dependency of theirs
+that the tool does not already carry — a validation library, say. The loader resolves those from
+`lib/`.
+
+**The manifest is required.** A file called `memoria.json` at the root of the archive — not in a
+folder — declaring the services the zip brings. A zip without one is refused, and so is one whose
+manifest breaks a rule below; the Settings page says which.
+
+```json
+{
+  "services": [
+    {
+      "name": "orders",
+      "assemblies": ["Contoso.Orders.Domain.dll", "Contoso.Orders.Contracts.dll"],
+      "connectionString": "Orders",
+      "roles": {
+        "read": ["orders-team"],
+        "update": ["orders-leads"]
+      }
+    }
+  ]
+}
+```
+
+| Key | Required | What it is |
+| --- | --- | --- |
+| `services` | Yes, at least one | The services the archive declares. One archive may carry several |
+| `name` | Yes | The service's name: letters, digits and hyphens, matched without regard to case, unique across every installed archive. It is the address the service is browsed under |
+| `assemblies` | Yes, at least one | The assembly files the service's domain types are read from, by file name. Each must be in the zip. **Only these are scanned**; every other assembly in the zip is loaded as a dependency and registers nothing, whatever it carries |
+| `connectionString` | Yes | The **name** of an entry under `ConnectionStrings` in the tool's configuration — never the string itself, which stays with the deployment. Not checked at upload, since the configuration may be filled in afterwards; the archive's sheet on the Settings page says whether it is configured and which engine opens it |
+| `roles` | No | `read` and `update` are lists of claim values, read from the claim `Authorization:RoleClaimType` names, the same way the values under `Authorization:Roles:*` are. Update includes read. Absent, only the [global roles](#roles) reach the service |
+
+Keys the manifest carries that the tool does not read are ignored, so a later version may add to the
+shape without an older tool refusing what it wrote.
+
+An archive already in the directory without a manifest — from before one was required — stays
+listed, marked **No manifest**, registers nothing, and its sheet says why. Add a manifest to the zip
+and upload it again.
 
 **Never include a `Memoria*` assembly.** Uploaded types must bind to the ones the process already
 loaded, or nothing they declare satisfies `IEvent` or `IAggregateRoot`. An assembly compiled against

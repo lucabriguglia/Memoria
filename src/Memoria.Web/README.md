@@ -1,8 +1,9 @@
 # Memoria.Web
 
 A browser tool for reading a Memoria store. Point it at a database, upload a zip of your own domain
-assemblies on the Settings page, and it shows you the events that were appended, the aggregates and
-projections snapshotted from them, and the types both were written through.
+assemblies on the Settings page — with a `memoria.json` at its root naming the services in it — and
+it shows you the events that were appended, the aggregates and projections snapshotted from them,
+and the types both were written through.
 
 It is not a sample and not a package: it lives here, and you build and run it yourself.
 

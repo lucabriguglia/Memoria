@@ -46,7 +46,18 @@ public sealed class DomainTypeRegistry(ExtensionStore store, Assembly? host = nu
 
             var loaded = ExtensionLoader.Load(store);
 
-            var uploaded = loaded.Assemblies.Select(assembly => assembly.Assembly);
+            // Everything in the library is loaded, so a dependency resolves; only what a service
+            // names is scanned, so the manifest is what says whose types are whose. A file nothing
+            // names — a dependency, or a stray no installed archive accounts for — registers
+            // nothing even when it carries attributed types of its own.
+            var named = store.InstalledArchives()
+                .SelectMany(archive => archive.Services)
+                .SelectMany(service => service.Assemblies)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var uploaded = loaded.Assemblies
+                .Where(assembly => named.Contains(assembly.FileName))
+                .Select(assembly => assembly.Assembly);
             var assemblies = host is null
                 ? uploaded.ToList()
                 : new List<Assembly>([host, .. uploaded]);

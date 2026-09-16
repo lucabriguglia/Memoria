@@ -34,11 +34,14 @@ public class TypeBindingSetTests : IDisposable
 
     public TypeBindingSetTests()
     {
-        // The process-wide set knows the shared models and nothing of the twins.
+        // The process-wide set knows the shared models and nothing of the twins — the same event
+        // map every other test class in this process sets, to the entry, because the classes run
+        // in parallel over one static set and a smaller map here would be a missing key there.
         TypeBindings.EventTypeBindings = new Dictionary<string, Type>
         {
             { "SeatReserved:1", typeof(SeatReservedEvent) },
-            { "SeatReleased:1", typeof(SeatReleasedEvent) }
+            { "SeatReleased:1", typeof(SeatReleasedEvent) },
+            { "CourseRenamed:1", typeof(CourseRenamedEvent) }
         };
         DcbTypeBindings.AggregateTypeBindings = new Dictionary<string, Type>
         {

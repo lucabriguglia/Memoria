@@ -1,4 +1,6 @@
+using System.IO.Compression;
 using AwesomeAssertions;
+using AwesomeAssertions.Execution;
 using Memoria.EventSourcing.Dcb;
 using Memoria.EventSourcing.Domain;
 using Memoria.Web.Extensibility;
@@ -18,13 +20,32 @@ public class DomainTypeRegistryTests : IDisposable
 
     private DomainTypeRegistry Registry() => new(Store());
 
-    private string PutInLibrary(string fileName)
+    /// <summary>
+    /// Installs an archive carrying this test assembly under each of the given file names, with a
+    /// manifest declaring one service that names the assemblies in <paramref name="named"/> —
+    /// every file given, unless told which.
+    /// </summary>
+    private void Install(string archive, string service, string[] files, string[]? named = null)
     {
-        var store = Store();
-        Directory.CreateDirectory(store.LibraryDirectory);
-        var path = Path.Combine(store.LibraryDirectory, fileName);
-        File.WriteAllBytes(path, File.ReadAllBytes(typeof(SampleAggregate).Assembly.Location));
-        return path;
+        var buffer = new MemoryStream();
+
+        using (var zip = new ZipArchive(buffer, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            foreach (var file in files)
+            {
+                using var entry = zip.CreateEntry(file).Open();
+                entry.Write(File.ReadAllBytes(typeof(SampleAggregate).Assembly.Location));
+            }
+
+            using var manifest = new StreamWriter(zip.CreateEntry("memoria.json").Open());
+            var assemblies = string.Join(", ", (named ?? files).Select(file => $"\"{file}\""));
+            manifest.Write($$"""
+                { "services": [ { "name": "{{service}}", "assemblies": [{{assemblies}}], "connectionString": "Memoria" } ] }
+                """);
+        }
+
+        buffer.Position = 0;
+        Store().Install(archive, buffer);
     }
 
     [Fact]
@@ -36,7 +57,7 @@ public class DomainTypeRegistryTests : IDisposable
     [Fact]
     public void Publishes_what_it_found()
     {
-        PutInLibrary("Domain.dll");
+        Install("domain.zip", "domain", ["Domain.dll"]);
         var registry = Registry();
 
         registry.Reload();
@@ -48,7 +69,7 @@ public class DomainTypeRegistryTests : IDisposable
     [Fact]
     public void Binds_the_types_to_both_models()
     {
-        PutInLibrary("Domain.dll");
+        Install("domain.zip", "domain", ["Domain.dll"]);
 
         Registry().Reload();
 
@@ -66,11 +87,11 @@ public class DomainTypeRegistryTests : IDisposable
     [Fact]
     public void Forgets_types_that_are_no_longer_there()
     {
-        var path = PutInLibrary("Domain.dll");
+        Install("domain.zip", "domain", ["Domain.dll"]);
         var registry = Registry();
         registry.Reload();
 
-        File.Delete(path);
+        Store().Remove("domain.zip");
         registry.Reload();
 
         TypeBindings.EventTypeBindings.Should().NotContainKey("SampleHappened:1");
@@ -83,7 +104,7 @@ public class DomainTypeRegistryTests : IDisposable
         var registry = Registry();
         registry.Reload();
 
-        PutInLibrary("Domain.dll");
+        Install("domain.zip", "domain", ["Domain.dll"]);
         registry.Reload();
 
         TypeBindings.EventTypeBindings.Should().ContainKey("SampleHappened:1");
@@ -106,8 +127,8 @@ public class DomainTypeRegistryTests : IDisposable
     [Fact]
     public void Reports_a_name_claimed_twice_rather_than_throwing()
     {
-        PutInLibrary("Domain.dll");
-        PutInLibrary("DomainAgain.dll");
+        Install("domain.zip", "domain", ["Domain.dll"]);
+        Install("again.zip", "again", ["DomainAgain.dll"]);
         var registry = Registry();
 
         var reload = () => registry.Reload();
@@ -123,7 +144,7 @@ public class DomainTypeRegistryTests : IDisposable
     [Fact]
     public void Says_which_types_were_registered_from_each_file()
     {
-        PutInLibrary("Domain.dll");
+        Install("domain.zip", "domain", ["Domain.dll"]);
         var registry = Registry();
 
         registry.Reload();
@@ -138,12 +159,51 @@ public class DomainTypeRegistryTests : IDisposable
     [Fact]
     public void Registers_nothing_from_a_file_that_was_not_loaded()
     {
-        PutInLibrary("Domain.dll");
+        Install("domain.zip", "domain", ["Domain.dll"]);
         var registry = Registry();
 
         registry.Reload();
 
         registry.Current.RegisteredFrom("Missing.dll").Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// The manifest says whose types are whose: an assembly in the archive that no service names
+    /// is a dependency, loaded so the named ones resolve and scanned for nothing — even when it
+    /// carries attributed types of its own.
+    /// </summary>
+    [Fact]
+    public void Scans_only_the_assemblies_a_service_names()
+    {
+        Install("domain.zip", "domain", ["Domain.dll", "Dependency.dll"], named: ["Domain.dll"]);
+        var registry = Registry();
+
+        registry.Reload();
+
+        using (new AssertionScope())
+        {
+            registry.Current.RegisteredFrom("Domain.dll").Should().NotBeEmpty();
+            registry.Current.RegisteredFrom("Dependency.dll").Should().BeEmpty();
+            registry.Current.StreamedAggregates.Should().ContainSingle(type => type.Name == nameof(SampleAggregate));
+        }
+    }
+
+    /// <summary>
+    /// An assembly in the library that no installed archive accounts for — left by hand, or by an
+    /// archive since removed — is not scanned either: only a service names what is registered.
+    /// </summary>
+    [Fact]
+    public void Scans_nothing_no_installed_archive_names()
+    {
+        var store = Store();
+        Directory.CreateDirectory(store.LibraryDirectory);
+        File.WriteAllBytes(Path.Combine(store.LibraryDirectory, "Stray.dll"),
+            File.ReadAllBytes(typeof(SampleAggregate).Assembly.Location));
+        var registry = Registry();
+
+        registry.Reload();
+
+        registry.Current.Count.Should().Be(0);
     }
 
     public void Dispose()

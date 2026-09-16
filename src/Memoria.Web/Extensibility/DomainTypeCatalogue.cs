@@ -1,3 +1,5 @@
+using Memoria.EventSourcing.Domain;
+
 namespace Memoria.Web.Extensibility;
 
 /// <summary>
@@ -69,17 +71,33 @@ public sealed record DomainTypeCatalogue
     public IReadOnlyList<LoadedAssembly> Assemblies { get; init; } = [];
 
     /// <summary>
-    /// The application's own assembly, scanned alongside the uploads, under the file name a
-    /// manifest would name it by — so a service may claim what it declares the way it claims an
-    /// upload. Null when there is nothing of its own to contribute.
+    /// The assemblies scanned alongside the uploads without having been uploaded — the
+    /// application's own — each under the file name a manifest would name it by, so a service may
+    /// claim what one declares the way it claims an upload. Empty when there is nothing of the
+    /// application's own to contribute.
     /// </summary>
-    public LoadedAssembly? Host { get; init; }
+    public IReadOnlyList<LoadedAssembly> Hosts { get; init; } = [];
 
     /// <summary>
     /// The services the installed archives declared when this catalogue was built, in the order
     /// the archives are listed. What Home lists and what every page under a service reads through.
     /// </summary>
     public IReadOnlyList<Service> Services { get; init; } = [];
+
+    /// <summary>
+    /// Each service's type bindings, by the address its name makes: the set its stores are read
+    /// through, built from its own assemblies alone — so two services may bind one key to two
+    /// types, which one process-wide map never could.
+    /// </summary>
+    public IReadOnlyDictionary<string, TypeBindingSet> Bindings { get; init; } =
+        new Dictionary<string, TypeBindingSet>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The bindings a service's stores are read through, or an empty set for a service this
+    /// catalogue built none for — one naming only assemblies that did not load, say.
+    /// </summary>
+    public TypeBindingSet BindingsOf(Service service) =>
+        Bindings.TryGetValue(service.Slug, out var bindings) ? bindings : new TypeBindingSet();
 
     /// <summary>
     /// What went wrong while loading, one line per assembly that could not be read. Held rather
@@ -116,7 +134,7 @@ public sealed record DomainTypeCatalogue
     public DomainTypeCatalogue For(Service service)
     {
         var named = Assemblies
-            .Concat(Host is { } host ? [host] : [])
+            .Concat(Hosts)
             .Where(loaded => service.Assemblies.Contains(loaded.FileName, StringComparer.OrdinalIgnoreCase))
             .Select(loaded => loaded.Assembly.FullName)
             .OfType<string>()

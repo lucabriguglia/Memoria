@@ -1,36 +1,52 @@
+@using Memoria.Web.Data
 @using Memoria.Web.Extensibility
-@inject Memoria.Web.Data.StoreCapabilities Store
 @inject DomainTypeRegistry Types
 @inject CurrentService Current
+@inject ServiceStores Stores
 @inject NavigationManager Navigation
 
 <Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        @* A page the store cannot answer is not found, rather than found and empty. The menu already
-           leaves those out; this is what makes a typed or bookmarked address say the same thing,
-           and it is one check here rather than a guard at the top of each of the nine pages.
-
-           Read off the page's namespace rather than the address: every page under
-           Components/Pages/Dcb reads the dynamic consistency boundary and no page outside it does,
-           so the routed type answers the question directly and a change of route does not quietly
-           move a page out of the rule.
-
-           And a page under a service is under a declared one, or not found: the first segment of
+        @* A page under a service is under a declared one, or not found: the first segment of
            every address that reads a store names a service, and a name no manifest declares has
            nothing to read. Resolved here, once, so the layout and every page under it read the
            same answer — and so the old addresses under no service, which no page answers on any
-           more, are not found the same way. *@
-        @if (Entered(routeData) && (Store.HasDcb || !ReadsTheBoundary(routeData)))
-        {
-            <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)"/>
-            <FocusOnNavigate RouteData="routeData" Selector="h1"/>
-        }
-        else
+           more, are not found the same way.
+
+           A page that reads a store is then drawn only over a store that can be reached, and
+           only when the store answers what the page asks: a service whose connection string is
+           not configured says so in place of the page, and a page reading the dynamic
+           consistency boundary is not found under a store with no boundary, rather than found
+           and empty. The menu already leaves those out; this is what makes a typed or bookmarked
+           address say the same thing, and it is one check here rather than a guard at the top of
+           each of the pages.
+
+           Read off the page's namespace rather than the address: every page under
+           Components/Pages/Dcb reads the dynamic consistency boundary, every one under
+           Components/Pages/Streamed reads the streams, and no page outside those does — so the
+           routed type answers the question directly and a change of route does not quietly move
+           a page out of the rule. *@
+        @if (!Entered(routeData))
         {
             @* Asked for rather than drawn here: this is the framework's own not-found path, so the
                address gets the same page and the same 404 as one that matches no route at all.
                Rendering the page directly instead would answer 200 and say it was found. *@
             Navigation.NotFound();
+        }
+        else if (ReadsAStore(routeData) && Stores.For(Current.Service!).Problem is { } problem)
+        {
+            <LayoutView Layout="typeof(Layout.MainLayout)">
+                <UnreachableService Problem="@problem"/>
+            </LayoutView>
+        }
+        else if (ReadsTheBoundary(routeData) && !Stores.For(Current.Service!).Capabilities.HasDcb)
+        {
+            Navigation.NotFound();
+        }
+        else
+        {
+            <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)"/>
+            <FocusOnNavigate RouteData="routeData" Selector="h1"/>
         }
     </Found>
 </Router>
@@ -40,13 +56,19 @@
     /// <summary>The namespace every page reading the dynamic consistency boundary sits in.</summary>
     private const string Boundary = "Memoria.Web.Components.Pages.Dcb";
 
+    /// <summary>The namespace every page reading the streams sits in.</summary>
+    private const string Streams = "Memoria.Web.Components.Pages.Streamed";
+
     private static bool ReadsTheBoundary(RouteData routeData) =>
         routeData.PageType.Namespace == Boundary;
+
+    private static bool ReadsAStore(RouteData routeData) =>
+        routeData.PageType.Namespace is Boundary or Streams;
 
     /// <summary>
     /// Enters the service the address names, when it names one, and says whether the page may be
     /// drawn: a page under no service always may, and a page under a service may when a manifest
-    /// declares it.
+    /// declares it. The middleware has usually entered it already; entering again is harmless.
     /// </summary>
     private bool Entered(RouteData routeData)
     {

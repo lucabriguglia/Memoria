@@ -105,7 +105,7 @@ public class ServiceCatalogueTests
         var catalogue = Catalogue() with
         {
             Assemblies = [Streamed],
-            Host = new LoadedAssembly("Samples.dll", typeof(SampleAggregate).Assembly)
+            Hosts = [new LoadedAssembly("Samples.dll", typeof(SampleAggregate).Assembly)]
         };
 
         catalogue.For(ServiceNaming("samples", "Samples.dll")).StreamedAggregates

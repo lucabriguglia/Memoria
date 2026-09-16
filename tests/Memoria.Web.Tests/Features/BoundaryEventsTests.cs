@@ -12,34 +12,27 @@ namespace Memoria.Web.Tests.Features;
 /// own work and is covered against a real store in <see cref="SqliteBoundaryEventsTests"/>.
 /// </summary>
 /// <remarks>
-/// The event type bindings are process-wide, so these run alongside the other tests that rebuild
-/// them rather than beside them.
+/// A row is read through the set the store it came from was given — the service's own — so the
+/// bindings here are a set of this test's, and nothing process-wide is touched.
 /// </remarks>
-[Collection(nameof(TypeBindingsCollection))]
-public class BoundaryEventsTests : IDisposable
+public class BoundaryEventsTests
 {
     private static readonly DateTimeOffset Written = new(2026, 5, 6, 11, 15, 0, TimeSpan.Zero);
 
-    private readonly Dictionary<string, Type> _bindings = TypeBindings.EventTypeBindings;
-
-    public BoundaryEventsTests() =>
-        TypeBindings.EventTypeBindings = new Dictionary<string, Type>
+    private static readonly TypeBindingSet Bindings = new()
+    {
+        EventTypeBindings = new Dictionary<string, Type>
         {
             { "SampleHappened:1", typeof(SampleHappenedEvent) }
-        };
-
-    public void Dispose()
-    {
-        TypeBindings.EventTypeBindings = _bindings;
-        GC.SuppressFinalize(this);
-    }
+        }
+    };
 
     [Fact]
     public void Reads_the_event_the_payload_was_written_from()
     {
         var data = DomainSerializer.Current.Serialize(new SampleHappenedEvent("abc-1"));
 
-        var read = BoundaryEvents.Read(position: 7, "SampleHappened:1", data, Written);
+        var read = BoundaryEvents.Read(Bindings, position: 7, "SampleHappened:1", data, Written);
 
         read.Position.Should().Be(7);
         read.Type.Should().Be("SampleHappened:1");
@@ -56,7 +49,7 @@ public class BoundaryEventsTests : IDisposable
     [Fact]
     public void Lists_an_event_whose_type_is_not_registered()
     {
-        var read = BoundaryEvents.Read(position: 7, "NeverUploaded:1", """{"Id":"abc-1"}""", Written);
+        var read = BoundaryEvents.Read(Bindings, position: 7, "NeverUploaded:1", """{"Id":"abc-1"}""", Written);
 
         read.Position.Should().Be(7);
         read.Type.Should().Be("NeverUploaded:1");
@@ -71,7 +64,7 @@ public class BoundaryEventsTests : IDisposable
     [Fact]
     public void Reads_the_name_and_version_out_of_the_key_it_was_stored_under()
     {
-        var read = BoundaryEvents.Read(position: 7, "SampleHappened:1", """{"Id":"abc-1"}""", Written);
+        var read = BoundaryEvents.Read(Bindings, position: 7, "SampleHappened:1", """{"Id":"abc-1"}""", Written);
 
         read.Name.Should().Be("SampleHappened");
         read.Version.Should().Be("1");
@@ -84,7 +77,7 @@ public class BoundaryEventsTests : IDisposable
     [Fact]
     public void Takes_the_version_from_the_last_separator_in_the_key()
     {
-        var read = BoundaryEvents.Read(position: 7, "Sample:Happened:2", "{}", Written);
+        var read = BoundaryEvents.Read(Bindings, position: 7, "Sample:Happened:2", "{}", Written);
 
         read.Name.Should().Be("Sample:Happened");
         read.Version.Should().Be("2");
@@ -97,7 +90,7 @@ public class BoundaryEventsTests : IDisposable
     [Fact]
     public void Reports_no_version_for_a_key_that_carries_none()
     {
-        var read = BoundaryEvents.Read(position: 7, "SampleHappened", "{}", Written);
+        var read = BoundaryEvents.Read(Bindings, position: 7, "SampleHappened", "{}", Written);
 
         read.Name.Should().Be("SampleHappened");
         read.Version.Should().BeNull();
@@ -106,7 +99,7 @@ public class BoundaryEventsTests : IDisposable
     [Fact]
     public void Reports_a_payload_that_cannot_be_read_back()
     {
-        var read = BoundaryEvents.Read(position: 7, "SampleHappened:1", "{not json", Written);
+        var read = BoundaryEvents.Read(Bindings, position: 7, "SampleHappened:1", "{not json", Written);
 
         read.State.Should().BeEmpty();
         read.Error.Should().NotBeNullOrWhiteSpace();
@@ -115,7 +108,7 @@ public class BoundaryEventsTests : IDisposable
     [Fact]
     public void Reports_a_payload_that_reads_back_as_nothing()
     {
-        var read = BoundaryEvents.Read(position: 7, "SampleHappened:1", "null", Written);
+        var read = BoundaryEvents.Read(Bindings, position: 7, "SampleHappened:1", "null", Written);
 
         read.State.Should().BeEmpty();
         read.Error.Should().Contain("empty");
@@ -129,13 +122,13 @@ public class BoundaryEventsTests : IDisposable
     [Fact]
     public void Keeps_the_payload_the_log_wrote()
     {
-        BoundaryEvents.Read(position: 7, "SampleHappened:1", """{"Id":"abc-1"}""", Written)
+        BoundaryEvents.Read(Bindings, position: 7, "SampleHappened:1", """{"Id":"abc-1"}""", Written)
             .Data.Should().Be("""{"Id":"abc-1"}""");
 
-        BoundaryEvents.Read(position: 7, "NeverUploaded:1", """{"Id":"abc-1"}""", Written)
+        BoundaryEvents.Read(Bindings, position: 7, "NeverUploaded:1", """{"Id":"abc-1"}""", Written)
             .Data.Should().Be("""{"Id":"abc-1"}""");
 
-        BoundaryEvents.Read(position: 7, "SampleHappened:1", "{not json", Written)
+        BoundaryEvents.Read(Bindings, position: 7, "SampleHappened:1", "{not json", Written)
             .Data.Should().Be("{not json");
     }
 

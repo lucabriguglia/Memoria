@@ -76,7 +76,7 @@ public class DomainTypeDescriberCacheTests
     {
         var registry = new DomainTypeRegistry(
             new ExtensionStore(Path.Combine(Path.GetTempPath(), $"memoria-web-{Guid.NewGuid():N}")),
-            host: typeof(SampleBuiltCountingAggregate).Assembly);
+            typeof(SampleBuiltCountingAggregate).Assembly);
 
         Describe();
         registry.Reload();

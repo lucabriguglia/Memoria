@@ -155,7 +155,7 @@
 
     /// <summary>What the configuration says about the string the service reads over.</summary>
     private string State(Service service) =>
-        ConnectionStringState.Of(Configuration, service.ConnectionString).Description;
+        ConnectionStrings.Named(Configuration, service.ConnectionString).Description;
 
     /// <summary>
     /// Who may do one of the two things, in the words the roles page uses: the claim values the

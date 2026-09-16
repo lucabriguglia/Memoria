@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Memoria.EventSourcing;
 using Memoria.EventSourcing.Dcb;
 using Memoria.Web.Components;
+using Memoria.Web.Data;
 using Memoria.Web.Extensibility;
 using Memoria.Web.Security;
 using Microsoft.AspNetCore.Antiforgery;
@@ -159,29 +160,27 @@ public static class EndpointRegistration
         app.MapPost("/{service}/dcb/aggregates/update", async (
             string service,
             DomainTypeRegistry types,
-            IDcbDomainService store,
-            TotalsCache totals,
+            IServiceProvider provider,
             ILoggerFactory loggerFactory,
             HttpRequest request,
             [FromForm] string type,
             [FromForm] string id,
             [FromForm] string returnUrl,
             ClaimsPrincipal user) =>
-            Under(types, service) is { } catalogue ? await Refresh(DcbModelKind.Aggregate, catalogue, store, totals, loggerFactory, request, type, id, returnUrl, Operator.Of(user)) : Results.NotFound())
+            Under(types, service) is { } catalogue ? (Unreachable(provider) is { } problem ? BackToModel(returnUrl, error: problem) : await Refresh(DcbModelKind.Aggregate, catalogue, provider.GetRequiredService<IDcbDomainService>(), provider.GetRequiredService<TotalsCache>(), loggerFactory, request, type, id, returnUrl, Operator.Of(user))) : Results.NotFound())
             .RequireAuthorization(Roles.Updater);
 
         app.MapPost("/{service}/dcb/projections/update", async (
             string service,
             DomainTypeRegistry types,
-            IDcbDomainService store,
-            TotalsCache totals,
+            IServiceProvider provider,
             ILoggerFactory loggerFactory,
             HttpRequest request,
             [FromForm] string type,
             [FromForm] string id,
             [FromForm] string returnUrl,
             ClaimsPrincipal user) =>
-            Under(types, service) is { } catalogue ? await Refresh(DcbModelKind.Projection, catalogue, store, totals, loggerFactory, request, type, id, returnUrl, Operator.Of(user)) : Results.NotFound())
+            Under(types, service) is { } catalogue ? (Unreachable(provider) is { } problem ? BackToModel(returnUrl, error: problem) : await Refresh(DcbModelKind.Projection, catalogue, provider.GetRequiredService<IDcbDomainService>(), provider.GetRequiredService<TotalsCache>(), loggerFactory, request, type, id, returnUrl, Operator.Of(user))) : Results.NotFound())
             .RequireAuthorization(Roles.Updater);
     }
 
@@ -199,31 +198,29 @@ public static class EndpointRegistration
         app.MapPost("/{service}/streamed/aggregates/update", async (
             string service,
             DomainTypeRegistry types,
-            IDomainService store,
-            TotalsCache totals,
+            IServiceProvider provider,
             ILoggerFactory loggerFactory,
             [FromForm] string type,
             [FromForm] string stream,
             [FromForm] string id,
             [FromForm] string returnUrl,
             ClaimsPrincipal user) =>
-            Under(types, service) is { } catalogue ? await RefreshStreamed(
-                StreamedModelKind.Aggregate, catalogue, store, totals, loggerFactory, type, stream, id, returnUrl, Operator.Of(user)) : Results.NotFound())
+            Under(types, service) is { } catalogue ? (Unreachable(provider) is { } problem ? BackToModel(returnUrl, error: problem) : await RefreshStreamed(
+                StreamedModelKind.Aggregate, catalogue, provider.GetRequiredService<IDomainService>(), provider.GetRequiredService<TotalsCache>(), loggerFactory, type, stream, id, returnUrl, Operator.Of(user))) : Results.NotFound())
             .RequireAuthorization(Roles.Updater);
 
         app.MapPost("/{service}/streamed/projections/update", async (
             string service,
             DomainTypeRegistry types,
-            IDomainService store,
-            TotalsCache totals,
+            IServiceProvider provider,
             ILoggerFactory loggerFactory,
             [FromForm] string type,
             [FromForm] string stream,
             [FromForm] string id,
             [FromForm] string returnUrl,
             ClaimsPrincipal user) =>
-            Under(types, service) is { } catalogue ? await RefreshStreamed(
-                StreamedModelKind.Projection, catalogue, store, totals, loggerFactory, type, stream, id, returnUrl, Operator.Of(user)) : Results.NotFound())
+            Under(types, service) is { } catalogue ? (Unreachable(provider) is { } problem ? BackToModel(returnUrl, error: problem) : await RefreshStreamed(
+                StreamedModelKind.Projection, catalogue, provider.GetRequiredService<IDomainService>(), provider.GetRequiredService<TotalsCache>(), loggerFactory, type, stream, id, returnUrl, Operator.Of(user))) : Results.NotFound())
             .RequireAuthorization(Roles.Updater);
     }
 
@@ -234,6 +231,14 @@ public static class EndpointRegistration
     /// </summary>
     private static DomainTypeCatalogue? Under(DomainTypeRegistry types, string service) =>
         types.Current.ServiceAt(service) is { } named ? types.Current.For(named) : null;
+
+    /// <summary>
+    /// Why the store the request is under cannot be reached, or null when it can. Asked before
+    /// the store's services are resolved, since resolving them over a store that is not there is
+    /// what would fail — and the answer is carried back to the page, the way the page says it.
+    /// </summary>
+    private static string? Unreachable(IServiceProvider provider) =>
+        provider.GetRequiredService<ServiceStore>().Problem;
 
     // Back to the settings page carrying what happened, so the outcome survives the redirect.
     // The tab is carried back with the message because the settings page writes each one under the

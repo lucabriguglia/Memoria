@@ -1,3 +1,4 @@
+using Memoria.EventSourcing.Domain;
 using Memoria.EventSourcing.Filtering;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Entities;
 using Memoria.Web.Data;
@@ -96,7 +97,7 @@ public static class StreamedEvents
 
             var ordered = Ordered(stored, descending);
 
-            var read = await ReadRows(ordered, placed.Skip, size, cancellationToken);
+            var read = await ReadRows(context.TypeBindings, ordered, placed.Skip, size, cancellationToken);
 
             return new StoredStreamEvents(read, total, placed.Page, placed.TotalPages, Error: null);
         }
@@ -150,7 +151,7 @@ public static class StreamedEvents
         try
         {
             var stored = Narrow(context, streamPattern, eventType, text, eventTypes, properties, beforeSequence);
-            var read = await ReadRows(Ordered(stored, descending), index, take: 1, cancellationToken);
+            var read = await ReadRows(context.TypeBindings, Ordered(stored, descending), index, take: 1, cancellationToken);
 
             return new PlacedStreamEvent(read.FirstOrDefault(), Error: null);
         }
@@ -231,7 +232,7 @@ public static class StreamedEvents
                     : new StoredStreamEvent(
                         row.StreamId,
                         row.Id,
-                        BoundaryEvents.Read(row.Sequence, row.EventType, row.Data, row.CreatedDate,
+                        BoundaryEvents.Read(context.TypeBindings, row.Sequence, row.EventType, row.Data, row.CreatedDate,
                             writtenBy: row.CreatedBy)),
                 Error: null);
         }
@@ -340,7 +341,7 @@ public static class StreamedEvents
     /// go through, so a row says the same thing wherever it is met.
     /// </summary>
     private static async Task<List<StoredStreamEvent>> ReadRows(
-        IOrderedQueryable<EventEntity> ordered, int skip, int take, CancellationToken cancellationToken)
+        TypeBindingSet bindings, IOrderedQueryable<EventEntity> ordered, int skip, int take, CancellationToken cancellationToken)
     {
         var rows = await ordered
             .Skip(skip)
@@ -362,7 +363,7 @@ public static class StreamedEvents
             .Select(row => new StoredStreamEvent(
                 row.StreamId,
                 row.Id,
-                BoundaryEvents.Read(row.Sequence, row.EventType, row.Data, row.CreatedDate,
+                BoundaryEvents.Read(bindings, row.Sequence, row.EventType, row.Data, row.CreatedDate,
                     writtenBy: row.CreatedBy)))
             .ToList();
 

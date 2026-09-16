@@ -31,6 +31,26 @@ internal static class OneSidedAssembly
     /// </summary>
     public static readonly Assembly OneNamespace = DeclaringAggregates("OneNamespace", "FirstAggregate", "SecondAggregate");
 
+    /// <summary>
+    /// An assembly declaring one event under the given binding name and nothing else: what two
+    /// services that both claim <c>ProductCreated:1</c> look like, each in an assembly of its own.
+    /// A record with no state, so a stored payload of <c>{}</c> opens into it.
+    /// </summary>
+    public static Assembly DeclaringEvent(string assemblyName, string eventName)
+    {
+        var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Run);
+        var module = assembly.DefineDynamicModule(assemblyName);
+        var type = module.DefineType(
+            $"{assemblyName}.{eventName}", TypeAttributes.Public | TypeAttributes.Class, typeof(object), [typeof(IEvent)]);
+
+        type.DefineDefaultConstructor(MethodAttributes.Public);
+        type.SetCustomAttribute(new CustomAttributeBuilder(
+            typeof(EventType).GetConstructor([typeof(string), typeof(byte)])!, [eventName, (byte)1]));
+
+        type.CreateType();
+        return assembly;
+    }
+
     private static Assembly DeclaringAggregates(string assemblyName, params string[] typeNames)
     {
         var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Run);

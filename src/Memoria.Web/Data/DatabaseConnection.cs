@@ -100,24 +100,31 @@ public sealed record DatabaseConnection(DatabaseProvider Provider, string Connec
     /// not have, no provider can be read off the string and the setting is not set to settle it, or
     /// the string asks for a SQLite database that would not outlive the connection.
     /// </exception>
-    public static DatabaseConnection Of(string? connectionString, string? configured)
+    /// <summary>
+    /// The setting that settles the provider for a named string: the older unnamed one for the
+    /// string the tool has always read, and one under the name for every other.
+    /// </summary>
+    public static string ProviderSettingFor(string name) =>
+        name == Name ? Setting : $"Databases:{name}:Provider";
+
+    public static DatabaseConnection Of(string? connectionString, string? configured, string name = Name)
     {
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             throw new InvalidOperationException(
-                $"Connection string '{Name}' is not configured in appsettings.json.");
+                $"Connection string '{name}' is not configured in appsettings.json.");
         }
 
-        var values = Values(connectionString);
+        var values = Values(connectionString, name);
 
         // The setting first, and it is not checked against the string: it is the way out of a
         // string this cannot read, so second-guessing it would close the door it opens.
-        var provider = string.IsNullOrWhiteSpace(configured) ? Infer(values) : Configured(configured);
+        var provider = string.IsNullOrWhiteSpace(configured) ? Infer(values, name) : Configured(configured, name);
 
         if (provider is DatabaseProvider.Sqlite && OnlyLivesAsLongAsTheConnection(values))
         {
             throw new InvalidOperationException(
-                $"Connection string '{Name}' asks for a SQLite database held in memory, which lives " +
+                $"Connection string '{name}' asks for a SQLite database held in memory, which lives " +
                 "only as long as the connection that opened it. This tool opens a connection per " +
                 "unit of work, so it would find an empty store rather than the one that was seeded. " +
                 "Point it at a database file.");
@@ -154,11 +161,11 @@ public sealed record DatabaseConnection(DatabaseProvider Provider, string Connec
     /// <summary>
     /// The provider the setting names.
     /// </summary>
-    private static DatabaseProvider Configured(string configured) =>
+    private static DatabaseProvider Configured(string configured, string name) =>
         Named.TryGetValue(Normalised(configured), out var provider)
             ? provider
             : throw new InvalidOperationException(
-                $"'{configured}' is not a database provider this tool has. Set {Setting} to " +
+                $"'{configured}' is not a database provider this tool has. Set {ProviderSettingFor(name)} to " +
                 "Npgsql, SqlServer, Sqlite or Cosmos, or leave it out to read the provider off the " +
                 "connection string.");
 
@@ -171,7 +178,7 @@ public sealed record DatabaseConnection(DatabaseProvider Provider, string Connec
     /// signals for two of them is as unreadable as one carrying none — both are cases where
     /// choosing would be choosing arbitrarily, and both are answered by asking for the setting.
     /// </remarks>
-    private static DatabaseProvider Infer(IReadOnlyDictionary<string, string> values)
+    private static DatabaseProvider Infer(IReadOnlyDictionary<string, string> values, string name)
     {
         var source = SourceKeywords
             .Select(keyword => values.GetValueOrDefault(keyword))
@@ -207,9 +214,9 @@ public sealed record DatabaseConnection(DatabaseProvider Provider, string Connec
         return candidates.Count == 1
             ? candidates[0]
             : throw new InvalidOperationException(
-                $"The provider for connection string '{Name}' could not be read off it: " +
+                $"The provider for connection string '{name}' could not be read off it: " +
                 Why(values, candidates.Count) +
-                $" Set {Setting} to Npgsql, SqlServer, Sqlite or Cosmos.");
+                $" Set {ProviderSettingFor(name)} to Npgsql, SqlServer, Sqlite or Cosmos.");
     }
 
     /// <summary>
@@ -266,7 +273,7 @@ public sealed record DatabaseConnection(DatabaseProvider Provider, string Connec
     /// Reads the connection string into its keywords and their values, with the keywords normalised
     /// so that the spellings a provider accepts for one of them all arrive as the same word.
     /// </summary>
-    private static Dictionary<string, string> Values(string connectionString)
+    private static Dictionary<string, string> Values(string connectionString, string name)
     {
         var parsed = new DbConnectionStringBuilder();
 
@@ -277,7 +284,7 @@ public sealed record DatabaseConnection(DatabaseProvider Provider, string Connec
         catch (ArgumentException exception)
         {
             throw new InvalidOperationException(
-                $"Connection string '{Name}' could not be read: {exception.Message}", exception);
+                $"Connection string '{name}' could not be read: {exception.Message}", exception);
         }
 
         var values = new Dictionary<string, string>(StringComparer.Ordinal);

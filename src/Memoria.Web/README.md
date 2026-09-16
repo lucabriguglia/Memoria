@@ -12,7 +12,8 @@ dotnet run --project src/Memoria.Web
 ```
 
 That serves on `http://localhost:5159` in the Development environment. Point it at a store first —
-`ConnectionStrings:Memoria` in [`appsettings.json`](appsettings.json) — or fill one with
+a connection string in [`appsettings.json`](appsettings.json) under the name each zip's manifest
+reads it by, `ConnectionStrings:Memoria` for the samples — or fill one with
 [Memoria.Web.Samples](../Memoria.Web.Samples), which writes data through a sample domain carried
 one consistency model per project, in [Memoria.Web.Samples.Streamed](../Memoria.Web.Samples.Streamed)
 and [Memoria.Web.Samples.Dcb](../Memoria.Web.Samples.Dcb).
@@ -42,10 +43,10 @@ for what to register at the provider.
 
 | Setting                            | Required                        | Default                              |
 | ---------------------------------- | ------------------------------- | ------------------------------------ |
-| `ConnectionStrings:Memoria`        | Yes                             | —                                    |
-| `Database:Provider`                | Only when the string is unclear | Read off the connection string       |
-| `Database:Cosmos:DatabaseName`     | No                              | `Memoria`                            |
-| `Database:Cosmos:ContainerName`    | No                              | `Domain`                             |
+| `ConnectionStrings:{name}`         | One per store a service reads   | —                                    |
+| `Databases:{name}:Provider`        | Only when that string is unclear | Read off the connection string      |
+| `Databases:{name}:Cosmos:DatabaseName` | No                          | `Memoria`                            |
+| `Databases:{name}:Cosmos:ContainerName` | No                         | `Domain`                             |
 | `Extensions:Directory`             | No                              | `<content root>/App_Data/extensions` |
 | `Authentication:Oidc:Authority`    | Unless running open             | —                                    |
 | `Authentication:Oidc:ClientId`     | Unless running open             | —                                    |

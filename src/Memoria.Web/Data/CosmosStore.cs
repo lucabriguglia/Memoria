@@ -28,12 +28,32 @@ public sealed record CosmosStore(string ConnectionString, string DatabaseName, s
     public const string ContainerSetting = "Database:Cosmos:ContainerName";
 
     /// <summary>
-    /// Reads where a Cosmos store's documents are.
+    /// Reads where a Cosmos store's documents are, from the settings the one store the tool used
+    /// to read has always had.
     /// </summary>
     public static CosmosStore Of(DatabaseConnection database, IConfiguration configuration) =>
         new(database.ConnectionString,
             configuration[DatabaseSetting] is { Length: > 0 } databaseName ? databaseName : "Memoria",
             configuration[ContainerSetting] is { Length: > 0 } containerName ? containerName : "Domain");
+
+    /// <summary>
+    /// Reads where the Cosmos store behind one named connection string keeps its documents:
+    /// <c>Databases:{name}:Cosmos:DatabaseName</c> and <c>ContainerName</c>, with the string the
+    /// tool has always read, <c>Memoria</c>, keeping its older unnamed settings as well.
+    /// </summary>
+    public static CosmosStore Of(string name, DatabaseConnection database, IConfiguration configuration)
+    {
+        var older = name == DatabaseConnection.Name ? Of(database, configuration) : null;
+
+        return new CosmosStore(
+            database.ConnectionString,
+            configuration[$"Databases:{name}:Cosmos:DatabaseName"] is { Length: > 0 } databaseName
+                ? databaseName
+                : older?.DatabaseName ?? "Memoria",
+            configuration[$"Databases:{name}:Cosmos:ContainerName"] is { Length: > 0 } containerName
+                ? containerName
+                : older?.ContainerName ?? "Domain");
+    }
 }
 
 /// <summary>

@@ -38,7 +38,7 @@ public class DcbEventRowTests
     /// </summary>
     private static async Task SeedTwoEvents(MemoriaWeb web)
     {
-        using var scope = web.Services.CreateScope();
+        using var scope = web.Scope();
         scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>().HttpContext = new DefaultHttpContext
         {
             User = new ClaimsPrincipal(new ClaimsIdentity(

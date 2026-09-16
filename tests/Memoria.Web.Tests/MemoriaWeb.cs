@@ -93,16 +93,19 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
     /// <summary>The service every instance knowing types declares them under.</summary>
     public const string ServiceName = "samples";
 
-    private readonly List<string> _services = [];
+    private readonly List<(string Name, string ConnectionString, System.Reflection.Assembly? Assembly)> _services = [];
 
     /// <summary>
     /// The same instance declaring one more service, under the name given as a manifest would
-    /// write it, naming the same host assembly — so the same types are browsed under a second
-    /// address, made from that name.
+    /// write it, over the connection string named — <c>Memoria</c>, the one every instance is
+    /// given, unless said — and naming the assembly given, or the host's when none is: so the
+    /// same types, or an emitted assembly's, are browsed under a second address made from that
+    /// name, over a second store when one is named.
     /// </summary>
-    public MemoriaWeb WithService(string name)
+    public MemoriaWeb WithService(
+        string name, string connectionString = "Memoria", System.Reflection.Assembly? assembly = null)
     {
-        _services.Add(name);
+        _services.Add((name, connectionString, assembly));
         return this;
     }
 
@@ -183,6 +186,33 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
     {
         _reads = reads;
         return this;
+    }
+
+    /// <summary>
+    /// A scope inside one of this instance's services, the way a request under it would be — so a
+    /// test seeding or reading the store through the application's own container resolves that
+    /// service's context, over that service's store, and not nothing.
+    /// </summary>
+    public IServiceScope Scope(string service = ServiceName)
+    {
+        var scope = Services.CreateScope();
+        var types = Services.GetRequiredService<DomainTypeRegistry>();
+
+        scope.ServiceProvider.GetRequiredService<CurrentService>().Enter(
+            types.Current.ServiceAt(service) ?? throw new InvalidOperationException($"No service is at /{service}."),
+            types.Current);
+
+        return scope;
+    }
+
+    /// <summary>Where one of this instance's services remembers its list totals between pages.</summary>
+    public TotalsCache Totals(string service = ServiceName)
+    {
+        var types = Services.GetRequiredService<DomainTypeRegistry>();
+
+        return Services.GetRequiredService<Memoria.Web.Data.ServiceStores>()
+            .For(types.Current.ServiceAt(service) ?? throw new InvalidOperationException($"No service is at /{service}."))
+            .Totals;
     }
 
     /// <summary>The address of the sample aggregate's detail page, on the tab asked for.</summary>
@@ -327,22 +357,34 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
     {
         Directory.CreateDirectory(_scratch);
 
+        // The services this instance declares: a manifest-only archive each, put in the directory
+        // the way a zip from before manifests would be, naming the file the assembly would be
+        // called. Nothing is extracted from them; the registry scans the assemblies it was given
+        // — the host and any an extra service brought — and attributes their types to the service
+        // naming each by that name. The host's own service comes first, when there is a host.
+        var declared = new List<(string Name, string ConnectionString, System.Reflection.Assembly Assembly)>();
+
         if (_host is { } host)
         {
-            // The service the host's types are declared under: a manifest-only archive put in the
-            // directory the way a zip from before manifests would be, naming the file the host
-            // would be called. Nothing is extracted from it; the registry scans the host it was
-            // given and attributes its types to this service by that name.
+            declared.Add((ServiceName, "Memoria", host));
+        }
+
+        declared.AddRange(_services
+            .Where(service => service.Assembly is not null || _host is not null)
+            .Select(service => (service.Name, service.ConnectionString, service.Assembly ?? _host!)));
+
+        if (declared.Count > 0)
+        {
             var zips = Path.Combine(ExtensionsDirectory, "zips");
             Directory.CreateDirectory(zips);
 
-            foreach (var (name, index) in new[] { ServiceName }.Concat(_services).Select((name, index) => (name, index)))
+            foreach (var ((name, connectionString, assembly), index) in declared.Select((service, index) => (service, index)))
             {
                 using var archive = ZipFile.Open(Path.Combine(zips, $"service-{index}.zip"), ZipArchiveMode.Create);
                 using var manifest = new StreamWriter(archive.CreateEntry("memoria.json").Open());
                 manifest.Write($$"""
-                    { "services": [ { "name": "{{name}}", "assemblies": ["{{host.GetName().Name}}.dll"],
-                                      "connectionString": "Memoria" } ] }
+                    { "services": [ { "name": "{{name}}", "assemblies": ["{{assembly.GetName().Name}}.dll"],
+                                      "connectionString": "{{connectionString}}" } ] }
                     """);
             }
         }
@@ -407,12 +449,22 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
                 });
             }
 
+            var scanned = new List<System.Reflection.Assembly>();
+
             if (_host is { } host)
             {
+                scanned.Add(host);
+            }
+
+            scanned.AddRange(_services.Select(service => service.Assembly).OfType<System.Reflection.Assembly>());
+
+            if (scanned.Count > 0)
+            {
                 // Registered after the application's own, so it is the one resolved — and the one
-                // Program reloads at start-up. Over the same store, so an upload still lands.
+                // Program reloads at start-up. Over the same store, so an upload still lands. Every
+                // assembly a declared service names is scanned the way the application's own is.
                 services.AddSingleton(provider =>
-                    new DomainTypeRegistry(provider.GetRequiredService<ExtensionStore>(), host));
+                    new DomainTypeRegistry(provider.GetRequiredService<ExtensionStore>(), scanned.ToArray()));
             }
 
             if (_reads is { } reads)

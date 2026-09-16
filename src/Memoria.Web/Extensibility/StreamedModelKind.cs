@@ -50,11 +50,11 @@ public static class StreamedModels
     /// One map per kind because one key can name both: a projection and an aggregate may be bound
     /// under the same name, and the store tells them apart by which table it wrote the row into.
     /// </remarks>
-    public static IReadOnlyDictionary<string, Type> Bindings(this StreamedModelKind kind) =>
+    public static IReadOnlyDictionary<string, Type> Bindings(this StreamedModelKind kind, TypeBindingSet bindings) =>
         kind switch
         {
-            StreamedModelKind.Projection => TypeBindings.ProjectionTypeBindings,
-            _ => TypeBindings.AggregateTypeBindings
+            StreamedModelKind.Projection => bindings.ProjectionTypeBindings,
+            _ => bindings.AggregateTypeBindings
         };
 
     /// <summary>

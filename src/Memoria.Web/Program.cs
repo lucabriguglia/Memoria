@@ -9,20 +9,18 @@ using Memoria.Web.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
-DatabaseConnection database;
 AuthenticationSettings authentication;
 AuthorizationSettings roles;
 
 try
 {
-    // Which engine the store is in is read off the connection string, or taken from
-    // Database:Provider where the string could be more than one. The tool is pointed at a store
-    // somebody else created, so it is told rather than assuming Postgres.
-    database = DatabaseConnection.Of(
-        builder.Configuration.GetConnectionString(DatabaseConnection.Name),
-        builder.Configuration[DatabaseConnection.Setting]);
+    // Every connection string the tool has must be readable, whatever it is called: a service
+    // names the one it reads over, and a string nobody can open is a mistake best found before a
+    // page asks for it. Which strings there are is not insisted on — a service naming one that is
+    // not there is listed as unreachable rather than stopping everything.
+    ConnectionStrings.Validate(builder.Configuration);
 
-    // Whether operators sign in, read here for the same reason the store is: a tool told neither
+    // Whether operators sign in, read here for the same reason the strings are: a tool told neither
     // refuses, rather than running open because nobody said otherwise.
     authentication = AuthenticationSettings.Of(builder.Configuration);
 
@@ -50,14 +48,10 @@ var sent = builder.AddTelemetry();
 
 builder.Services.AddMemoria(typeof(Program));
 
-// The two event sourcing models side by side. Each store call replaces the default no-op service
-// its model registers, so it comes after.
+// The two event sourcing models side by side. Each store registration replaces the default
+// no-op service its model registers, so the stores come after.
 builder.Services.AddMemoriaEventSourcing(typeof(Program));
 builder.Services.AddMemoriaDcb(typeof(Program));
-
-// Whichever store the connection string named, and the reader the streamed pages ask through. A
-// relational store brings four contexts with it; a Cosmos store brings a client and no context.
-builder.Services.AddStore(database, builder.Configuration);
 
 // The domain types uploaded through the settings page. Only registered here — the assemblies are
 // read below, and again whenever someone uploads or asks for a refresh.
@@ -67,11 +61,13 @@ builder.Services.AddDomainExtensions(
         ?? Path.Combine(builder.Environment.ContentRootPath, "App_Data", "extensions")),
     typeof(Program).Assembly);
 
+// One store per service, over the connection string its manifest names: the readers, contexts and
+// domain services a request under a service resolves are built from the service the request is
+// inside. A relational store brings the contexts with it; a Cosmos store brings a client and none.
+builder.Services.AddStores();
+
 var app = builder.Build();
 
-// Logged because the provider is now read rather than fixed: a store that answers nothing is the
-// first thing anyone will suspect the connection string of, and this says how it was read.
-app.Logger.LogInformation("Store opened with {Provider}.", database.Provider);
 app.Logger.LogSignIn(authentication, roles);
 app.Logger.LogTelemetry(sent);
 
@@ -79,7 +75,12 @@ var registry = app.Services.GetRequiredService<DomainTypeRegistry>();
 registry.Reload();
 app.Logger.LogCatalogue(registry.Current);
 
-app.WarmInBackground(database);
+// One line per service saying which string it opened and with which engine, or why it opened
+// none: a store that answers nothing is the first thing anyone will suspect the connection string
+// of, and this says how it was read.
+app.Logger.LogStores(app.Services.GetRequiredService<ServiceStores>());
+
+app.WarmInBackground();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -96,6 +97,10 @@ app.UseHttpsRedirection();
 // nobody would not match the operator who posts it back.
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Inside the service the address names, before anything answers: a page and a form post under
+// a service both resolve that service's store.
+app.UseServiceScope();
 
 app.UseAntiforgery();
 

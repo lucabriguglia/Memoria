@@ -1,0 +1,36 @@
+@using Memoria.Web.Extensibility
+@inject CurrentService Current
+
+@* What a page under a service shows when the service's store cannot be reached: the reason, in
+   the words the settings sheet gives it, and where to fix it. Drawn in place of the page rather
+   than as an error, because nothing failed — a manifest named a string the configuration does
+   not hold yet, which is the ordinary state of a zip uploaded before its deployment caught up. *@
+<PageTitle>@Current.Name</PageTitle>
+
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="">Home</a>
+    <span aria-hidden="true">/</span>
+    <a href="@Current.Segment">@Current.Name</a>
+</nav>
+
+<h1>@Current.Name</h1>
+
+<p class="lede">
+    There is nothing to read here yet: @Problem
+</p>
+
+<p class="hint">
+    A service reads the store its manifest names under <code>connectionString</code>, and this
+    instance's configuration holds the string itself under <code>ConnectionStrings</code>. The
+    sheet over the archive on the <a href="settings">Settings</a> page says which name this
+    service reads over.
+</p>
+
+@code {
+
+    /// <summary>Why the store cannot be reached, as the store says it.</summary>
+    [Parameter]
+    [EditorRequired]
+    public string Problem { get; set; } = string.Empty;
+
+}

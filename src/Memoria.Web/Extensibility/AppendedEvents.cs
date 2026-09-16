@@ -134,7 +134,7 @@ public static class AppendedEvents
             // it, as they do on the page about one event: a row on this page opens on that page, and
             // a row on a model's events tab opens in a sheet that lists the same facts.
             var read = rows
-                .Select(row => BoundaryEvents.Read(row.Position, row.EventType, row.Data, row.CreatedDate,
+                .Select(row => BoundaryEvents.Read(context.TypeBindings, row.Position, row.EventType, row.Data, row.CreatedDate,
                     row.Tags, row.CreatedBy))
                 .ToList();
 
@@ -184,7 +184,7 @@ public static class AppendedEvents
             return new ReadEvent(
                 row is null
                     ? null
-                    : BoundaryEvents.Read(row.Position, row.EventType, row.Data, row.CreatedDate, row.Tags,
+                    : BoundaryEvents.Read(context.TypeBindings, row.Position, row.EventType, row.Data, row.CreatedDate, row.Tags,
                         row.CreatedBy),
                 Error: null);
         }

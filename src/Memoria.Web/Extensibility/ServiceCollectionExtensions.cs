@@ -22,7 +22,7 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services, ExtensionStore store, Assembly? host = null)
     {
         services.AddSingleton(store);
-        services.AddSingleton(new DomainTypeRegistry(store, host));
+        services.AddSingleton(host is null ? new DomainTypeRegistry(store) : new DomainTypeRegistry(store, host));
         services.AddScoped<CurrentService>();
     }
 }

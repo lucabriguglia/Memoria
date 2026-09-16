@@ -28,14 +28,26 @@ public static class StoreWarmUp
     /// boundary tables, which a Cosmos store does not have — there would be nothing to compile and
     /// no context to ask.
     /// </remarks>
-    public static void WarmInBackground(this WebApplication app, DatabaseConnection database)
+    public static void WarmInBackground(this WebApplication app)
     {
-        if (database.Provider is DatabaseProvider.Cosmos)
+        // Each reachable relational store, one after the other: a Cosmos store has no boundary
+        // tables to warm, and an unreachable one has nothing to open.
+        var stores = app.Services.GetRequiredService<ServiceStores>().All()
+            .Where(store => store.Reachable && store.Database!.Provider is not DatabaseProvider.Cosmos)
+            .ToList();
+
+        if (stores.Count == 0)
         {
             return;
         }
 
-        _ = Task.Run(() => Warm(app));
+        _ = Task.Run(async () =>
+        {
+            foreach (var store in stores)
+            {
+                await Warm(app, store);
+            }
+        });
     }
 
     /// <summary>
@@ -48,15 +60,20 @@ public static class StoreWarmUp
     /// the column headings and the filter box lead to. Failure is logged and dropped — the store
     /// being unreachable is something the pages report, not a reason to hold up start-up.
     /// </remarks>
-    private static async Task Warm(WebApplication app)
+    private static async Task Warm(WebApplication app, ServiceStore serviceStore)
     {
         try
         {
             using var scope = app.Services.CreateScope();
 
+            // The scope is put inside the service the way a request under it would be, so the
+            // context it resolves is that service's, over that service's store and bindings.
+            var catalogue = app.Services.GetRequiredService<DomainTypeRegistry>().Current;
+            scope.ServiceProvider.GetRequiredService<CurrentService>().Enter(serviceStore.Service, catalogue);
+
             var store = scope.ServiceProvider.GetRequiredService<IDcbDbContext>();
-            var types = app.Services.GetRequiredService<DomainTypeRegistry>().Current;
-            var totals = app.Services.GetRequiredService<TotalsCache>();
+            var types = catalogue.For(serviceStore.Service);
+            var totals = serviceStore.Totals;
 
             // Either kind will do. Both pages run the same two queries, and the kind rides in as a
             // parameter rather than as part of the SQL, so whichever is warmed first warms the other's
@@ -124,7 +141,7 @@ public static class StoreWarmUp
                         await ModelReader.Load(store, model, kind, identifier);
                     }
 
-                    app.Logger.LogInformation("Store warmed on {Model}.", model.Name);
+                    app.Logger.LogInformation("Store of service {Service} warmed on {Model}.", serviceStore.Service.Name, model.Name);
                     return;
                 }
             }
@@ -132,12 +149,13 @@ public static class StoreWarmUp
             // Nothing uploaded yet, so there is no real query to run. The model is still worth building.
             await store.DcbSnapshots.AsNoTracking().Select(snapshot => snapshot.Id).FirstOrDefaultAsync();
 
-            app.Logger.LogInformation("Store warmed.");
+            app.Logger.LogInformation("Store of service {Service} warmed.", serviceStore.Service.Name);
         }
         catch (Exception exception)
         {
             app.Logger.LogWarning(exception,
-                "Could not warm the store. The first page that reads it will be slower.");
+                "Could not warm the store of service {Service}. The first page that reads it will be slower.",
+                serviceStore.Service.Name);
         }
     }
 }

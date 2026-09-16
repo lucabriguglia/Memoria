@@ -68,7 +68,7 @@ public class RowsPerPageTests
 
     private static async Task SeedOneEvent(MemoriaWeb web)
     {
-        using var scope = web.Services.CreateScope();
+        using var scope = web.Scope();
         var store = scope.ServiceProvider.GetRequiredService<StreamedStoreDbContext>();
         await store.Database.EnsureCreatedAsync();
         store.Events.Add(new EventEntity

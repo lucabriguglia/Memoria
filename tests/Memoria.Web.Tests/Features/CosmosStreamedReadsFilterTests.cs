@@ -1,3 +1,4 @@
+using Memoria.EventSourcing.Domain;
 using System;
 using System.Linq;
 using System.Net.Http;
@@ -100,7 +101,7 @@ public class CosmosStreamedReadsFilterTests : IAsyncLifetime
             }
         }
 
-        _reads = new CosmosStreamedReads(_client, _databaseName, ContainerName);
+        _reads = new CosmosStreamedReads(_client, _databaseName, ContainerName, TypeBindingSet.Default);
     }
 
     public async Task DisposeAsync()

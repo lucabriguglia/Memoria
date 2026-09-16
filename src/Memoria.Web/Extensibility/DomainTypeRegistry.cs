@@ -1,5 +1,4 @@
 using System.Reflection;
-using Memoria.EventSourcing.Dcb;
 using Memoria.EventSourcing.Domain;
 
 namespace Memoria.Web.Extensibility;
@@ -8,18 +7,24 @@ namespace Memoria.Web.Extensibility;
 /// Holds the domain types the application knows about, and rebuilds them from scratch on demand.
 /// </summary>
 /// <param name="store">Where the uploaded assemblies live.</param>
-/// <param name="host">
-/// The application's own assembly, scanned alongside the uploads so anything it declares survives a
-/// reload. Null when there is nothing of its own to contribute.
+/// <param name="hosts">
+/// The application's own assemblies, scanned alongside the uploads so anything they declare
+/// survives a reload — the one the application was built from, in production. Empty when there is
+/// nothing of its own to contribute.
 /// </param>
 /// <remarks>
-/// Reloading replaces process-wide state: Memoria keeps its binding maps in static properties on
-/// <see cref="TypeBindings"/> and <see cref="DcbTypeBindings"/>, so a reload changes what every
-/// request on this server resolves, for everyone, at once. That is what makes an upload take effect
-/// without a restart, and it is also why one bad upload is everybody's problem. Pages already
-/// rendered are not told; a browser refresh picks the new set up.
+/// A reload replaces what every request on this server resolves, for everyone, at once: the
+/// catalogue is published whole, so a request reading it concurrently sees either the previous one
+/// or the new one, never half of each. That is what makes an upload take effect without a restart,
+/// and it is also why one bad upload is everybody's problem. Pages already rendered are not told;
+/// a browser refresh picks the new set up.
+/// <para>
+/// The bindings a store is read through are built per service, from that service's assemblies
+/// alone, and handed to the service's stores; the framework's process-wide maps are left as they
+/// are, so two services may bind one key to two types.
+/// </para>
 /// </remarks>
-public sealed class DomainTypeRegistry(ExtensionStore store, Assembly? host = null)
+public sealed class DomainTypeRegistry(ExtensionStore store, params Assembly[] hosts)
 {
     private readonly Lock _gate = new();
 
@@ -27,13 +32,12 @@ public sealed class DomainTypeRegistry(ExtensionStore store, Assembly? host = nu
     public DomainTypeCatalogue Current { get; private set; } = DomainTypeCatalogue.Empty;
 
     /// <summary>
-    /// Reads every uploaded assembly again and rebuilds the bindings from nothing.
+    /// Reads every uploaded assembly again and rebuilds the catalogue and every service's bindings
+    /// from nothing.
     /// </summary>
     /// <remarks>
     /// From nothing rather than merged into what is already there, so a type that has been removed
-    /// or renamed stops being offered. Each map is built complete and then assigned in one go: a
-    /// request reading a map concurrently sees either the whole previous set or the whole new one,
-    /// never half of each.
+    /// or renamed stops being offered.
     /// </remarks>
     public void Reload()
     {
@@ -61,35 +65,48 @@ public sealed class DomainTypeRegistry(ExtensionStore store, Assembly? host = nu
             var uploaded = loaded.Assemblies
                 .Where(assembly => named.Contains(assembly.FileName))
                 .Select(assembly => assembly.Assembly);
-            var assemblies = host is null
-                ? uploaded.ToList()
-                : new List<Assembly>([host, .. uploaded]);
+            var assemblies = new List<Assembly>([.. hosts, .. uploaded]);
 
-            // The host under the file name a manifest would name it by, so a service may claim
-            // what it declares the way it claims an upload; the name rather than the location,
+            // The hosts under the file name a manifest would name each by, so a service may claim
+            // what one declares the way it claims an upload; the name rather than the location,
             // since an assembly emitted at run time has none.
-            var hostFile = host is null ? null : new LoadedAssembly($"{host.GetName().Name}.dll", host);
+            var hostFiles = hosts
+                .Select(host => new LoadedAssembly($"{host.GetName().Name}.dll", host))
+                .ToList();
 
             var scanned = DomainTypeScanner.Scan(assemblies);
             var errors = new List<string>([.. loaded.Errors, .. scanned.Errors]);
 
-            var events = Bind(scanned.Events, KeyOf<EventType>, "event", errors);
-            var aggregates = Bind(scanned.StreamedAggregates, KeyOf<AggregateType>, "aggregate", errors);
-            var projections = Bind(scanned.StreamedProjections, KeyOf<ProjectionType>, "projection", errors);
-            var dcbAggregates = Bind(scanned.DcbAggregates, KeyOf<AggregateType>, "DCB aggregate", errors);
-            var dcbProjections = Bind(scanned.DcbProjections, KeyOf<ProjectionType>, "DCB projection", errors);
-
-            TypeBindings.EventTypeBindings = events;
-            TypeBindings.AggregateTypeBindings = aggregates;
-            TypeBindings.ProjectionTypeBindings = projections;
-            DcbTypeBindings.AggregateTypeBindings = dcbAggregates;
-            DcbTypeBindings.ProjectionTypeBindings = dcbProjections;
-
-            Current = scanned with
+            var catalogue = scanned with
             {
                 Assemblies = loaded.Assemblies,
-                Host = hostFile,
-                Services = services,
+                Hosts = hostFiles,
+                Services = services
+            };
+
+            // One set per service, from that service's own view of the catalogue: a key two of
+            // its own types claim is reported, and the first keeps it; a key two services claim
+            // is no clash at all, since each reads its own stores through its own set.
+            var bindings = new Dictionary<string, TypeBindingSet>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var service in services)
+            {
+                var own = catalogue.For(service);
+                var what = $"{service.Name}: ";
+
+                bindings[service.Slug] = new TypeBindingSet
+                {
+                    EventTypeBindings = Bind(own.Events, KeyOf<EventType>, what + "event", errors),
+                    AggregateTypeBindings = Bind(own.StreamedAggregates, KeyOf<AggregateType>, what + "aggregate", errors),
+                    ProjectionTypeBindings = Bind(own.StreamedProjections, KeyOf<ProjectionType>, what + "projection", errors),
+                    DcbAggregateTypeBindings = Bind(own.DcbAggregates, KeyOf<AggregateType>, what + "DCB aggregate", errors),
+                    DcbProjectionTypeBindings = Bind(own.DcbProjections, KeyOf<ProjectionType>, what + "DCB projection", errors)
+                };
+            }
+
+            Current = catalogue with
+            {
+                Bindings = bindings,
                 Errors = errors,
                 ReloadedUtc = DateTime.UtcNow
             };

@@ -1,7 +1,8 @@
 @page "/"
+@using Memoria.Web.Data
 @using Memoria.Web.Extensibility
 @inject DomainTypeRegistry Types
-@inject Memoria.Web.Data.StoreCapabilities Store
+@inject ServiceStores Stores
 
 <PageTitle>Memoria</PageTitle>
 
@@ -28,7 +29,8 @@ else
     <ul class="tiles services">
         @foreach (var service in Services)
         {
-            var shown = ShownModels.Of(Types.Current.For(service), Store);
+            var store = Stores.For(service);
+            var shown = ShownModels.Of(Types.Current.For(service), store.Capabilities);
 
             <li>
                 @* Shown by the name the manifest wrote; reached by the address that name makes. *@
@@ -38,8 +40,10 @@ else
                         <span class="name">@service.Name</span>
                         @* Which models the service registered types under, the same words its
                            own page heads them with — so a reader knows before opening it whether
-                           they will find streams, boundaries, or both. *@
-                        <span class="detail">@Models(shown)</span>
+                           they will find streams, boundaries, or both. Or that they will find
+                           nothing yet, and why: a store that cannot be reached is said here,
+                           where the person who can fix the configuration is looking. *@
+                        <span class="detail">@(store.Problem is { } problem ? $"Unreachable: {problem}" : Models(shown))</span>
                     </span>
                 </a>
             </li>

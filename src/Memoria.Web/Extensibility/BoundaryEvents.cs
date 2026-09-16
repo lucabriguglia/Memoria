@@ -136,7 +136,7 @@ public static class BoundaryEvents
                 .ToListAsync(cancellationToken);
 
             var read = rows
-                .Select(row => Read(row.Position, row.EventType, row.Data, row.CreatedDate, row.Tags, row.CreatedBy))
+                .Select(row => Read(context.TypeBindings, row.Position, row.EventType, row.Data, row.CreatedDate, row.Tags, row.CreatedBy))
                 .ToList();
 
             return new StoredEvents(read, total, placed.Page, placed.TotalPages, Error: null)
@@ -290,18 +290,18 @@ public static class BoundaryEvents
     /// </para>
     /// </remarks>
     /// <param name="writtenBy">Who appended it, or null when nobody is named against the row.</param>
-    public static StoredEvent Read(long position, string eventType, string data, DateTimeOffset written,
+    public static StoredEvent Read(TypeBindingSet bindings, long position, string eventType, string data, DateTimeOffset written,
         IReadOnlyList<string>? tags = null, string? writtenBy = null) =>
-        Opened(position, eventType, data, written, tags ?? []) with { WrittenBy = writtenBy };
+        Opened(bindings, position, eventType, data, written, tags ?? []) with { WrittenBy = writtenBy };
 
     /// <summary>
     /// The row with its payload opened, or with why it would not open: everything about it but who
     /// appended it, which holds whatever became of the payload and is put on afterwards.
     /// </summary>
-    private static StoredEvent Opened(long position, string eventType, string data, DateTimeOffset written,
+    private static StoredEvent Opened(TypeBindingSet bindings, long position, string eventType, string data, DateTimeOffset written,
         IReadOnlyList<string> under)
     {
-        if (!TypeBindings.EventTypeBindings.TryGetValue(eventType, out var clrType))
+        if (!bindings.EventTypeBindings.TryGetValue(eventType, out var clrType))
         {
             return new StoredEvent(position, eventType, written, data, [],
                 $"No uploaded type is registered as {eventType}.", under);

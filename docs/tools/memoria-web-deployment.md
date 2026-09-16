@@ -158,13 +158,13 @@ their values.
 | `ASPNETCORE_FORWARDEDHEADERS_ENABLED`    | `true`                                  | App Service terminates TLS in front of the application — see [HTTPS](#https) |
 | `Extensions__Directory`                  | `/home/data/extensions`                 | `/home` is the one path App Service keeps across deployments and restarts |
 | `WEBSITE_RUN_FROM_PACKAGE`               | `1`                                     | The published files are mounted read-only, so nothing can be written next to them |
-| `Database__Provider`                     | `Npgsql`, `SqlServer` or `Cosmos`       | Only when the connection string does not say which engine it is for      |
+| `Databases__{name}__Provider`            | `Npgsql`, `SqlServer` or `Cosmos`       | Only when the connection string of that name does not say which engine it is for |
 | `Authentication__Oidc__Authority`        | your provider's issuer                  | See [Signing in through Entra ID](#signing-in-through-entra-id), or your own provider |
 | `Authentication__Oidc__ClientId`         | what the tool is registered as          | Public by design; the provider shows it to every operator who signs in    |
 | `Authorization__Roles__*`                | the claim values that grant each role   | Policy, not secret — see [Roles](memoria-web-configuration.md#roles)      |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING`  | set by connecting Application Insights  | Every line the tool logs about a write is then found in the portal — see [Who did what](#who-did-what) |
 | `Authentication__Oidc__ClientSecret`     | a Key Vault reference                   | What the tool proves its registration with                                |
-| `ConnectionStrings__Memoria`             | a Key Vault reference                   | Unless it carries no password — see [below](#a-connection-string-with-no-password) |
+| `ConnectionStrings__{name}`              | a Key Vault reference, one per store    | One under each name the installed manifests read — `Memoria` for the samples — unless it carries no password — see [below](#a-connection-string-with-no-password) |
 
 ```bash
 az webapp config appsettings set --name <app> --resource-group memoria-web --settings \
@@ -271,9 +271,9 @@ above.
 
 ### Where the secrets live
 
-The client secret and the connection string go into a Key Vault, and the App Service reads them
+The client secret and the connection strings go into a Key Vault, and the App Service reads them
 from there through an identity of its own. The application is none the wiser: it still finds
-`Authentication:Oidc:ClientSecret` and `ConnectionStrings:Memoria` in its configuration. What
+`Authentication:Oidc:ClientSecret` and each `ConnectionStrings:{name}` in its configuration. What
 changes is who can see the values. Anyone who can read the App Service's settings — the deploy
 identity included — sees a reference, not a secret; rotation is one write to the vault; and the
 vault logs every read.

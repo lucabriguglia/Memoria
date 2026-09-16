@@ -66,18 +66,41 @@ public class DomainTypeRegistryTests : IDisposable
         registry.Current.DcbAggregateIds.Should().Contain(type => type.Name == nameof(SampleDcbAggregateId));
     }
 
+    /// <summary>
+    /// Each service gets a binding set of its own, built from its own assemblies, which is what
+    /// its stores are read through; the process-wide maps are left alone, so two services may
+    /// bind one key to two types.
+    /// </summary>
     [Fact]
-    public void Binds_the_types_to_both_models()
+    public void Binds_each_service_s_types_to_both_models_in_a_set_of_its_own()
     {
         Install("domain.zip", "domain", ["Domain.dll"]);
+        var registry = Registry();
 
-        Registry().Reload();
+        registry.Reload();
 
-        TypeBindings.EventTypeBindings.Should().ContainKey("SampleHappened:1");
-        TypeBindings.AggregateTypeBindings.Should().ContainKey("SampleAggregate:1");
-        TypeBindings.ProjectionTypeBindings.Should().ContainKey("SampleProjection:1");
-        DcbTypeBindings.AggregateTypeBindings.Should().ContainKey("SampleDcbAggregate:1");
-        DcbTypeBindings.ProjectionTypeBindings.Should().ContainKey("SampleDcbProjection:1");
+        var bindings = registry.Current.BindingsOf(registry.Current.ServiceAt("domain")!);
+        using (new AssertionScope())
+        {
+            bindings.EventTypeBindings.Should().ContainKey("SampleHappened:1");
+            bindings.AggregateTypeBindings.Should().ContainKey("SampleAggregate:1");
+            bindings.ProjectionTypeBindings.Should().ContainKey("SampleProjection:1");
+            bindings.DcbAggregateTypeBindings.Should().ContainKey("SampleDcbAggregate:1");
+            bindings.DcbProjectionTypeBindings.Should().ContainKey("SampleDcbProjection:1");
+            TypeBindings.EventTypeBindings.Should().NotContainKey("SampleHappened:1");
+        }
+    }
+
+    [Fact]
+    public void Binds_nothing_for_a_service_naming_an_assembly_that_did_not_load()
+    {
+        Install("domain.zip", "domain", ["Domain.dll"]);
+        var registry = Registry();
+
+        registry.Reload();
+
+        var stranger = new Service("Stranger", ["Missing.dll"], "Memoria", [], []);
+        registry.Current.BindingsOf(stranger).EventTypeBindings.Should().BeEmpty();
     }
 
     /// <summary>
@@ -94,8 +117,12 @@ public class DomainTypeRegistryTests : IDisposable
         Store().Remove("domain.zip");
         registry.Reload();
 
-        TypeBindings.EventTypeBindings.Should().NotContainKey("SampleHappened:1");
-        registry.Current.Count.Should().Be(0);
+        using (new AssertionScope())
+        {
+            registry.Current.Services.Should().BeEmpty();
+            registry.Current.Bindings.Should().BeEmpty();
+            registry.Current.Count.Should().Be(0);
+        }
     }
 
     [Fact]
@@ -107,7 +134,8 @@ public class DomainTypeRegistryTests : IDisposable
         Install("domain.zip", "domain", ["Domain.dll"]);
         registry.Reload();
 
-        TypeBindings.EventTypeBindings.Should().ContainKey("SampleHappened:1");
+        registry.Current.BindingsOf(registry.Current.ServiceAt("domain")!).EventTypeBindings
+            .Should().ContainKey("SampleHappened:1");
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using Memoria.EventSourcing.Domain;
 using System.Diagnostics;
 using Memoria.EventSourcing.Filtering;
 using Memoria.EventSourcing.Store.Cosmos.Documents;
@@ -24,7 +25,7 @@ namespace Memoria.Web.Extensibility;
 /// </para>
 /// </remarks>
 public sealed class CosmosStreamedReads(
-    CosmosClient client, string databaseName, string containerName, TotalsCache? totals = null)
+    CosmosClient client, string databaseName, string containerName, TypeBindingSet bindings, TotalsCache? totals = null)
     : IStreamedReads
 {
     /// <summary>
@@ -79,7 +80,7 @@ public sealed class CosmosStreamedReads(
                 .Select(document => new StoredStreamEvent(
                     document.StreamId,
                     document.Id,
-                    BoundaryEvents.Read(document.Sequence, document.EventType, document.Data,
+                    BoundaryEvents.Read(bindings, document.Sequence, document.EventType, document.Data,
                         document.CreatedDate, writtenBy: document.CreatedBy)))
                 .ToList();
 
@@ -244,7 +245,7 @@ public sealed class CosmosStreamedReads(
                     : new StoredStreamEvent(
                         document.StreamId,
                         document.Id,
-                        BoundaryEvents.Read(document.Sequence, document.EventType, document.Data,
+                        BoundaryEvents.Read(bindings, document.Sequence, document.EventType, document.Data,
                             document.CreatedDate, writtenBy: document.CreatedBy)),
                 Error: null);
         }
@@ -381,7 +382,7 @@ public sealed class CosmosStreamedReads(
                     : new StoredStreamEvent(
                         document.StreamId,
                         document.Id,
-                        BoundaryEvents.Read(document.Sequence, document.EventType, document.Data,
+                        BoundaryEvents.Read(bindings, document.Sequence, document.EventType, document.Data,
                             document.CreatedDate, writtenBy: document.CreatedBy)),
                 Error: null);
         }

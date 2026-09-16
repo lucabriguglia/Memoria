@@ -1,7 +1,7 @@
 @inherits LayoutComponentBase
 @using Memoria.Web.Extensibility
 @inject NavigationManager Navigation
-@inject Memoria.Web.Data.StoreCapabilities Store
+@inject Memoria.Web.Data.ServiceStores Stores
 @inject CurrentService Current
 @inject AuthenticationSettings SignIn
 
@@ -212,7 +212,9 @@
     /// not found under such a store either — see Routes.razor, which is what makes a bookmarked
     /// address agree with this bar.
     /// </summary>
-    private ShownModels Shown => ShownModels.Of(Current.Catalogue, Store);
+    private ShownModels Shown => Current.Service is { } service
+        ? ShownModels.Of(Current.Catalogue, Stores.For(service).Capabilities)
+        : new ShownModels(Streamed: false, Dcb: false);
 
     /// <summary>An address under the current service: the segment its pages sit under, then the page.</summary>
     private string At(string path) => $"{Current.Segment}/{path}";

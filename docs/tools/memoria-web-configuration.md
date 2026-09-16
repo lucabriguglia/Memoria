@@ -1,8 +1,8 @@
 # Memoria Web: configuration
 
 Everything [Memoria Web](memoria-web.md) needs is configuration, and only two things are required:
-the store to open, and how operators sign in. The rest have defaults that are right for a store
-installed under Memoria's own default names.
+a connection string for each store the installed services read, and how operators sign in. The
+rest have defaults that are right for a store installed under Memoria's own default names.
 
 Settings are read the way ASP.NET Core reads any of them — `appsettings.json`,
 `appsettings.{Environment}.json`, environment variables, then command-line arguments — so a setting
@@ -12,10 +12,13 @@ can be overridden without editing a file.
 
 | Setting                          | Required                        | Default                               | What it is                                       |
 | -------------------------------- | ------------------------------- | ------------------------------------- | ------------------------------------------------ |
-| `ConnectionStrings:Memoria`      | Yes                             | —                                     | The store to open                                |
-| `Database:Provider`              | Only when the string is unclear | Read off the connection string        | `Npgsql`, `SqlServer`, `Sqlite` or `Cosmos`      |
-| `Database:Cosmos:DatabaseName`   | No                              | `Memoria`                             | Cosmos only: the database the container is in    |
-| `Database:Cosmos:ContainerName`  | No                              | `Domain`                              | Cosmos only: the container the store writes into |
+| `ConnectionStrings:{name}`       | One per store a service reads   | —                                     | A store to open, under the name a service's manifest reads it by — see [The connection strings](#the-connection-strings) |
+| `Databases:{name}:Provider`      | Only when that string is unclear | Read off the connection string       | `Npgsql`, `SqlServer`, `Sqlite` or `Cosmos`, for the string of that name |
+| `Databases:{name}:Cosmos:DatabaseName` | No                        | `Memoria`                             | Cosmos only: the database the container is in, for the string of that name |
+| `Databases:{name}:Cosmos:ContainerName` | No                       | `Domain`                              | Cosmos only: the container the store writes into, for the string of that name |
+| `Database:Provider`              | No                              | —                                     | The older form of the three above, still read for the string called `Memoria` alone |
+| `Database:Cosmos:DatabaseName`   | No                              | `Memoria`                             | Likewise                                         |
+| `Database:Cosmos:ContainerName`  | No                              | `Domain`                              | Likewise                                         |
 | `Extensions:Directory`           | No                              | `<content root>/App_Data/extensions`  | Where uploaded archives and assemblies are kept  |
 | `Authentication:Oidc:Authority`  | Unless running open             | —                                     | The OpenID Connect provider operators sign in through |
 | `Authentication:Oidc:ClientId`   | Unless running open             | —                                     | What the tool is registered as at that provider  |
@@ -28,34 +31,59 @@ can be overridden without editing a file.
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | No                       | —                                     | Sends the log to Application Insights — see [Logging and hosting](#logging-and-hosting) |
 
 As environment variables, replace each `:` with a double underscore:
-`ConnectionStrings__Memoria`, `Database__Provider`, `Extensions__Directory`,
+`ConnectionStrings__Orders`, `Databases__Orders__Provider`, `Extensions__Directory`,
 `Authentication__Oidc__ClientSecret`, `Authorization__Roles__Administrator`.
 
 ## When it is not configured
 
-A tool told nothing about its store, or nothing about how operators sign in, does not serve its
-pages. It answers every address with one page instead — at status 503, so a health check or a
-monitor reads it as a deployment that is not up — saying which settings would have let it start
-and linking back here. Nothing else is mapped while it does: not a page, not the upload form. The
-same is said in the log, as an error, for whoever is looking at the host rather than the browser.
-The messages quoted below are what that page and that log say.
+A tool told nothing about how operators sign in, or holding a connection string it cannot read,
+does not serve its pages. It answers every address with one page instead — at status 503, so a
+health check or a monitor reads it as a deployment that is not up — saying which settings would
+have let it start and linking back here. Nothing else is mapped while it does: not a page, not the
+upload form. The same is said in the log, as an error, for whoever is looking at the host rather
+than the browser. The messages quoted below are what that page and that log say.
 
-## The connection string
+A connection string that is missing is not that. The tool starts, and the service that named it is
+[unreachable](#the-connection-strings) until the string is there.
+
+## The connection strings
+
+Each service's manifest names the connection string it is read over — `"connectionString":
+"Orders"` in [the manifest](#what-to-put-in-a-zip) — and the configuration holds a string under
+that name:
 
 ```json
 {
   "ConnectionStrings": {
-    "Memoria": "Host=localhost;Port=5432;Database=memoria_samples;Username=postgres;Password=password"
+    "Orders": "Host=localhost;Port=5432;Database=orders;Username=postgres;Password=password",
+    "Billing": "Data Source=C:\\stores\\billing.db"
   }
 }
 ```
 
-Without it, the tool answers only [the page that says so](#when-it-is-not-configured):
+One instance holds as many strings as its services name, and two services may name one string
+and read one store. No name is required, `Memoria` — the one name the tool read before it had
+services — included. A service naming a string the configuration lacks is listed on the home
+page as unreachable, *not configured*, and each of its pages says so in place of its rows, until
+the string is added and the tool restarted. The manifest is not refused for it: the zip may well
+be uploaded before the deployment it is meant for is configured.
 
-> Connection string 'Memoria' is not configured in appsettings.json.
+A string that is there but cannot be read is a different thing — a mistake in the file rather than
+a service ahead of its deployment — and the tool answers only
+[the page that says so](#when-it-is-not-configured), whatever the string is called:
 
-The tool opens a store somebody else created. It creates nothing — no database, no container, no
-table — so the store has to exist and carry the 1.9.0 schema already. See
+> Connection string 'Orders' could not be read: …
+
+Start-up logs one line per service, so a store that answers nothing can be traced to the string
+it was opened over, or to the string it was not:
+
+```
+info: Memoria.Web[0]  Service Orders reads connection string Orders with PostgreSQL.
+warn: Memoria.Web[0]  Service Billing names connection string Billing, which is not configured.
+```
+
+The tool opens stores somebody else created. It creates nothing — no database, no container, no
+table — so each store has to exist and carry the 1.9.0 schema already. See
 [Install the store schema](../guides/install-the-store-schema.md).
 
 ### Which engine it is
@@ -63,33 +91,31 @@ table — so the store has to exist and carry the 1.9.0 schema already. See
 The engine is read off the connection string. Most strings say plainly which one they are for,
 because each provider takes keywords the others do not:
 
-| Engine     | Recognised by                                                                            | `Database:Provider` |
-| ---------- | ---------------------------------------------------------------------------------------- | ------------------- |
-| PostgreSQL | `Host=`, `Port=`, `Username=`, `SslMode=`, …                                             | `Npgsql`            |
-| SQL Server | `Initial Catalog=`, `Trusted_Connection=`, `(localdb)`, `tcp:`, `.database.windows.net`   | `SqlServer`         |
-| SQLite     | `Data Source=` naming a `.db`/`.sqlite` file, `Mode=`, `Cache=`                           | `Sqlite`            |
-| Cosmos DB  | `AccountEndpoint=`, `AccountKey=`                                                        | `Cosmos`            |
+| Engine     | Recognised by                                                                            | `Databases:{name}:Provider` |
+| ---------- | ---------------------------------------------------------------------------------------- | --------------------------- |
+| PostgreSQL | `Host=`, `Port=`, `Username=`, `SslMode=`, …                                             | `Npgsql`                    |
+| SQL Server | `Initial Catalog=`, `Trusted_Connection=`, `(localdb)`, `tcp:`, `.database.windows.net`   | `SqlServer`                 |
+| SQLite     | `Data Source=` naming a `.db`/`.sqlite` file, `Mode=`, `Cache=`                           | `Sqlite`                    |
+| Cosmos DB  | `AccountEndpoint=`, `AccountKey=`                                                        | `Cosmos`                    |
 
 Keywords all of them take — `Database`, `Server`, `User Id`, `Password` — settle nothing and are
 ignored for this purpose.
 
-Set `Database:Provider` when the string carries signals for more than one engine, or for none. The
-tool refuses to guess in either case, and says which it met:
+Set `Databases:{name}:Provider`, under the string's own name, when that string carries signals
+for more than one engine, or for none. The tool refuses to guess in either case, and says which it
+met:
 
-> The provider for connection string 'Memoria' could not be read off it: it carries keywords for
-> more than one provider. Set Database:Provider to Npgsql, SqlServer, Sqlite or Cosmos.
+> The provider for connection string 'Orders' could not be read off it: it carries keywords for
+> more than one provider. Set Databases:Orders:Provider to Npgsql, SqlServer, Sqlite or Cosmos.
 
 The setting is not checked against the string. It is the way out of a string the tool cannot read, so
 second-guessing it would close the door it opens. The names are matched case-insensitively and
 without spaces, hyphens or underscores, so `SQL Server`, `sql_server` and `sqlserver` are one answer;
 `postgres`, `postgresql` and `npgsql` are another; `cosmos`, `cosmosdb` and `azurecosmosdb` a third.
 
-Which provider was chosen is logged at start-up, because a store that answers nothing is the first
-thing anyone suspects the connection string of:
-
-```
-info: Memoria.Web[0]  Store opened with Npgsql.
-```
+The string called `Memoria` also reads the older, unnamed `Database:Provider`, so a configuration
+written for the tool before it had services settles it as it always did. The named setting wins
+where both are set.
 
 ### In-memory SQLite is refused
 
@@ -109,20 +135,24 @@ separately:
 ```json
 {
   "ConnectionStrings": {
-    "Memoria": "AccountEndpoint=https://localhost:8081/;AccountKey=<key>"
+    "Orders": "AccountEndpoint=https://localhost:8081/;AccountKey=<key>"
   },
-  "Database": {
-    "Cosmos": {
-      "DatabaseName": "memoria_samples",
-      "ContainerName": "Domain"
+  "Databases": {
+    "Orders": {
+      "Cosmos": {
+        "DatabaseName": "orders",
+        "ContainerName": "Domain"
+      }
     }
   }
 }
 ```
 
-Both default to what `CosmosOptions` itself defaults to — `Memoria` and `Domain` — so an account
-installed under those names needs neither setting. Set them to the same values the application that
-wrote the store uses, or the tool opens a container nothing has written to.
+Both sit under the string's own name and default to what `CosmosOptions` itself defaults to —
+`Memoria` and `Domain` — so an account installed under those names needs neither setting. Set them
+to the same values the application that wrote the store uses, or the tool opens a container nothing
+has written to. The string called `Memoria` also reads the older `Database:Cosmos:DatabaseName` and
+`Database:Cosmos:ContainerName`, as with [the provider](#which-engine-it-is).
 
 The client is built in `Gateway` connection mode. The tool asks most of its questions across
 partitions, and gateway mode is the one that works from wherever an operator happens to be running

@@ -1,3 +1,4 @@
+using Memoria.EventSourcing.Domain;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -136,7 +137,7 @@ public class CosmosStreamedModelTests : IAsyncLifetime
             UpdatedDate = start
         }, new PartitionKey(Stream));
 
-        _reads = new CosmosStreamedReads(_client, _databaseName, ContainerName);
+        _reads = new CosmosStreamedReads(_client, _databaseName, ContainerName, TypeBindingSet.Default);
     }
 
     public async Task DisposeAsync()

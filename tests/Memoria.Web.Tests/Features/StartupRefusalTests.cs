@@ -56,16 +56,35 @@ public class StartupRefusalTests
         web.Services.GetRequiredService<EndpointDataSource>().Endpoints.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// A service names the connection string it reads over, so there is no single string to insist
+    /// on at start-up: the tool starts with whatever strings it has, and a service naming one that
+    /// is not there is listed as unreachable rather than stopping everything.
+    /// </summary>
     [Fact]
-    public async Task Answers_a_missing_connection_string_the_same_way()
+    public async Task Starts_without_the_memoria_connection_string()
     {
         using var web = MemoriaWeb.Open().With("ConnectionStrings:Memoria", "");
 
         var home = await web.Client.GetAsync("/");
 
+        home.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    /// <summary>
+    /// A string that is there but cannot be read is still a mistake nobody wants to find minutes
+    /// later against a store that is perfectly reachable, whichever name it is under.
+    /// </summary>
+    [Fact]
+    public async Task Refuses_a_connection_string_it_cannot_read_under_any_name()
+    {
+        using var web = MemoriaWeb.Open().With("ConnectionStrings:Orders", "nonsense");
+
+        var home = await web.Client.GetAsync("/");
+
         home.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
         (await home.Content.ReadAsStringAsync()).Should()
-            .Contain("Connection string").And.Contain("Memoria").And.Contain("is not configured");
+            .Contain("Connection string").And.Contain("Orders").And.Contain("could not be read");
     }
 
     /// <summary>

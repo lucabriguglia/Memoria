@@ -222,9 +222,10 @@ which provider, or told in so many words to run open. See
 for the settings and [Deployment](memoria-web-deployment.md#signing-operators-in) for what to
 register at the provider.
 
-**What an operator may do is their role.** A Reader reads every page; an Updater may also press
-**Update**; an Administrator may also use Settings. Every signed-in operator is a Reader until a
-claim the provider sends is mapped to one of the other two — see
+**What an operator may do is their role, for each service.** A Reader reads a service's pages; an
+Updater may also press **Update**; an Administrator may also use Settings. A service's manifest
+names the claim values that read and update it; the configuration maps claim values to each role
+for every service. An operator named by neither sees no service — see
 [Roles](memoria-web-configuration.md#roles). Map Administrator only to the people you would give
 shell access on the host to, and treat it as exactly that.
 

@@ -19,7 +19,8 @@ public class AuthorizationSettingsTests
         AuthorizationSettings.Of(Configured()).Should().Be(new AuthorizationSettings(
             RoleClaimType: "roles",
             Administrators: [],
-            Updaters: []));
+            Updaters: [],
+            Readers: []));
     }
 
     [Fact]
@@ -27,10 +28,12 @@ public class AuthorizationSettingsTests
     {
         var settings = AuthorizationSettings.Of(Configured(
             ("Authorization:Roles:Administrator", "memoria-admins, ops"),
-            ("Authorization:Roles:Updater", "memoria-updaters")));
+            ("Authorization:Roles:Updater", "memoria-updaters"),
+            ("Authorization:Roles:Reader", "memoria-readers, auditors")));
 
         settings.Administrators.Should().Equal("memoria-admins", "ops");
         settings.Updaters.Should().Equal("memoria-updaters");
+        settings.Readers.Should().Equal("memoria-readers", "auditors");
     }
 
     [Fact]
@@ -61,6 +64,7 @@ public class AuthorizationSettingsTests
         AuthorizationSettings.Of(Configured()).MapsAnyone.Should().BeFalse();
         AuthorizationSettings.Of(Configured(("Authorization:Roles:Updater", "u"))).MapsAnyone.Should().BeTrue();
         AuthorizationSettings.Of(Configured(("Authorization:Roles:Administrator", "a"))).MapsAnyone.Should().BeTrue();
+        AuthorizationSettings.Of(Configured(("Authorization:Roles:Reader", "r"))).MapsAnyone.Should().BeTrue();
     }
 
     private static IConfiguration Configured(params (string Key, string Value)[] settings)

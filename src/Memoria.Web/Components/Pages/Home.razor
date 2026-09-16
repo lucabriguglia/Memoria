@@ -3,20 +3,33 @@
 @using Memoria.Web.Extensibility
 @inject DomainTypeRegistry Types
 @inject ServiceStores Stores
+@inject ServiceAccess Access
 
 <PageTitle>Memoria</PageTitle>
 
 <h1>Memoria</h1>
 
-@* The services installed, each the way into its own page. A service is a named set of domain
-   assemblies read over one store, declared by the manifest in the zip that brought it; what a
-   reader picks here is which one to read. Drawn as the tiles every section of the site is
-   entered by, one a service, so the front door and the doors behind it are the same shape. *@
+@* The services installed that this operator may read, each the way into its own page. A service
+   is a named set of domain assemblies read over one store, declared by the manifest in the zip
+   that brought it; what a reader picks here is which one to read. Drawn as the tiles every
+   section of the site is entered by, one a service, so the front door and the doors behind it
+   are the same shape. *@
 @if (Services.Count == 0)
 {
     <p class="lede">
         No services are installed. A zip uploaded under
         <a href="settings">Settings</a> declares the services it brings, and each is listed here.
+    </p>
+}
+else if (Visible.Count == 0)
+{
+    @* Silence is nobody: an operator whose sign-in carries nothing a manifest or the
+       configuration names sees no service, and is told that is why, and who can change it —
+       rather than a page that looks like a tool with nothing in it. *@
+    <p class="lede">
+        Nothing your sign-in carries names a service. A service is read by the operators its
+        manifest names, or by anyone the tool's configuration maps to a role for every service.
+        Ask whoever runs the service you were after, or whoever runs this tool, to name yours.
     </p>
 }
 else
@@ -27,7 +40,7 @@ else
     </p>
 
     <ul class="tiles services">
-        @foreach (var service in Services)
+        @foreach (var service in Visible)
         {
             var store = Stores.For(service);
             var shown = ShownModels.Of(Types.Current.For(service), store.Capabilities);
@@ -53,7 +66,21 @@ else
 
 @code {
 
+    /// <summary>Who is asking, as the sign-in says; open, nobody, and everything is theirs to read.</summary>
+    [CascadingParameter]
+    public Task<AuthenticationState>? AuthenticationState { get; set; }
+
     private IReadOnlyList<Service> Services => Types.Current.Services;
+
+    /// <summary>The services this operator may read: named by their manifest, or by a global role.</summary>
+    private IReadOnlyList<Service> Visible { get; set; } = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = AuthenticationState is { } state ? (await state).User : new System.Security.Claims.ClaimsPrincipal();
+
+        Visible = Services.Where(service => Access.Grants(user, Roles.Reader, service)).ToList();
+    }
 
     /// <summary>What a service registered under, in the words the site names the models by.</summary>
     private static string Models(ShownModels shown) => shown switch

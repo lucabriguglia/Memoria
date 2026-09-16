@@ -93,21 +93,26 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
     /// <summary>The service every instance knowing types declares them under.</summary>
     public const string ServiceName = "samples";
 
-    private readonly List<(string Name, string ConnectionString, System.Reflection.Assembly? Assembly)> _services = [];
+    private readonly List<(string Name, string ConnectionString, System.Reflection.Assembly? Assembly, string[] Read, string[] Update)> _services = [];
 
     /// <summary>
     /// The same instance declaring one more service, under the name given as a manifest would
     /// write it, over the connection string named — <c>Memoria</c>, the one every instance is
     /// given, unless said — and naming the assembly given, or the host's when none is: so the
     /// same types, or an emitted assembly's, are browsed under a second address made from that
-    /// name, over a second store when one is named.
+    /// name, over a second store when one is named. The roles are the claim values the manifest
+    /// writes under <c>roles.read</c> and <c>roles.update</c>; none, unless said.
     /// </summary>
     public MemoriaWeb WithService(
-        string name, string connectionString = "Memoria", System.Reflection.Assembly? assembly = null)
+        string name, string connectionString = "Memoria", System.Reflection.Assembly? assembly = null,
+        string[]? read = null, string[]? update = null)
     {
-        _services.Add((name, connectionString, assembly));
+        _services.Add((name, connectionString, assembly, read ?? [], update ?? []));
         return this;
     }
+
+    /// <summary>The values as a JSON array's items, quoted and comma-separated.</summary>
+    private static string Quoted(string[] values) => string.Join(", ", values.Select(value => $"\"{value}\""));
 
     /// <summary>
     /// The same instance knowing the sample domain types this test assembly carries, as if they
@@ -362,29 +367,30 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
         // called. Nothing is extracted from them; the registry scans the assemblies it was given
         // — the host and any an extra service brought — and attributes their types to the service
         // naming each by that name. The host's own service comes first, when there is a host.
-        var declared = new List<(string Name, string ConnectionString, System.Reflection.Assembly Assembly)>();
+        var declared = new List<(string Name, string ConnectionString, System.Reflection.Assembly Assembly, string[] Read, string[] Update)>();
 
         if (_host is { } host)
         {
-            declared.Add((ServiceName, "Memoria", host));
+            declared.Add((ServiceName, "Memoria", host, [], []));
         }
 
         declared.AddRange(_services
             .Where(service => service.Assembly is not null || _host is not null)
-            .Select(service => (service.Name, service.ConnectionString, service.Assembly ?? _host!)));
+            .Select(service => (service.Name, service.ConnectionString, service.Assembly ?? _host!, service.Read, service.Update)));
 
         if (declared.Count > 0)
         {
             var zips = Path.Combine(ExtensionsDirectory, "zips");
             Directory.CreateDirectory(zips);
 
-            foreach (var ((name, connectionString, assembly), index) in declared.Select((service, index) => (service, index)))
+            foreach (var ((name, connectionString, assembly, read, update), index) in declared.Select((service, index) => (service, index)))
             {
                 using var archive = ZipFile.Open(Path.Combine(zips, $"service-{index}.zip"), ZipArchiveMode.Create);
                 using var manifest = new StreamWriter(archive.CreateEntry("memoria.json").Open());
                 manifest.Write($$"""
                     { "services": [ { "name": "{{name}}", "assemblies": ["{{assembly.GetName().Name}}.dll"],
-                                      "connectionString": "{{connectionString}}" } ] }
+                                      "connectionString": "{{connectionString}}",
+                                      "roles": { "read": [{{Quoted(read)}}], "update": [{{Quoted(update)}}] } } ] }
                     """);
             }
         }

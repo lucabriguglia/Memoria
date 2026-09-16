@@ -5,9 +5,10 @@ namespace Memoria.Web.Security;
 /// </summary>
 /// <remarks>
 /// A Reader browses. An Updater may also press Update, which writes a snapshot. An Administrator
-/// may also use Settings, which installs an assembly the process loads and runs. Every signed-in
-/// operator is a Reader; the other two are granted by mapping a claim the provider sends. The
-/// names are the glossary's, and the policy each maps to carries the same name.
+/// may also use Settings, which installs an assembly the process loads and runs. Each is granted
+/// by mapping a claim the provider sends: globally, in configuration, for every service; or by a
+/// service's own manifest, for that service — see <see cref="ServiceAccess"/>. The names are the
+/// glossary's, and the policy each maps to carries the same name.
 /// </remarks>
 public static class Roles
 {
@@ -19,6 +20,13 @@ public static class Roles
 
     /// <summary>May also install, remove and reread the uploaded assemblies.</summary>
     public const string Administrator = "Administrator";
+
+    /// <summary>The three, lowest first; a role includes every one before it.</summary>
+    private static readonly string[] Ordered = [Reader, Updater, Administrator];
+
+    /// <summary>Whether holding <paramref name="held"/> is holding <paramref name="wanted"/> too.</summary>
+    public static bool Includes(string held, string wanted) =>
+        Array.IndexOf(Ordered, held) >= Array.IndexOf(Ordered, wanted);
 
     /// <summary>
     /// The claim the tool's own roles are carried in, once mapped. Its own rather than the

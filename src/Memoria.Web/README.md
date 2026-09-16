@@ -30,10 +30,12 @@ and nothing answers anyone who has not, form posts included. The tool answers no
 saying so until it is told which provider, or told in so many words to run open, which is what
 [`appsettings.Development.json`](appsettings.Development.json) does for `dotnet run` on localhost.
 
-Signed in, an operator is a Reader, an Updater or an Administrator, each including the one before:
-read every page; also press **Update**; also upload a `.dll` that this process will load and
-execute. Every operator is a Reader until a claim the provider sends is mapped to one of the other
-two, so map Administrator only to the people you would give shell access on the host to. See
+Signed in, an operator holds, for each service, one of Reader, Updater or Administrator, each
+including the one before: read its pages; also press **Update**; also upload a `.dll` that this
+process will load and execute. A service's manifest names the claim values that may read and update
+it; the configuration maps claim values to each role for every service. An operator named by neither
+sees no service, so map Administrator only to the people you would give shell access on the host
+to. See
 [Configuration](https://lucabriguglia.github.io/Memoria/tools/memoria-web-configuration.html#signing-operators-in)
 for the settings and
 [Deployment](https://lucabriguglia.github.io/Memoria/tools/memoria-web-deployment.html#signing-operators-in)
@@ -56,6 +58,7 @@ for what to register at the provider.
 | `Authorization:RoleClaimType`      | No                              | `roles`                              |
 | `Authorization:Roles:Administrator` | No                             | —                                    |
 | `Authorization:Roles:Updater`      | No                              | —                                    |
+| `Authorization:Roles:Reader`       | No                              | —                                    |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | No                         | — (the log stays on the host)        |
 
 PostgreSQL, SQL Server and SQLite are read through Entity Framework Core and carry both consistency

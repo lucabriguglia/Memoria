@@ -44,7 +44,7 @@ A fan-out message. Multiple `INotificationHandler<T>` handlers can be registered
 
 ## Operator
 
-*Memoria Web.* A person signed in to the tool. Every operator holds one of three roles, each including the one before it: [Reader](#reader), [Updater](#updater), [Administrator](#administrator).
+*Memoria Web.* A person signed in to the tool. For each [service](#service), an operator may hold one of three roles, each including the one before it: [Reader](#reader), [Updater](#updater), [Administrator](#administrator) — granted for that service by its [manifest](#manifest), or for every service by the tool's configuration. An operator holding none sees no service.
 
 ## Projection
 
@@ -60,7 +60,7 @@ Controls how `IDomainService.GetAggregate` reconstructs an aggregate. Four varia
 
 ## Reader
 
-*Memoria Web.* The role every signed-in [operator](#operator) holds: may read every page and nothing more. An operator whose claims match no mapping is a Reader.
+*Memoria Web.* The role that may read a [service](#service)'s pages and nothing more. Granted for one service by a claim value its [manifest](#manifest) names under `roles.read`, or for every service by mapping a claim value under `Authorization:Roles:Reader` — see [Roles](../tools/memoria-web-configuration.md#roles). An operator whose claims match no mapping and no manifest holds no role and sees no service.
 
 ## Result Pattern
 

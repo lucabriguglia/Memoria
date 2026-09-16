@@ -50,7 +50,9 @@ public static class SignInRegistration
 
             // The three policies exist so that the pages and posts naming them can be mapped, and
             // each is met by anyone: open, there is nobody to hold a role, and nothing is kept
-            // from the nobody who is asking.
+            // from the nobody who is asking. The access decision the pages ask directly answers
+            // the same way.
+            services.AddSingleton(ServiceAccess.Open);
             services.AddAuthorization(options =>
             {
                 foreach (var role in new[] { Roles.Reader, Roles.Updater, Roles.Administrator })
@@ -63,6 +65,7 @@ public static class SignInRegistration
         }
 
         services.AddSingleton(roles);
+        services.AddSingleton(new ServiceAccess(roles));
         services.AddTransient<IClaimsTransformation, RoleClaims>();
         services.AddSingleton<IAuthorizationHandler, RoleRequirement.Handler>();
         services.AddSingleton<IAuthorizationMiddlewareResultHandler, ForbiddenRedirect>();
@@ -204,19 +207,22 @@ public static class SignInRegistration
         if (roles.MapsAnyone)
         {
             logger.LogInformation(
-                "Roles are read off the {Claim} claim: Administrator for {Administrators}, Updater for {Updaters}.",
+                "Roles are read off the {Claim} claim: Administrator for {Administrators}, Updater for {Updaters}, Reader for {Readers}.",
                 roles.RoleClaimType,
                 string.Join(", ", roles.Administrators),
-                string.Join(", ", roles.Updaters));
+                string.Join(", ", roles.Updaters),
+                string.Join(", ", roles.Readers));
             return;
         }
 
         // Said at start-up rather than discovered at the upload form. Silence is the safe reading,
         // but an administrator who forgot the mapping should hear about it here first.
         logger.LogInformation(
-            "No roles are mapped: every signed-in operator is a Reader, and nobody can update a " +
-            "snapshot or use Settings. Set {Administrator} and {Updater} to the claim values that grant them.",
+            "No roles are mapped: a signed-in operator sees only the services whose manifest names a " +
+            "claim value they hold, and nobody can use Settings. Set {Administrator}, {Updater} and " +
+            "{Reader} to the claim values that grant each role for every service.",
             AuthorizationSettings.AdministratorSetting,
-            AuthorizationSettings.UpdaterSetting);
+            AuthorizationSettings.UpdaterSetting,
+            AuthorizationSettings.ReaderSetting);
     }
 }

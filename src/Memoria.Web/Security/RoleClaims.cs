@@ -4,21 +4,29 @@ using Microsoft.AspNetCore.Authentication;
 namespace Memoria.Web.Security;
 
 /// <summary>
-/// Turns what the provider said about an operator into the roles the tool understands.
+/// Turns what the provider said about an operator into the global roles the tool understands.
 /// </summary>
 /// <remarks>
 /// Runs on every authenticated request, whichever scheme authenticated it, and reads the claim
 /// the settings name for the values the settings map. What it adds is a claim of the tool's own
 /// type, so a group the provider happens to call Administrator grants nothing until configuration
-/// says it does. Idempotent, as a transformation has to be: asked twice about the same principal
-/// it adds nothing the second time.
+/// says it does. Nothing is added for a value nothing maps — not Reader either: since a service's
+/// manifest may name its own readers, silence is nobody rather than everybody. Idempotent, as a
+/// transformation has to be: asked twice about the same principal it adds nothing the second
+/// time, which the marker claim below is for.
 /// </remarks>
 public sealed class RoleClaims(AuthorizationSettings settings) : IClaimsTransformation
 {
+    /// <summary>
+    /// The claim that says the principal has been looked at, whether or not a role was added —
+    /// so a principal mapped to nothing is not mapped again on every request.
+    /// </summary>
+    public const string MappedClaimType = "memoria-web:mapped";
+
     public Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {
         if (principal.Identity is not ClaimsIdentity { IsAuthenticated: true } identity ||
-            identity.HasClaim(claim => claim.Type == Roles.ClaimType))
+            identity.HasClaim(claim => claim.Type == MappedClaimType))
         {
             return Task.FromResult(principal);
         }
@@ -35,9 +43,12 @@ public sealed class RoleClaims(AuthorizationSettings settings) : IClaimsTransfor
             identity.AddClaim(new Claim(Roles.ClaimType, Roles.Updater));
         }
 
-        // Every signed-in operator, so that a principal carrying no role claim at all cannot be
-        // mistaken for one that was never looked at.
-        identity.AddClaim(new Claim(Roles.ClaimType, Roles.Reader));
+        if (settings.Readers.Any(sent.Contains))
+        {
+            identity.AddClaim(new Claim(Roles.ClaimType, Roles.Reader));
+        }
+
+        identity.AddClaim(new Claim(MappedClaimType, "true"));
 
         return Task.FromResult(principal);
     }

@@ -646,11 +646,12 @@ else
             @* Held behind the role the button needs, here rather than on the tab's link: this is a
                page a Reader is already reading, so the tab is better explained than removed. The
                explanation names the role, which is what they have to ask for. *@
-            <AuthorizeView Policy="@Roles.Updater" Context="signedIn">
+            <AuthorizeView Policy="@Roles.Updater" Resource="Current.Service" Context="signedIn">
             <NotAuthorized>
                 <p class="missing">
-                    Updating a snapshot needs the Updater role, which you do not hold. Ask whoever runs
-                    this tool to map yours.
+                    Updating a snapshot needs the Updater role — for this service, or for every
+                    service — which you do not hold. Ask whoever runs this service to name yours in
+                    its manifest, or whoever runs this tool to map it.
                 </p>
             </NotAuthorized>
             <Authorized>

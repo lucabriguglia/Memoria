@@ -5,10 +5,11 @@ repository, and you build it, publish it, and host it yourself.
 
 > **Read [Security](memoria-web.md#security) before deciding where to put it.** Operators sign in
 > through your OpenID Connect provider — see [Signing operators in](#signing-operators-in) — and
-> what each may do is decided by a role mapped from a claim the provider sends. Until a mapping is
-> configured every operator is a Reader; map the Administrator role only to people you would give
-> shell access on the host to, because an Administrator uploads assemblies this process will load
-> and execute.
+> what each may do is decided by a role mapped from a claim the provider sends — by each service's
+> manifest for that service, or by the configuration for every service. Until one or the other
+> names a claim an operator holds, they see no service; map the Administrator role only to people
+> you would give shell access on the host to, because an Administrator uploads assemblies this
+> process will load and execute.
 
 ## Run it locally
 
@@ -185,7 +186,8 @@ deployment removes them.
 Any provider that publishes a discovery document will do — see
 [Signing operators in](#signing-operators-in) — and Microsoft Entra ID is the one the subscription
 already has. Registering the tool there produces the authority, the client id and the client secret
-the settings above need, and the app roles that make some operators more than Readers.
+the settings above need, and the app roles that grant operators a role for every service — or that
+a service's manifest names, for that service alone.
 
 **Register the tool** as a confidential web client, with both addresses the tool sends operators
 back to. Entra checks the post-sign-out address against the same list as the sign-in one, so both
@@ -251,18 +253,18 @@ Then **assign people to the roles**. That is done on the service principal the l
 created, in the portal: **Entra ID → Enterprise applications → memoria-web → Users and groups →
 Add user/group**, pick the operator or a group they are in, pick the role. A group works as well as
 a person, and is the usual choice: membership of the group is then the whole of who may upload an
-assembly. Nobody needs assigning to be a Reader.
+assembly. A team's own role — `orders-team`, say — needs no mapping in the settings: the team's
+service names it in its manifest, and Entra sends it in the same claim.
 
-**Decide who may sign in at all.** As registered, every account in the tenant can sign in and is a
-Reader. If only the assigned operators should get that far, require an assignment:
+**Decide who may sign in at all.** As registered, every account in the tenant can sign in — and
+sees nothing until a manifest or the settings name a role they hold. If only the assigned operators
+should get that far, require an assignment:
 
 ```bash
 az ad sp update --id <appId> --set appRoleAssignmentRequired=true
 ```
 
-Anyone else is then turned away by Entra before the tool sees them. Give Readers a role of their own
-if you take this route — an app role with any value the settings do not map grants nothing beyond
-Reader, and lets them in.
+Anyone else is then turned away by Entra before the tool sees them.
 
 The tool asks Entra for `openid profile email` by default, which is enough: the name shown in the
 log lines comes from `profile`, and the roles ride along without being asked for. Sign-out ends

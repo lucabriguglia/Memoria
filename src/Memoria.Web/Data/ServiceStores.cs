@@ -5,6 +5,7 @@ using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore;
 using Memoria.EventSourcing.Store.EntityFrameworkCore;
 using Memoria.EventSourcing.Store.EntityFrameworkCore.Filtering;
 using Memoria.Web.Extensibility;
+using Memoria.Web.Security;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -113,7 +114,14 @@ public static class ServiceStoreRegistration
     /// Puts each request inside the service its first segment names, before anything answers it
     /// — so a form post under a service resolves that service's store the way a page does, and a
     /// name no manifest declares leaves the request outside every service for the router to answer.
+    /// An operator the service does not admit is sent to the page that says so instead: the
+    /// service's own read roles are the one thing the address's policy cannot ask for, since
+    /// every page shares one policy, so it is asked here, once, in front of all of them.
     /// </summary>
+    /// <remarks>
+    /// After authorization, so whoever reaches this is signed in when signing in is required,
+    /// and the claims transformation has said which global roles they hold.
+    /// </remarks>
     public static IApplicationBuilder UseServiceScope(this IApplicationBuilder app) =>
         app.Use(async (context, next) =>
         {
@@ -127,6 +135,15 @@ public static class ServiceStoreRegistration
 
                 if (types.Current.ServiceAt(segment) is { } service)
                 {
+                    var access = context.RequestServices.GetRequiredService<ServiceAccess>();
+
+                    if (!access.Grants(context.User, Roles.Reader, service))
+                    {
+                        context.Response.Redirect(
+                            ForbiddenRedirect.Address(Roles.Reader, service, ForbiddenRedirect.Asked(context)));
+                        return;
+                    }
+
                     context.RequestServices.GetRequiredService<CurrentService>().Enter(service, types.Current);
                 }
             }

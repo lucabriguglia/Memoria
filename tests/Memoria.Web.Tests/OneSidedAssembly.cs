@@ -35,6 +35,13 @@ internal static class OneSidedAssembly
     public static readonly Assembly OneNamespace = DeclaringAggregates("OneNamespace", "FirstAggregate", "SecondAggregate");
 
     /// <summary>
+    /// Two events and one streamed aggregate that applies only the first: what a domain looks like
+    /// when an event is bound and written but no model of the service folds it. The service
+    /// registers two events and its model applies one.
+    /// </summary>
+    public static readonly Assembly PartlyApplied = DeclaringPartlyApplied("PartlyApplied");
+
+    /// <summary>
     /// An assembly declaring one event under the given binding name and nothing else: what two
     /// services that both claim <c>ProductCreated:1</c> look like, each in an assembly of its own.
     /// A record with no state, so a stored payload of <c>{}</c> opens into it.
@@ -43,14 +50,31 @@ internal static class OneSidedAssembly
     {
         var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Run);
         var module = assembly.DefineDynamicModule(assemblyName);
-        var type = module.DefineType(
-            $"{assemblyName}.{eventName}", TypeAttributes.Public | TypeAttributes.Class, typeof(object), [typeof(IEvent)]);
+
+        DefineEvent(module, $"{assemblyName}.{eventName}", eventName);
+        return assembly;
+    }
+
+    private static Type DefineEvent(ModuleBuilder module, string fullName, string eventName)
+    {
+        var type = module.DefineType(fullName, TypeAttributes.Public | TypeAttributes.Class, typeof(object), [typeof(IEvent)]);
 
         type.DefineDefaultConstructor(MethodAttributes.Public);
         type.SetCustomAttribute(new CustomAttributeBuilder(
             typeof(EventType).GetConstructor([typeof(string), typeof(byte)])!, [eventName, (byte)1]));
 
-        type.CreateType();
+        return type.CreateType();
+    }
+
+    private static Assembly DeclaringPartlyApplied(string assemblyName)
+    {
+        var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Run);
+        var module = assembly.DefineDynamicModule(assemblyName);
+
+        var applied = DefineEvent(module, $"{assemblyName}.Applied", "Applied");
+        DefineEvent(module, $"{assemblyName}.Loose", "Loose");
+        DefineAggregate(module, $"{assemblyName}.Folding", applies: applied);
+
         return assembly;
     }
 
@@ -61,43 +85,64 @@ internal static class OneSidedAssembly
 
         foreach (var typeName in typeNames)
         {
-            var type = module.DefineType(
-                $"{assemblyName}.{typeName}", TypeAttributes.Public | TypeAttributes.Class, typeof(AggregateRoot));
-
-            // The two members the base leaves abstract, answering as the samples do: no filter,
-            // and no event applied.
-            var filter = type.DefineMethod(
-                "get_EventTypeFilter",
-                MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
-                typeof(Type[]),
-                Type.EmptyTypes);
-            var filterIl = filter.GetILGenerator();
-            filterIl.Emit(OpCodes.Ldnull);
-            filterIl.Emit(OpCodes.Ret);
-            type.DefineMethodOverride(filter, typeof(EventSourcedModel).GetProperty(nameof(EventSourcedModel.EventTypeFilter))!.GetGetMethod()!);
-            type.DefineProperty(nameof(EventSourcedModel.EventTypeFilter), PropertyAttributes.None, typeof(Type[]), null).SetGetMethod(filter);
-
-            var apply = type.DefineMethod(
-                "Apply",
-                MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig,
-                typeof(bool),
-                Type.EmptyTypes);
-            var eventType = apply.DefineGenericParameters("T")[0];
-            eventType.SetInterfaceConstraints(typeof(IEvent));
-            apply.SetParameters(eventType);
-            var applyIl = apply.GetILGenerator();
-            applyIl.Emit(OpCodes.Ldc_I4_0);
-            applyIl.Emit(OpCodes.Ret);
-            type.DefineMethodOverride(
-                apply,
-                typeof(EventSourcedModel)
-                    .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
-                    .Single(method => method.Name == "Apply" && method.IsGenericMethodDefinition));
-
-            type.CreateType();
+            DefineAggregate(module, $"{assemblyName}.{typeName}", applies: null);
         }
 
         return assembly;
+    }
+
+    /// <summary>
+    /// A streamed aggregate answering the two members the base leaves abstract: a filter naming
+    /// the one event given, or none as the samples answer, and no event applied.
+    /// </summary>
+    private static void DefineAggregate(ModuleBuilder module, string fullName, Type? applies)
+    {
+        var type = module.DefineType(fullName, TypeAttributes.Public | TypeAttributes.Class, typeof(AggregateRoot));
+
+        var filter = type.DefineMethod(
+            "get_EventTypeFilter",
+            MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
+            typeof(Type[]),
+            Type.EmptyTypes);
+        var filterIl = filter.GetILGenerator();
+        if (applies is null)
+        {
+            filterIl.Emit(OpCodes.Ldnull);
+        }
+        else
+        {
+            // new[] { typeof(applies) }
+            filterIl.Emit(OpCodes.Ldc_I4_1);
+            filterIl.Emit(OpCodes.Newarr, typeof(Type));
+            filterIl.Emit(OpCodes.Dup);
+            filterIl.Emit(OpCodes.Ldc_I4_0);
+            filterIl.Emit(OpCodes.Ldtoken, applies);
+            filterIl.Emit(OpCodes.Call, typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle))!);
+            filterIl.Emit(OpCodes.Stelem_Ref);
+        }
+
+        filterIl.Emit(OpCodes.Ret);
+        type.DefineMethodOverride(filter, typeof(EventSourcedModel).GetProperty(nameof(EventSourcedModel.EventTypeFilter))!.GetGetMethod()!);
+        type.DefineProperty(nameof(EventSourcedModel.EventTypeFilter), PropertyAttributes.None, typeof(Type[]), null).SetGetMethod(filter);
+
+        var apply = type.DefineMethod(
+            "Apply",
+            MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig,
+            typeof(bool),
+            Type.EmptyTypes);
+        var eventType = apply.DefineGenericParameters("T")[0];
+        eventType.SetInterfaceConstraints(typeof(IEvent));
+        apply.SetParameters(eventType);
+        var applyIl = apply.GetILGenerator();
+        applyIl.Emit(OpCodes.Ldc_I4_0);
+        applyIl.Emit(OpCodes.Ret);
+        type.DefineMethodOverride(
+            apply,
+            typeof(EventSourcedModel)
+                .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+                .Single(method => method.Name == "Apply" && method.IsGenericMethodDefinition));
+
+        type.CreateType();
     }
 
     private static Assembly Declaring(string assemblyName, string typeName, Type contract)

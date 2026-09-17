@@ -101,9 +101,7 @@ else
 
     /// <summary>
     /// The services this operator may read — named by their manifest, or by a global role — by
-    /// name, whatever order their zips were installed in. Compared the way a reader compares
-    /// words, case aside, rather than by code point, which would sort every capital before
-    /// every lower-case letter.
+    /// name, the same list in the same order the bar's Services menu folds.
     /// </summary>
     private IReadOnlyList<Service> Visible { get; set; } = [];
 
@@ -111,10 +109,7 @@ else
     {
         var user = AuthenticationState is { } state ? (await state).User : new System.Security.Claims.ClaimsPrincipal();
 
-        Visible = Services
-            .Where(service => Access.Grants(user, Roles.Reader, service))
-            .OrderBy(service => service.Name, StringComparer.CurrentCultureIgnoreCase)
-            .ToList();
+        Visible = Access.Readable(user, Services);
     }
 
     /// <summary>
@@ -132,17 +127,22 @@ else
     private sealed record Fact(SectionKind? Kind, string Text, string? Label);
 
     /// <summary>
-    /// The types a service registered, counted by kind, with the kinds it registered none of left
-    /// out; or that it registered none at all. An aggregate or projection is counted whichever
-    /// model it is registered under, and an event once however many models apply it.
+    /// The types a service registered, counted by kind in the order its own page lays the sections
+    /// out, with the kinds it registered none of left out; or that it registered none at all. The
+    /// same numbers that page counts on its tiles, folded up: an aggregate or projection whichever
+    /// model it is registered under, the streams the streamed model's events are held in, and an
+    /// event once however many models apply it — and only if some model does. An event no model
+    /// folds is declared and bound, but it is behind neither door, and counting it here made this
+    /// row disagree with the page it leads to.
     /// </summary>
     private static IReadOnlyList<Fact> Facts(DomainTypeCatalogue catalogue)
     {
         var counted = new[]
             {
-                Count(SectionKind.Events, catalogue.Events.Count, "event"),
+                Count(SectionKind.Events, catalogue.StreamedEvents.Union(catalogue.DcbEvents).Count(), "event"),
                 Count(SectionKind.Aggregates, catalogue.StreamedAggregates.Count + catalogue.DcbAggregates.Count, "aggregate"),
-                Count(SectionKind.Projections, catalogue.StreamedProjections.Count + catalogue.DcbProjections.Count, "projection")
+                Count(SectionKind.Projections, catalogue.StreamedProjections.Count + catalogue.DcbProjections.Count, "projection"),
+                Count(SectionKind.Streams, catalogue.StreamedStreamIds.Count, "stream")
             }
             .OfType<Fact>()
             .ToList();

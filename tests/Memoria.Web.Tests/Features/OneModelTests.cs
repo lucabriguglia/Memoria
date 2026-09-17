@@ -18,7 +18,7 @@ public class OneModelTests
 
         var page = await web.Client.GetStringAsync("/samples");
 
-        Markup.MenuBar(page).Should().Equal("Home", "samples", "Streamed", "DCB");
+        Markup.MenuBar(page).Should().Equal("Home", "Services", "samples", "Streamed", "DCB");
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class OneModelTests
 
         var page = await web.Client.GetStringAsync("/samples");
 
-        Markup.MenuBar(page).Should().Equal("Home", "samples", "Events", "Aggregates", "Projections", "Streams");
+        Markup.MenuBar(page).Should().Equal("Home", "Services", "samples", "Events", "Aggregates", "Projections", "Streams");
         Markup.Header(page).Should().Contain("href=\"samples/streamed/events/types\"").And.NotContain("href=\"samples/dcb");
     }
 
@@ -39,7 +39,7 @@ public class OneModelTests
 
         var page = await web.Client.GetStringAsync("/samples");
 
-        Markup.MenuBar(page).Should().Equal("Home", "samples", "Events", "Aggregates", "Projections");
+        Markup.MenuBar(page).Should().Equal("Home", "Services", "samples", "Events", "Aggregates", "Projections");
         Markup.Header(page).Should().Contain("href=\"samples/dcb/events/types\"").And.NotContain("href=\"samples/streamed");
     }
 
@@ -68,8 +68,8 @@ public class OneModelTests
         page.Should().Contain("class=\"models\"")
             .And.Contain("<h2><a href=\"samples/streamed\">Streamed</a></h2>")
             .And.Contain("<h2><a href=\"samples/dcb\">DCB</a></h2>")
-            .And.Contain("What is registered under the streamed model.")
-            .And.Contain("What is registered under the DCB model.");
+            .And.MatchRegex("[0-9]+ types registered under the streamed model\\.")
+            .And.MatchRegex("[0-9]+ types registered under the DCB model\\.");
     }
 
     /// <summary>
@@ -85,7 +85,7 @@ public class OneModelTests
 
         page.Should().NotContain("class=\"models\"").And.NotContain("<h2>")
             .And.Contain("href=\"samples/streamed/streams\"").And.NotContain("href=\"samples/dcb")
-            .And.NotContain("href=\"samples/streamed\"").And.NotContain("What is registered under");
+            .And.NotContain("href=\"samples/streamed\"").And.NotContain("registered under the");
     }
 
     [Fact]
@@ -97,7 +97,7 @@ public class OneModelTests
 
         page.Should().NotContain("class=\"models\"").And.NotContain("<h2>")
             .And.Contain("href=\"samples/dcb/projections\"").And.NotContain("href=\"samples/streamed")
-            .And.NotContain("href=\"samples/dcb\"").And.NotContain("What is registered under");
+            .And.NotContain("href=\"samples/dcb\"").And.NotContain("registered under the");
     }
 
     [Fact]

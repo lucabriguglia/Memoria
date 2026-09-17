@@ -2,6 +2,8 @@
 @using Memoria.Web.Extensibility
 @inject NavigationManager Navigation
 @inject Memoria.Web.Data.ServiceStores Stores
+@inject DomainTypeRegistry Types
+@inject ServiceAccess Access
 @inject CurrentService Current
 @inject AuthenticationSettings SignIn
 
@@ -24,11 +26,32 @@
            the same whichever way it is reached. *@
         <NavLink href="" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Home"/>Home</NavLink>
 
+        @* Beside Home, the services this operator may read, folded under one heading: the way
+           from any page to any other service without going back through Home, which lists the
+           same services in the same order — one rule, in ServiceAccess, answers both. Each is
+           fronted by the service mark the Installed table lists one under, and matched exactly,
+           so the one whose own page this is stands lit and no other. Left off the bar when there
+           is nothing to fold under it: a menu with nothing in it is a door painted on a wall. Not
+           marked current inside a service — the service's own name on the bar already is, and
+           two things lit for one place would say less than one. *@
+        @if (Readable.Count > 0)
+        {
+        <details class="menu">
+            <summary><SectionMark Kind="SectionKind.Service"/>Services</summary>
+            <div class="submenu">
+                @foreach (var service in Readable)
+                {
+                    <NavLink href="@service.Slug" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Service"/>@service.Name</NavLink>
+                }
+            </div>
+        </details>
+        }
+
         @* The bar is the service's while a service is being read: its name, leading to its own
            page, and then the menus over its models exactly as they were drawn for the one store.
            Outside a service there are no models to menu — Home lists the services — so the bar
-           is Home alone. Settings is not a place in a service either: it is the operator's, and
-           sits with their preferences at the far end. *@
+           is the tool's alone. Settings is not a place in a service either: it is the operator's,
+           and sits with their preferences at the far end. *@
         @if (Current.Inside)
         {
         @* A rule between the tool's part of the bar and the service's, so where one ends and the
@@ -210,6 +233,24 @@
 </div>
 
 @code {
+
+    /// <summary>Who is asking, as the sign-in says; open, nobody, and everything is theirs to read.</summary>
+    [CascadingParameter]
+    public Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    /// <summary>
+    /// The services the Services menu folds: the ones this operator may read, by name — read off
+    /// the registry's current view each time, since an upload changes the answer without the
+    /// layout being told.
+    /// </summary>
+    private IReadOnlyList<Service> Readable { get; set; } = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = AuthenticationState is { } state ? (await state).User : new System.Security.Claims.ClaimsPrincipal();
+
+        Readable = Access.Readable(user, Types.Current.Services);
+    }
 
     /// <summary>
     /// Which models the bar is laid out for: the current service's, read off its own view of the

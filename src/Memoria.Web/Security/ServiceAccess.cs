@@ -58,4 +58,20 @@ public sealed class ServiceAccess(AuthorizationSettings? settings)
             ? service.UpdateRoles.Any(sent.Contains)
             : service.ReadRoles.Concat(service.UpdateRoles).Any(sent.Contains);
     }
+
+    /// <summary>
+    /// The services among <paramref name="services"/> that <paramref name="user"/> may read, by
+    /// name, whatever order their zips were installed in. One answer for every place that lists
+    /// them — Home and the bar's Services menu — so a reader finds a service the same way in each,
+    /// and no list shows a door the sign-in does not open.
+    /// </summary>
+    /// <remarks>
+    /// Compared the way a reader compares words, case aside, rather than by code point, which
+    /// would sort every capital before every lower-case letter.
+    /// </remarks>
+    public IReadOnlyList<Service> Readable(ClaimsPrincipal user, IEnumerable<Service> services) =>
+        services
+            .Where(service => Grants(user, Roles.Reader, service))
+            .OrderBy(service => service.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
 }

@@ -14,12 +14,12 @@
 </nav>
 
 <h1>@Heading</h1>
-<p class="lede">
-    The streamed read models, and what has been stored of them.
-</p>
 
 <SectionTiles TypesHref="@($"{Service}/streamed/projections/types")" DataHref="@($"{Service}/streamed/projections/data")">
-    <TypesDetail>The read models the model declares, and what they are built from.</TypesDetail>
+    <TypesDetail>
+        @Count(Catalogue.StreamedProjections.Count, "projection") the model declares, addressed by
+        @Count(Catalogue.StreamedProjectionIds.Count, "identifier").
+    </TypesDetail>
     <DataDetail>The projections that have been stored, read one identifier at a time.</DataDetail>
 </SectionTiles>
 
@@ -35,5 +35,10 @@
     /// breadcrumb that says which section this is.
     /// </summary>
     private const string Heading = "Projections";
+
+    private DomainTypeCatalogue Catalogue => Current.Catalogue;
+
+    private static string Count(int count, string noun) =>
+        count == 1 ? $"1 {noun}" : $"{count} {noun}s";
 
 }

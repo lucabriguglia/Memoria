@@ -59,6 +59,10 @@ public class HomeTests
         }
     }
 
+    /// <summary>
+    /// Every kind in turn, the streams last: the order the service's own page lays the sections
+    /// out in, so the row of counts here reads as that page folded up.
+    /// </summary>
     [Fact]
     public async Task Counts_every_kind_a_service_registered()
     {
@@ -71,6 +75,28 @@ public class HomeTests
             "<span class=\"fact\" title=\"(\\d+) events\" aria-label=\"\\1 events\">\\1</span>" +
             "<span class=\"fact\" title=\"(\\d+) aggregates\" aria-label=\"\\2 aggregates\">\\2</span>" +
             "<span class=\"fact\" title=\"(\\d+) projections\" aria-label=\"\\3 projections\">\\3</span>" +
+            "<span class=\"fact\" title=\"(\\d+) streams\" aria-label=\"\\4 streams\">\\4</span>" +
+            "</span>");
+    }
+
+    /// <summary>
+    /// The events counted are the ones some model of the service applies — the same events its
+    /// own page counts, column by column — not every event its assemblies declare. An event no
+    /// model folds is bound and written, but it is not behind either door, and counting it here
+    /// made Home disagree with the page it leads to. A service with no streams counts none, rather
+    /// than counting zero.
+    /// </summary>
+    [Fact]
+    public async Task Counts_the_events_some_model_applies_and_no_streams_where_there_are_none()
+    {
+        using var web = MemoriaWeb.Open().WithService("Partly", assembly: OneSidedAssembly.PartlyApplied);
+
+        var page = Markup.Unmarked(Markup.Plain(await web.Client.GetStringAsync("/")));
+
+        page.Should().Contain(
+            "<span class=\"facts\">" +
+            "<span class=\"fact\" title=\"1 event\" aria-label=\"1 event\">1</span>" +
+            "<span class=\"fact\" title=\"1 aggregate\" aria-label=\"1 aggregate\">1</span>" +
             "</span>");
     }
 
@@ -145,7 +171,7 @@ public class HomeTests
         {
             home.Should().Contain("href=\"orders-team-eu\"").And.Contain("Orders  Team (EU)");
             page.Should().Contain("<h1>Orders  Team (EU)</h1>").And.Contain("href=\"orders-team-eu/streamed\"");
-            Markup.MenuBar(page).Should().Equal("Home", "Orders  Team (EU)", "Streamed", "DCB");
+            Markup.MenuBar(page).Should().Equal("Home", "Services", "Orders  Team (EU)", "Streamed", "DCB");
         }
     }
 
@@ -157,6 +183,28 @@ public class HomeTests
         var page = Markup.Plain(await web.Client.GetStringAsync("/"));
 
         page.Should().Contain("No services").And.NotContain("class=\"models\"");
+    }
+
+    /// <summary>
+    /// Under the service's name on its own page, what its manifest says it is, and nothing else:
+    /// the sentence about which models it uses told a reader nothing the tiles under it do not,
+    /// and a service that says nothing of itself has a name and its tiles.
+    /// </summary>
+    [Fact]
+    public async Task Says_under_the_service_s_name_what_its_manifest_says_it_is_and_nothing_else()
+    {
+        using var web = MemoriaWeb.Open().WithSampleTypes()
+            .WithService("Orders", description: "Orders placed in the shop, one stream a customer.");
+
+        var described = Markup.Plain(await web.Client.GetStringAsync("/orders"));
+        var undescribed = Markup.Plain(await web.Client.GetStringAsync("/samples"));
+
+        using (new AssertionScope())
+        {
+            described.Should().MatchRegex("<h1>Orders</h1>\\s*<p class=\"lede\">Orders placed in the shop, one stream a customer.</p>");
+            described.Should().NotContain("Two models of the same domain");
+            undescribed.Should().NotContain("class=\"lede\"");
+        }
     }
 
     [Fact]
@@ -247,17 +295,18 @@ public class HomeTests
 
         using (new AssertionScope())
         {
-            Markup.MenuBar(inside).Should().Equal("Home", "samples", "Streamed", "DCB");
-            Markup.MenuBar(outside).Should().Equal("Home");
+            Markup.MenuBar(inside).Should().Equal("Home", "Services", "samples", "Streamed", "DCB");
+            Markup.MenuBar(outside).Should().Equal("Home", "Services");
         }
     }
 
     /// <summary>
-    /// A rule stands between Home and the service's part of the bar, so where the tool's menu ends
-    /// and the service's begins can be seen. Outside a service there is nothing to set apart.
+    /// A rule stands between the tool's part of the bar — Home and the Services menu — and the
+    /// service's, so where the one ends and the other begins can be seen. Outside a service there
+    /// is nothing to set apart.
     /// </summary>
     [Fact]
-    public async Task Sets_the_service_s_menu_apart_from_home_with_a_rule()
+    public async Task Sets_the_service_s_menu_apart_from_the_tool_s_with_a_rule()
     {
         using var web = MemoriaWeb.Open().WithSampleTypes();
 
@@ -267,7 +316,7 @@ public class HomeTests
         using (new AssertionScope())
         {
             inside.Should().MatchRegex(
-                "Home</a>\\s*<span class=\"separator\"></span>\\s*<a href=\"samples\"");
+                "Home</a>\\s*<details class=\"menu\">\\s*<summary[^>]*>Services</summary>[\\s\\S]*?</details>\\s*<span class=\"separator\"></span>\\s*<a href=\"samples\"");
             outside.Should().NotContain("class=\"separator\"");
         }
     }

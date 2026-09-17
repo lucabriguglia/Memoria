@@ -86,6 +86,20 @@ public class ServiceAccessTests
         Access.Grants(elsewhere, Roles.Reader, Orders).Should().BeFalse();
     }
 
+    /// <summary>
+    /// What Home and the bar's Services menu both list: the services the operator may read, by
+    /// name as a reader compares names — case aside — whatever order they were installed in.
+    /// </summary>
+    [Fact]
+    public void Lists_the_services_an_operator_may_read_by_name_case_aside()
+    {
+        Service Named(string name, params string[] read) => new(name, [$"{name}.dll"], name, ReadRoles: read, UpdateRoles: []);
+        var installed = new[] { Named("Zebra", "orders-team"), Named("Billing", "billing-team"), Named("apple", "orders-team"), Named("Mango", "orders-leads") };
+
+        Access.Readable(Holding("orders-team"), installed).Select(service => service.Name)
+            .Should().Equal("apple", "Zebra");
+    }
+
     [Fact]
     public void Grants_everything_to_anyone_when_running_open()
     {

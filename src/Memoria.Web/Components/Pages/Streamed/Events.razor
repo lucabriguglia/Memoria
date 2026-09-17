@@ -14,12 +14,12 @@
 </nav>
 
 <h1>@Heading</h1>
-<p class="lede">
-    The events the streamed model can apply, and what has been stored of them.
-</p>
 
 <SectionTiles TypesHref="@($"{Service}/streamed/events/types")" DataHref="@($"{Service}/streamed/events/data")">
-    <TypesDetail>The events the model declares, and the state each one carries.</TypesDetail>
+    <TypesDetail>
+        @Count(Catalogue.StreamedEvents.Count, "event") the model declares, and the state each one
+        carries.
+    </TypesDetail>
     <DataDetail>The events that have been appended, read one type at a time.</DataDetail>
 </SectionTiles>
 
@@ -35,5 +35,10 @@
     /// breadcrumb that says which section this is.
     /// </summary>
     private const string Heading = "Events";
+
+    private DomainTypeCatalogue Catalogue => Current.Catalogue;
+
+    private static string Count(int count, string noun) =>
+        count == 1 ? $"1 {noun}" : $"{count} {noun}s";
 
 }

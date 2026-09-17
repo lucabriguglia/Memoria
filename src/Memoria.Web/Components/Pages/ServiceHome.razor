@@ -13,16 +13,20 @@
 
 <h1>@Current.Name</h1>
 
+@* Under the name, what the service is in its manifest's own words, when the manifest says — the
+   same line Home draws under it — and nothing else. A sentence about which models it uses told
+   a reader nothing the tiles below do not lay out better, and a service that says nothing of
+   itself has its name and its tiles. *@
+@if (Current.Service?.Description is { } description)
+{
+    <p class="lede">@description</p>
+}
+
 @* Laid out for the models the service has something registered under. Both: two columns, each
    headed by its model and the way into it. One alone: that model's tiles as the page, with no
    heading over them, because a heading names a choice and there is none to make. *@
 @if (Shown.Both)
 {
-    <p class="lede">
-        Two models of the same domain, side by side: streams addressed by aggregate, and dynamic
-        consistency boundaries addressed by identifier.
-    </p>
-
     <div class="models">
         <section class="model">
             <h2><a href="@At("streamed")">Streamed</a></h2>
@@ -37,20 +41,10 @@
 }
 else if (Shown.Streamed)
 {
-    <p class="lede">
-        Streams addressed by aggregate: the events, the models folded from them, and the streams
-        they are held in.
-    </p>
-
     @StreamedTiles
 }
 else
 {
-    <p class="lede">
-        Dynamic consistency boundaries addressed by identifier: the events, and the models folded
-        from them.
-    </p>
-
     @DcbTiles
 }
 
@@ -62,8 +56,33 @@ else
 
     private ShownModels Shown => ShownModels.Of(Current.Catalogue, Store);
 
+    private DomainTypeCatalogue Catalogue => Current.Catalogue;
+
+    /// <summary>
+    /// What the streamed model's Overview tile counts: the sum of the tiles under it — the events
+    /// it applies, its aggregates, its projections and the streams the events are held in — so a
+    /// reader adding the column up arrives at the number over it. The identifiers that address
+    /// the models are not counted: no tile here is theirs, and a total that outran the tiles it
+    /// heads read as a mistake.
+    /// </summary>
+    private int StreamedTypes =>
+        Catalogue.StreamedEvents.Count + Catalogue.StreamedAggregates.Count
+        + Catalogue.StreamedProjections.Count + Catalogue.StreamedStreamIds.Count;
+
+    /// <summary>What the DCB model's Overview tile counts, the same way; a boundary has no streams to add.</summary>
+    private int DcbTypes =>
+        Catalogue.DcbEvents.Count + Catalogue.DcbAggregates.Count + Catalogue.DcbProjections.Count;
+
     /// <summary>An address under this service: the segment its name makes, then the page.</summary>
     private string At(string path) => $"{Current.Segment}/{path}";
+
+    /// <summary>
+    /// A count worded for a reader, the way every overview tile words one: the number and the
+    /// noun, singular for one. Zero is said too — an empty section is a fact worth knowing
+    /// before the door is opened.
+    /// </summary>
+    private static string Count(int count, string noun) =>
+        count == 1 ? $"1 {noun}" : $"{count} {noun}s";
 
     // The same tiles the rest of the site is entered by, one under the other because a column is
     // half the page rather than the whole of it — and, alone, still one under the other, which is
@@ -84,7 +103,7 @@ else
                     <SectionMark Kind="SectionKind.Overview"/>
                     <span class="body">
                         <span class="name">Overview</span>
-                        <span class="detail">What is registered under the streamed model.</span>
+                        <span class="detail">@Count(StreamedTypes, "type") registered under the streamed model.</span>
                     </span>
                 </a>
             </li>
@@ -94,7 +113,7 @@ else
                     <SectionMark Kind="SectionKind.Events"/>
                     <span class="body">
                         <span class="name">Events</span>
-                        <span class="detail">The events the model can apply.</span>
+                        <span class="detail">@Count(Catalogue.StreamedEvents.Count, "event") the model can apply.</span>
                     </span>
                 </a>
             </li>
@@ -103,7 +122,7 @@ else
                     <SectionMark Kind="SectionKind.Aggregates"/>
                     <span class="body">
                         <span class="name">Aggregates</span>
-                        <span class="detail">The write models they are held in.</span>
+                        <span class="detail">@Count(Catalogue.StreamedAggregates.Count, "aggregate") the events are held in.</span>
                     </span>
                 </a>
             </li>
@@ -112,7 +131,7 @@ else
                     <SectionMark Kind="SectionKind.Projections"/>
                     <span class="body">
                         <span class="name">Projections</span>
-                        <span class="detail">The read models built from those events.</span>
+                        <span class="detail">@Count(Catalogue.StreamedProjections.Count, "projection") built from those events.</span>
                     </span>
                 </a>
             </li>
@@ -123,7 +142,7 @@ else
                     <SectionMark Kind="SectionKind.Streams"/>
                     <span class="body">
                         <span class="name">Streams</span>
-                        <span class="detail">The streams the events are held in.</span>
+                        <span class="detail">@Count(Catalogue.StreamedStreamIds.Count, "stream") the events are held in.</span>
                     </span>
                 </a>
             </li>
@@ -138,7 +157,7 @@ else
                     <SectionMark Kind="SectionKind.Overview"/>
                     <span class="body">
                         <span class="name">Overview</span>
-                        <span class="detail">What is registered under the DCB model.</span>
+                        <span class="detail">@Count(DcbTypes, "type") registered under the DCB model.</span>
                     </span>
                 </a>
             </li>
@@ -148,7 +167,7 @@ else
                     <SectionMark Kind="SectionKind.Events"/>
                     <span class="body">
                         <span class="name">Events</span>
-                        <span class="detail">The events the model can apply.</span>
+                        <span class="detail">@Count(Catalogue.DcbEvents.Count, "event") the model can apply.</span>
                     </span>
                 </a>
             </li>
@@ -157,7 +176,7 @@ else
                     <SectionMark Kind="SectionKind.Aggregates"/>
                     <span class="body">
                         <span class="name">Aggregates</span>
-                        <span class="detail">The write models they are addressed by.</span>
+                        <span class="detail">@Count(Catalogue.DcbAggregates.Count, "aggregate") the events are addressed by.</span>
                     </span>
                 </a>
             </li>
@@ -166,7 +185,7 @@ else
                     <SectionMark Kind="SectionKind.Projections"/>
                     <span class="body">
                         <span class="name">Projections</span>
-                        <span class="detail">The read models they are addressed by.</span>
+                        <span class="detail">@Count(Catalogue.DcbProjections.Count, "projection") the events are addressed by.</span>
                     </span>
                 </a>
             </li>

@@ -14,12 +14,12 @@
 </nav>
 
 <h1>@Heading</h1>
-<p class="lede">
-    The streamed write models, and what has been stored of them.
-</p>
 
 <SectionTiles TypesHref="@($"{Service}/streamed/aggregates/types")" DataHref="@($"{Service}/streamed/aggregates/data")">
-    <TypesDetail>The write models the model declares, and the streams they are held in.</TypesDetail>
+    <TypesDetail>
+        @Count(Catalogue.StreamedAggregates.Count, "aggregate") the model declares, addressed by
+        @Count(Catalogue.StreamedAggregateIds.Count, "identifier").
+    </TypesDetail>
     <DataDetail>The aggregates that have been stored, read one stream at a time.</DataDetail>
 </SectionTiles>
 
@@ -35,5 +35,10 @@
     /// breadcrumb that says which section this is.
     /// </summary>
     private const string Heading = "Aggregates";
+
+    private DomainTypeCatalogue Catalogue => Current.Catalogue;
+
+    private static string Count(int count, string noun) =>
+        count == 1 ? $"1 {noun}" : $"{count} {noun}s";
 
 }

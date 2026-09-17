@@ -27,7 +27,7 @@ public class BoundaryComparisonTests
 
     private static readonly DateTimeOffset Written = new(2026, 5, 6, 11, 15, 0, TimeSpan.Zero);
 
-    private static DcbEventHeader Header(long position) => new(position, "Sample:1", Written.AddMinutes(position));
+    private static DcbEventHeader Header(long position) => new(position, "Sample:1", Written.AddMinutes(position), "an operator");
 
     private static BoundaryHistory History(int events = 8) =>
         new(Enumerable.Range(1, events).Select(n => Header(6 + n)).ToList(), Error: null);
@@ -108,7 +108,7 @@ public class BoundaryComparisonTests
     }
 
     /// <summary>
-    /// The event that produced each version travels with it — its type and when it was appended —
+    /// The event that produced each version travels with it — its type, when it was appended and by whom —
     /// straight off the header, so the cards say what each version is without a payload being read.
     /// </summary>
     [Fact]
@@ -118,8 +118,8 @@ public class BoundaryComparisonTests
 
         var comparison = await BoundaryComparison.Of(History(), store, Request("3", "7"));
 
-        comparison.From.Should().Be(new FoldPoint(3, 9, "Sample:1", Written.AddMinutes(9)));
-        comparison.To.Should().Be(new FoldPoint(7, 13, "Sample:1", Written.AddMinutes(13)));
+        comparison.From.Should().Be(new FoldPoint(3, 9, "Sample:1", Written.AddMinutes(9), "an operator"));
+        comparison.To.Should().Be(new FoldPoint(7, 13, "Sample:1", Written.AddMinutes(13), "an operator"));
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public class BoundaryComparisonTests
 
         var comparison = await BoundaryComparison.Of(History(), store, Request("0", "1"));
 
-        comparison.From.Should().Be(new FoldPoint(0, 0, null, null));
+        comparison.From.Should().Be(new FoldPoint(0, 0, null, null, null));
         comparison.To!.Sequence.Should().Be(7);
         comparison.Rows.Single().Should().BeEquivalentTo(new DiffRow("Count", "int", "0", "1", Change.Changed, []));
     }

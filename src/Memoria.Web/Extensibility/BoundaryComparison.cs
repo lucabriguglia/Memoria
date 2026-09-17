@@ -68,8 +68,8 @@ public static class BoundaryComparison
         // has already kept within the count.
         FoldPoint Place(int version) =>
             version == 0
-                ? new FoldPoint(0, 0, null, null)
-                : new FoldPoint(version, rows[version - 1].Position, rows[version - 1].EventType, rows[version - 1].CreatedDate);
+                ? new FoldPoint(0, 0, null, null, null)
+                : new FoldPoint(version, rows[version - 1].Position, rows[version - 1].EventType, rows[version - 1].CreatedDate, rows[version - 1].CreatedBy);
 
         var from = Place(range.From);
         var to = Place(range.To);

@@ -31,12 +31,13 @@ public sealed record ComparisonRequest(
 /// </param>
 /// <param name="Type">The binding key the event that produced this version was stored under, or null for version zero.</param>
 /// <param name="Written">When that event was appended, or null for version zero.</param>
+/// <param name="WrittenBy">Who appended it, or null for version zero or where the store attributes nothing.</param>
 /// <remarks>
-/// What the cards say of a version and nothing more: the type and the date, not the payload,
+/// What the cards say of a version and nothing more: the type, the date and the author, not the payload,
 /// so a history can be read as headers without the payloads that make it heavy. Version zero is
 /// the model before anything happened to it and has no event of its own.
 /// </remarks>
-public sealed record FoldPoint(int Version, long Sequence, string? Type, DateTimeOffset? Written);
+public sealed record FoldPoint(int Version, long Sequence, string? Type, DateTimeOffset? Written, string? WrittenBy);
 
 /// <summary>
 /// Two versions of one model laid over each other: which they are, what each was folded up to, and
@@ -131,13 +132,13 @@ public sealed record ModelComparison(
         {
             if (version == 0)
             {
-                return new FoldPoint(0, 0, null, null);
+                return new FoldPoint(0, 0, null, null, null);
             }
 
             var placed = await reads.At(history, version - 1, cancellationToken);
 
             return placed.Error is null && placed.Event is { } found
-                ? new FoldPoint(version, found.Event.Position, found.Event.Type, found.Event.Written)
+                ? new FoldPoint(version, found.Event.Position, found.Event.Type, found.Event.Written, found.Event.WrittenBy)
                 : null;
         }
 

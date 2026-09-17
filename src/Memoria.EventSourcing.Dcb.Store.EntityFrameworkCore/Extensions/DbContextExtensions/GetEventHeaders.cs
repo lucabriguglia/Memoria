@@ -7,7 +7,7 @@ public static partial class DcbDbContextExtensions
 {
     /// <summary>
     /// Gets the headers of the stored events inside a boundary, in position order: where each
-    /// sits, what it was stored as, and when it was appended — without its payload.
+    /// sits, what it was stored as, when it was appended and by whom — without its payload.
     /// </summary>
     /// <param name="dcbDbContext">The database context.</param>
     /// <param name="query">The tag query selecting the boundary.</param>
@@ -24,6 +24,6 @@ public static partial class DcbDbContextExtensions
         dcbDbContext.Inside(query)
             .ApplyEventTypeFilter(eventTypeFilter, dcbDbContext.TypeBindings)
             .OrderBy(eventEntity => eventEntity.Position)
-            .Select(eventEntity => new DcbEventHeader(eventEntity.Position, eventEntity.EventType, eventEntity.CreatedDate))
+            .Select(eventEntity => new DcbEventHeader(eventEntity.Position, eventEntity.EventType, eventEntity.CreatedDate, eventEntity.CreatedBy))
             .ToListAsync(cancellationToken);
 }

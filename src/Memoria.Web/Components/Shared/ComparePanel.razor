@@ -179,8 +179,8 @@
 
     /// <summary>
     /// One version as the info tab would list it: the version, the sequence its fold stopped at,
-    /// and the event that produced it — its type, named as the events tab names one, and when it
-    /// was appended.
+    /// and the event that produced it — its type, named as the events tab names one, when it was
+    /// appended, and by whom.
     /// </summary>
     /// <remarks>
     /// Version zero has no event: it is the model before anything happened to it, and the two rows
@@ -232,6 +232,26 @@
                 else
                 {
                     <span class="missing">—</span>
+                }
+            </dd>
+
+            @* Under the date, as the page about one event lists it. Audit is a store concern the
+               application may leave switched off, so a row nobody is named against is an ordinary
+               row rather than a broken one; version zero has no row at all, and says so the way
+               its date does. *@
+            <dt>Appended by</dt>
+            <dd>
+                @if (point.Written is null)
+                {
+                    <span class="missing">—</span>
+                }
+                else if (point.WrittenBy is { Length: > 0 } writtenBy)
+                {
+                    @writtenBy
+                }
+                else
+                {
+                    <span class="missing">not attributed</span>
                 }
             </dd>
         </dl>;

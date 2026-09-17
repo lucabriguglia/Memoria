@@ -46,7 +46,7 @@ public class ModelComparisonTests
         new(typeof(SampleCountingAggregate), Identity, StreamId: "sample-1", EventTypes: null, from, to);
 
     private static StoredEvent Event(long position) =>
-        new(position, "Sample:1", Written.AddMinutes(position), "{}", [], null, []);
+        new(position, "Sample:1", Written.AddMinutes(position), "{}", [], null, []) { WrittenBy = "an operator" };
 
     /// <summary>
     /// A history of the model's events: a count, and the event at any place in it oldest first —
@@ -188,7 +188,7 @@ public class ModelComparisonTests
     }
 
     /// <summary>
-    /// The event that produced each version travels with it — its type and when it was appended —
+    /// The event that produced each version travels with it — its type, when it was appended and by whom —
     /// so the tab can say what each version is in the words the events tab uses, without a third
     /// read to find out.
     /// </summary>
@@ -199,8 +199,8 @@ public class ModelComparisonTests
 
         var comparison = await ModelComparison.Of(History(), store, Request("3", "7"));
 
-        comparison.From.Should().Be(new FoldPoint(3, 9, "Sample:1", Written.AddMinutes(9)));
-        comparison.To.Should().Be(new FoldPoint(7, 13, "Sample:1", Written.AddMinutes(13)));
+        comparison.From.Should().Be(new FoldPoint(3, 9, "Sample:1", Written.AddMinutes(9), "an operator"));
+        comparison.To.Should().Be(new FoldPoint(7, 13, "Sample:1", Written.AddMinutes(13), "an operator"));
     }
 
     /// <summary>
@@ -214,7 +214,7 @@ public class ModelComparisonTests
 
         var comparison = await ModelComparison.Of(History(), store, Request("0", "1"));
 
-        comparison.From.Should().Be(new FoldPoint(0, 0, null, null));
+        comparison.From.Should().Be(new FoldPoint(0, 0, null, null, null));
         comparison.To!.Sequence.Should().Be(7);
         comparison.Rows.Single().Should().BeEquivalentTo(new DiffRow("Count", "int", "0", "1", Change.Changed, []));
     }

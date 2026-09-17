@@ -49,17 +49,29 @@
             <table class="grid archives">
                 <thead>
                 <tr>
-                    <th scope="col" class="col-file">File</th>
-                    <th scope="col" class="col-size">Size</th>
-                    <th scope="col" class="col-uploaded">Uploaded</th>
+                    @* The three facts a row is told apart by are each a heading that sorts by it,
+                       drawn the way the data pages draw theirs: the word is the control, and the
+                       one in force carries the arrow. Services and the bin are not facts to sort
+                       by. *@
+                    @foreach (var column in Columns)
+                    {
+                        <th scope="col" class="@column.Class" aria-sort="@AriaSort(column.Sort)">
+                            <a href="@SortLink(column.Sort)">@column.Label
+                                @if (Sort == column.Sort)
+                                {
+                                    <span class="arrow @(Descending ? "down" : "up")" aria-hidden="true"></span>
+                                }
+                            </a>
+                        </th>
+                    }
                     <th scope="col" class="col-services">Services</th>
                     <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
                 </thead>
                 <tbody>
-                @for (var index = 0; index < Archives.Count; index++)
+                @for (var index = 0; index < Sorted.Count; index++)
                 {
-                    var archive = Archives[index];
+                    var archive = Sorted[index];
                     var dialog = $"delete-{index}";
 
                     @* The row is the file; the services in it are each the way into a sheet of
@@ -374,18 +386,109 @@ else if (Tab == TypesTab)
             .SelectMany(archive => archive.Services.Select(service => (Service: (Service?)service, Archive: (InstalledArchive?)archive)))
             .FirstOrDefault(pair => pair.Service!.Slug == ServiceAsked);
 
-    /// <summary>The Installed tab with nothing asked for, which is what closes the sheet.</summary>
-    private static string InstalledLink => $"settings?tab={InstalledTab}";
+    /// <summary>
+    /// The Installed tab with no sheet asked for, which is what closes the sheet — sorted as it
+    /// was, when it was sorted at all: the order was the reader's choice, and closing a sheet is
+    /// not a reason to lose it. The default order is not written into the address, so the plain
+    /// tab stays the plain tab.
+    /// </summary>
+    private string InstalledLink =>
+        $"settings?tab={InstalledTab}" +
+        (Sort == DefaultSort && Descending ? string.Empty : $"&sort={Key(Sort)}&dir={(Descending ? "desc" : "asc")}");
 
     /// <summary>
     /// The address that opens one service's sheet over the Installed tab, on the view named or
     /// on its facts. Lands on the sheet, so on a long list the reader arrives at what they opened
     /// rather than at the top of the page.
     /// </summary>
-    private static string ServiceLink(Service service, string? view = null) =>
+    private string ServiceLink(Service service, string? view = null) =>
         $"{InstalledLink}&service={Uri.EscapeDataString(service.Slug)}" +
         (view is null || view == ServiceDialog.InfoView ? string.Empty : $"&view={view}") +
         $"#{ServiceDialog.Anchor}";
+
+    /// <summary>What the Installed table can be sorted by: the three facts a row is told apart by.</summary>
+    private enum ArchiveSort
+    {
+        File,
+        Size,
+        Uploaded
+    }
+
+    /// <summary>
+    /// Newest first is how the table opens: what was just uploaded is what an operator most often
+    /// came to see.
+    /// </summary>
+    private const ArchiveSort DefaultSort = ArchiveSort.Uploaded;
+
+    [SupplyParameterFromQuery(Name = "sort")]
+    private string? SortAsked { get; set; }
+
+    [SupplyParameterFromQuery(Name = "dir")]
+    private string? DirectionAsked { get; set; }
+
+    /// <summary>The column sorted by: the one the address names, or the newest-first default for anything else.</summary>
+    private ArchiveSort Sort =>
+        Enum.TryParse<ArchiveSort>(SortAsked, ignoreCase: true, out var parsed) ? parsed : DefaultSort;
+
+    /// <summary>
+    /// Which way the rows run. Said by the address when it says; otherwise the way the column is
+    /// usually wanted — a name from A, a size from the largest, a date from the newest.
+    /// </summary>
+    private bool Descending => DirectionAsked switch
+    {
+        null => Sort != ArchiveSort.File,
+        _ => !string.Equals(DirectionAsked, "asc", StringComparison.OrdinalIgnoreCase)
+    };
+
+    /// <summary>
+    /// The sortable columns, their headings and the class each heading is laid out by, in one
+    /// place so the header row and the links cannot disagree about what can be sorted.
+    /// </summary>
+    private static readonly Column[] Columns =
+    [
+        new(ArchiveSort.File, "File", "col-file"),
+        new(ArchiveSort.Size, "Size", "col-size"),
+        new(ArchiveSort.Uploaded, "Uploaded", "col-uploaded")
+    ];
+
+    private sealed record Column(ArchiveSort Sort, string Label, string Class);
+
+    private static string Key(ArchiveSort sort) => sort.ToString().ToLowerInvariant();
+
+    private string? AriaSort(ArchiveSort column) =>
+        Sort != column ? null : Descending ? "descending" : "ascending";
+
+    /// <summary>
+    /// Pressing the heading sorted by turns it around; pressing another starts it the way its
+    /// column is usually wanted.
+    /// </summary>
+    private string SortLink(ArchiveSort column)
+    {
+        var descending = Sort == column ? !Descending : column != ArchiveSort.File;
+
+        return $"settings?tab={InstalledTab}&sort={Key(column)}&dir={(descending ? "desc" : "asc")}";
+    }
+
+    /// <summary>
+    /// The archives in the order asked for. Names are compared the way a reader compares words,
+    /// case aside; two alike by the column sorted on fall back to the name, so the order is the
+    /// same each time the page is drawn.
+    /// </summary>
+    private IReadOnlyList<InstalledArchive> Sorted => Sort switch
+    {
+        ArchiveSort.File => Ordered(archive => archive.Name, StringComparer.CurrentCultureIgnoreCase),
+        ArchiveSort.Size => Ordered(archive => archive.Length),
+        _ => Ordered(archive => archive.UploadedUtc)
+    };
+
+    private IReadOnlyList<InstalledArchive> Ordered<TKey>(Func<InstalledArchive, TKey> key, IComparer<TKey>? comparer = null)
+    {
+        var byName = StringComparer.CurrentCultureIgnoreCase;
+
+        return Descending
+            ? Archives.OrderByDescending(key, comparer).ThenByDescending(archive => archive.Name, byName).ToList()
+            : Archives.OrderBy(key, comparer).ThenBy(archive => archive.Name, byName).ToList();
+    }
 
     private DomainTypeCatalogue Catalogue => Types.Current;
 

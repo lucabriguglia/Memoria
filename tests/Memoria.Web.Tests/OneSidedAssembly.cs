@@ -24,6 +24,9 @@ internal static class OneSidedAssembly
     /// <summary>One DCB projection id, and nothing of the streamed model.</summary>
     public static readonly Assembly Dcb = Declaring("DcbOnly", "OnlyProjectionId", typeof(IDcbProjectionId));
 
+    /// <summary>No domain types at all: a service declared over an assembly that registers nothing.</summary>
+    public static readonly Assembly Empty = DeclaringAggregates("EmptyOnly");
+
     /// <summary>
     /// Two streamed aggregates declared under one namespace and nothing else: a list with nothing
     /// to fold by. The test assembly itself cannot be that list, because its own samples sit under

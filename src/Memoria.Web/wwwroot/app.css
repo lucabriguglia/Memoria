@@ -558,6 +558,54 @@ h2:focus {
     grid-template-columns: minmax(0, 1fr);
 }
 
+    /* The words fill the card. Every other tile's body is a flex item that takes the width of its
+       own words, which is fine when nothing in it is aligned against the card's far edge; here
+       the counts are, and a body as wide as the name would put "right" a word past the name. */
+    .tiles.services .body {
+        flex: 1 1 auto;
+    }
+
+    /* The name and, on the same line, the counts beside it, sent to the right so the name keeps
+       the left edge every tile aligns its name on and the counts line up under each other down
+       the page. Wraps when the row is too narrow for both, the counts dropping under the name
+       rather than the name breaking in two. */
+    .tiles.services .head {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem 1rem;
+    }
+
+    .tiles.services .name {
+        flex: 1 1 auto;
+    }
+
+    /* The counts, in the table size and the softer ink, so the name is still the thing read.
+       Pushed to the far edge on their own, so they stay right however the name grows. */
+    .tiles.services .facts {
+        color: var(--ink-soft);
+        display: flex;
+        font-size: var(--text-md);
+        gap: 0.9rem;
+        margin-left: auto;
+        white-space: nowrap;
+    }
+
+    /* One kind: its mark and the number after it, held together as one word. The mark is sized
+       against the count beside it rather than the tile's own mark, which is drawn a size up
+       against the name. */
+    .tiles.services .fact {
+        align-items: center;
+        display: inline-flex;
+        gap: 0.25rem;
+    }
+
+    .tiles.services .fact .glyph {
+        height: 1rem;
+        margin-top: 0;
+        width: 1rem;
+    }
+
     /* The whole card is the link, so the target is the tile a reader is already pointing at rather
        than the two words at the top of it. The sheet's white over the page's ground and carried by
        its rule, the way every other card here is drawn. */

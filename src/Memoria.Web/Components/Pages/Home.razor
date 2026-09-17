@@ -49,7 +49,32 @@ else
                 <a href="@service.Slug">
                     <SectionMark Kind="SectionKind.Overview"/>
                     <span class="body">
-                        <span class="name">@service.Name</span>
+                        <span class="head">
+                            <span class="name">@service.Name</span>
+                            @* Beside the name, for a store that can be reached: how much domain is
+                               behind the door — the types registered, counted by kind, the empty
+                               kinds left out. Each kind is its section's mark with the number
+                               after it, the same mark the service's page enters that section by,
+                               and the words are kept on the span for whoever cannot see the mark.
+                               Nothing names a model; the service's own page lays those out. An
+                               unreachable store counts nothing here: a count would suggest a door
+                               that opens. *@
+                            @if (Stores.For(service).Reachable)
+                            {
+                                <span class="facts">
+                                    @foreach (var fact in Facts(Types.Current.For(service)))
+                                    {
+                                        <span class="fact" title="@fact.Label" aria-label="@fact.Label">
+                                            @if (fact.Kind is { } kind)
+                                            {
+                                                <SectionMark Kind="kind"/>
+                                            }
+                                            @fact.Text
+                                        </span>
+                                    }
+                                </span>
+                            }
+                        </span>
                         @* What the service is, in its manifest's own words, when the manifest
                            says. Not which models it registered under: every service said one of
                            three things there, which told a reader nothing its own page does not
@@ -74,14 +99,22 @@ else
 
     private IReadOnlyList<Service> Services => Types.Current.Services;
 
-    /// <summary>The services this operator may read: named by their manifest, or by a global role.</summary>
+    /// <summary>
+    /// The services this operator may read — named by their manifest, or by a global role — by
+    /// name, whatever order their zips were installed in. Compared the way a reader compares
+    /// words, case aside, rather than by code point, which would sort every capital before
+    /// every lower-case letter.
+    /// </summary>
     private IReadOnlyList<Service> Visible { get; set; } = [];
 
     protected override async Task OnInitializedAsync()
     {
         var user = AuthenticationState is { } state ? (await state).User : new System.Security.Claims.ClaimsPrincipal();
 
-        Visible = Services.Where(service => Access.Grants(user, Roles.Reader, service)).ToList();
+        Visible = Services
+            .Where(service => Access.Grants(user, Roles.Reader, service))
+            .OrderBy(service => service.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
     }
 
     /// <summary>
@@ -90,5 +123,39 @@ else
     /// </summary>
     private string? Detail(Service service) =>
         Stores.For(service).Problem is { } problem ? $"Unreachable: {problem}" : service.Description;
+
+    /// <summary>
+    /// One thing said beside a service's name: a kind's mark and the number registered under it,
+    /// with the words the mark stands for kept for whoever cannot see it; or, with no mark, that
+    /// nothing is registered at all.
+    /// </summary>
+    private sealed record Fact(SectionKind? Kind, string Text, string? Label);
+
+    /// <summary>
+    /// The types a service registered, counted by kind, with the kinds it registered none of left
+    /// out; or that it registered none at all. An aggregate or projection is counted whichever
+    /// model it is registered under, and an event once however many models apply it.
+    /// </summary>
+    private static IReadOnlyList<Fact> Facts(DomainTypeCatalogue catalogue)
+    {
+        var counted = new[]
+            {
+                Count(SectionKind.Events, catalogue.Events.Count, "event"),
+                Count(SectionKind.Aggregates, catalogue.StreamedAggregates.Count + catalogue.DcbAggregates.Count, "aggregate"),
+                Count(SectionKind.Projections, catalogue.StreamedProjections.Count + catalogue.DcbProjections.Count, "projection")
+            }
+            .OfType<Fact>()
+            .ToList();
+
+        return counted.Count == 0 ? [new Fact(null, "no types registered", null)] : counted;
+    }
+
+    /// <summary>The count under a kind's mark, worded for a reader, or nothing when there is nothing to count.</summary>
+    private static Fact? Count(SectionKind kind, int count, string noun) => count switch
+    {
+        0 => null,
+        1 => new Fact(kind, "1", $"1 {noun}"),
+        _ => new Fact(kind, count.ToString(), $"{count} {noun}s")
+    };
 
 }

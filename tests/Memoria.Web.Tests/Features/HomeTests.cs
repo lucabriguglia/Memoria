@@ -37,6 +37,87 @@ public class HomeTests
         }
     }
 
+    /// <summary>
+    /// Beside the name, how much domain is behind the door: the types the service registered,
+    /// counted by kind and the empty kinds left out. Each count is drawn as its section's mark
+    /// with the number after it, and the words the mark stands for are kept on the span for a
+    /// reader who cannot see it. Nothing says which model the service uses, nor which engine its
+    /// store runs on.
+    /// </summary>
+    [Fact]
+    public async Task Counts_a_service_s_types_beside_its_name_under_each_kind_s_mark()
+    {
+        using var web = MemoriaWeb.Open().WithOneNamespace();
+
+        var page = Markup.Plain(await web.Client.GetStringAsync("/"));
+
+        using (new AssertionScope())
+        {
+            page.Should().Contain("<span class=\"fact\" title=\"2 aggregates\" aria-label=\"2 aggregates\"><svg class=\"glyph\"");
+            Markup.Unmarked(page).Should().Contain("aria-label=\"2 aggregates\">2</span>");
+            page.Should().NotContain("class=\"engine\"").And.NotContain("SQLite");
+        }
+    }
+
+    [Fact]
+    public async Task Counts_every_kind_a_service_registered()
+    {
+        using var web = MemoriaWeb.Open().WithSampleTypes();
+
+        var page = Markup.Unmarked(Markup.Plain(await web.Client.GetStringAsync("/")));
+
+        page.Should().MatchRegex(
+            "<span class=\"facts\">" +
+            "<span class=\"fact\" title=\"(\\d+) events\" aria-label=\"\\1 events\">\\1</span>" +
+            "<span class=\"fact\" title=\"(\\d+) aggregates\" aria-label=\"\\2 aggregates\">\\2</span>" +
+            "<span class=\"fact\" title=\"(\\d+) projections\" aria-label=\"\\3 projections\">\\3</span>" +
+            "</span>");
+    }
+
+    /// <summary>A service over an assembly that registers nothing says so, in words, where the counts would be.</summary>
+    [Fact]
+    public async Task Says_when_a_service_registered_no_types()
+    {
+        using var web = MemoriaWeb.Open().WithService("Empty", assembly: OneSidedAssembly.Empty);
+
+        var page = Markup.Plain(await web.Client.GetStringAsync("/"));
+
+        page.Should().Contain(">Empty<").And.Contain("<span class=\"facts\"><span class=\"fact\">no types registered</span></span>");
+    }
+
+    /// <summary>
+    /// A store that cannot be reached is said under the name, and nothing is counted beside it:
+    /// the counts would suggest a door that opens.
+    /// </summary>
+    [Fact]
+    public async Task Says_a_service_is_unreachable_and_counts_nothing_beside_it()
+    {
+        using var web = MemoriaWeb.Open().WithSampleTypes().WithService("Ghost", connectionString: "Nowhere");
+
+        var page = Markup.Plain(await web.Client.GetStringAsync("/"));
+        var ghost = page[page.IndexOf(">Ghost<", StringComparison.Ordinal)..];
+        var tile = ghost[..ghost.IndexOf("</li>", StringComparison.Ordinal)];
+
+        tile.Should().Contain("Unreachable").And.NotContain("class=\"facts\"");
+    }
+
+    /// <summary>
+    /// The services are listed by name, whatever order their zips were installed in: a reader
+    /// looking for one scans a list, and a list scanned wants an order the reader already knows.
+    /// </summary>
+    [Fact]
+    public async Task Lists_the_services_by_name()
+    {
+        using var web = MemoriaWeb.Open().WithSampleTypes()
+            .WithService("Zebra").WithService("apple").WithService("Mango");
+
+        var page = Markup.Plain(await web.Client.GetStringAsync("/"));
+
+        new[] { ">apple<", ">Mango<", ">samples<", ">Zebra<" }
+            .Select(name => page.IndexOf(name, StringComparison.Ordinal))
+            .Should().BeInAscendingOrder().And.NotContain(-1);
+    }
+
     /// <summary>A service whose manifest says nothing of it has a name and no line under it.</summary>
     [Fact]
     public async Task Draws_no_line_under_a_service_whose_manifest_gives_no_description()

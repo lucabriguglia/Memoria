@@ -162,6 +162,26 @@ public class HomeTests
         }
     }
 
+    /// <summary>
+    /// A rule stands between Home and the service's part of the bar, so where the tool's menu ends
+    /// and the service's begins can be seen. Outside a service there is nothing to set apart.
+    /// </summary>
+    [Fact]
+    public async Task Sets_the_service_s_menu_apart_from_home_with_a_rule()
+    {
+        using var web = MemoriaWeb.Open().WithSampleTypes();
+
+        var inside = Markup.Unmarked(Markup.Header(await web.Client.GetStringAsync("/samples")));
+        var outside = Markup.Unmarked(Markup.Header(await web.Client.GetStringAsync("/")));
+
+        using (new AssertionScope())
+        {
+            inside.Should().MatchRegex(
+                "Home</a>\\s*<span class=\"separator\"></span>\\s*<a href=\"samples\"");
+            outside.Should().NotContain("class=\"separator\"");
+        }
+    }
+
     [Fact]
     public async Task Passes_the_breadcrumb_through_the_service()
     {

@@ -67,6 +67,15 @@ header {
             font-weight: 600;
         }
 
+        /* The line between the tool's part of the bar and the service's: one text line tall, in the
+           ink the tables rule their rows with, so it marks where a group starts without saying
+           anything itself. */
+        header nav .separator {
+            align-self: center;
+            border-left: 1px solid var(--rule);
+            height: 1.25em;
+        }
+
 /* The mark in front of every item, in both menus and under every heading. Sized to the text it
    fronts rather than in rem, so it rides the bar's size, and set back in the fainter ink the tiles
    set theirs in: it says which item this is at a glance and then gets out of the way of the word

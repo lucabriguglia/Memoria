@@ -31,6 +31,11 @@
            sits with their preferences at the far end. *@
         @if (Current.Inside)
         {
+        @* A rule between the tool's part of the bar and the service's, so where one ends and the
+           other begins can be seen. A line rather than the dot the footer draws: a dot separates
+           items in a list, and this separates one group from the next. An empty span, drawn by
+           the stylesheet, so there is nothing for a screen reader to read out. *@
+        <span class="separator"></span>
         <NavLink href="@Current.Segment" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>@Current.Name</NavLink>
 
         @* <details> rather than a hover menu: it opens on touch and on the keyboard with no

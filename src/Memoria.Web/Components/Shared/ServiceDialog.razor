@@ -1,0 +1,202 @@
+@using Memoria.Web.Data
+@using Memoria.Web.Extensibility
+@inject IConfiguration Configuration
+
+@* One installed service, over the table it was listed in, read two ways: its facts — the address
+   it is browsed under, the connection string it reads over and what the configuration says about
+   that, and who may read and update it — and the domain types registered from each assembly it
+   names.
+
+   Open because the address says so and closed by a link that takes that back, like the JSON pop-up
+   over a page of the log. No script and no <dialog>: the settings page renders statically, the
+   framework's modal needs JavaScript to open at all, and a reader who followed a link here can
+   leave the way they came — the close is a link, the backdrop behind it is the same link, and the
+   browser's own back button undoes the whole thing.
+
+   Its own component rather than markup on the settings page, because that page styles the two
+   <dialog> elements it does open by script under the same class name the overlay's sheet carries,
+   and a sheet drawn there would be drawn twice over. *@
+<div class="overlay" id="@Anchor" tabindex="-1">
+    @* The way out that a click anywhere outside is. Kept out of the reading order and out of the
+       accessibility tree: it is the same address as the Close beside the title, and offered twice
+       it would be read out twice. *@
+    <a class="overlay-dismiss" href="@CloseLink" tabindex="-1" aria-hidden="true"></a>
+
+    @* Named by its heading rather than marked aria-modal: nothing here traps focus or hides the
+       page behind it from a screen reader, and saying otherwise would promise a reader something
+       that is not true. Narrow, like the payload sheet: a sheet of names is read down, not across. *@
+    <section class="dialog dialog-narrow" role="dialog" aria-labelledby="@(Anchor)-title">
+        <header class="dialog-header">
+            @* The mark a service is listed with in the row, in front of the name — so what was
+               clicked and what arrived look like the same thing. *@
+            <h2 id="@(Anchor)-title">
+                <SectionMark Kind="SectionKind.Service"/>
+                @Service.Name
+            </h2>
+
+            <a class="dialog-close" href="@CloseLink" aria-label="Close" title="Close">&times;</a>
+        </header>
+
+        <div class="dialog-body">
+            @* The two views, each an ordinary link carrying the view in the address, like the
+               settings page's own row of tabs under this sheet. Their own ids, so they do not
+               collide with that row. *@
+            <nav class="tabs" aria-label="Service views">
+                <a id="@(Anchor)-tab-@InfoView" href="@ViewLink(InfoView)"
+                   aria-current="@(Showing == InfoView ? "page" : null)">Info</a>
+                <a id="@(Anchor)-tab-@TypesView" href="@ViewLink(TypesView)"
+                   aria-current="@(Showing == TypesView ? "page" : null)">Types</a>
+            </nav>
+
+            @if (Showing == TypesView)
+            {
+                <section class="sheet-panel" aria-labelledby="@(Anchor)-tab-@TypesView">
+                    <ul class="assemblies">
+                        @foreach (var assembly in Service.Assemblies)
+                        {
+                            var registered = Catalogue.RegisteredFrom(assembly);
+
+                            <li>
+                                <span class="assembly">@assembly</span>
+
+                                @* One sentence rather than a blank, because a file that registered
+                                   nothing is the case worth noticing: an assembly that did not load,
+                                   or one built against another Memoria — both listed on the same
+                                   terms as the one that brought everything. *@
+                                @if (registered.Count == 0)
+                                {
+                                    <p class="none">No domain types registered from it.</p>
+                                }
+                                else
+                                {
+                                    <ul class="kinds">
+                                        @foreach (var kind in registered)
+                                        {
+                                            <li>
+                                                <span class="kind">@kind.Label</span>
+                                                <ul class="types">
+                                                    @foreach (var type in kind.Types)
+                                                    {
+                                                        @* Named as the index pages name it: by what it
+                                                           is bound as where it is bound, and by the
+                                                           class otherwise. *@
+                                                        <li>@DomainTypeDescriber.LabelOf(type)<ObsoleteMark Type="type"/></li>
+                                                    }
+                                                </ul>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </li>
+                        }
+                    </ul>
+
+                    @if (Dependencies.Count > 0)
+                    {
+                        @* What the archive also holds: loaded so the named assemblies resolve, and
+                           scanned for nothing, whatever it carries. Said so that a type somebody
+                           expected to see is looked for in the manifest rather than in the file. *@
+                        <p class="none">
+                            Also in the archive, loaded as dependencies and not scanned:
+                            @string.Join(", ", Dependencies).
+                        </p>
+                    }
+                </section>
+            }
+            else
+            {
+                @* The facts laid out the way every Info tab on the site lays its out — the same
+                   card the event and type sheets draw theirs into — so a reader stepping between
+                   sheets is reading one kind of surface. *@
+                <section class="tab-panel" aria-labelledby="@(Anchor)-tab-@InfoView">
+                    <dl class="facts">
+                        @* Where the service is browsed: the address its name makes, which is
+                           what a reader types and what the manifest never wrote. *@
+                        <dt>Address</dt>
+                        <dd><code>/@Service.Slug</code></dd>
+                        <dt>Connection string</dt>
+                        @* The name the manifest gave and what the configuration makes of it,
+                           beside each other: a name that meets nothing is the one fact on this
+                           sheet the person reading it can fix, and it is said where they look. *@
+                        <dd><code>@Service.ConnectionString</code> <span class="state">@State</span></dd>
+                        <dt>Read</dt>
+                        <dd>@Roles(Service.ReadRoles)</dd>
+                        <dt>Update</dt>
+                        <dd>@Roles(Service.UpdateRoles)</dd>
+                    </dl>
+                </section>
+            }
+        </div>
+    </section>
+</div>
+
+@code {
+
+    /// <summary>The service being read.</summary>
+    [Parameter]
+    [EditorRequired]
+    public Service Service { get; set; } = null!;
+
+    /// <summary>The archive that declared it, for the assemblies it also holds.</summary>
+    [Parameter]
+    [EditorRequired]
+    public InstalledArchive Archive { get; set; } = null!;
+
+    /// <summary>The types currently registered, which is where each file's are looked up.</summary>
+    [Parameter]
+    [EditorRequired]
+    public DomainTypeCatalogue Catalogue { get; set; } = DomainTypeCatalogue.Empty;
+
+    /// <summary>Which of the two views is open: <see cref="InfoView"/> unless the address says <see cref="TypesView"/>.</summary>
+    [Parameter]
+    public string? View { get; set; }
+
+    /// <summary>The address that opens a view of this sheet, given the view's name.</summary>
+    [Parameter]
+    [EditorRequired]
+    public Func<string, string> ViewLink { get; set; } = null!;
+
+    /// <summary>The page with nothing asked for, which is what closes it.</summary>
+    [Parameter]
+    [EditorRequired]
+    public string CloseLink { get; set; } = null!;
+
+    /// <summary>What this is called in the address, so the link that opens it can land on it.</summary>
+    public const string Anchor = "service";
+
+    /// <summary>The view the sheet opens on: the service's facts.</summary>
+    public const string InfoView = "info";
+
+    /// <summary>The other view: the types registered from each assembly the service names.</summary>
+    public const string TypesView = "types";
+
+    /// <summary>The view drawn: the one asked for when it is one of the two, and the facts otherwise.</summary>
+    private string Showing => string.Equals(View, TypesView, StringComparison.OrdinalIgnoreCase) ? TypesView : InfoView;
+
+    /// <summary>What the configuration says about the string the service reads over.</summary>
+    private string State =>
+        ConnectionStrings.Named(Configuration, Service.ConnectionString).Description;
+
+    /// <summary>
+    /// Who may do one of the two things, in the words the roles page uses: the claim values the
+    /// manifest names, or — when it names none — that only the tool's own roles reach it.
+    /// </summary>
+    private static string Roles(IReadOnlyList<string> roles) =>
+        roles.Count == 0 ? "only the global roles" : string.Join(", ", roles);
+
+    /// <summary>
+    /// The assembly files in the archive that no service names, in the order the archive lists them.
+    /// </summary>
+    private IReadOnlyList<string> Dependencies
+    {
+        get
+        {
+            var named = Archive.Services
+                .SelectMany(service => service.Assemblies)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            return Archive.Assemblies.Where(assembly => !named.Contains(assembly)).ToList();
+        }
+    }
+
+}

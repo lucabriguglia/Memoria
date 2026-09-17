@@ -1,0 +1,63 @@
+/* The row of views, set a little under the header rather than flush against it: the other sheets
+   carry a line naming the row between the two, and this one has nothing to put there but space. */
+.dialog-body .tabs {
+    margin-top: 1rem;
+}
+
+/* What the configuration says about a name, beside the name: the sheet's own words, in the page's
+   face, and softer than the name they are about. Spaced here rather than by the space in the
+   markup, the way the facts card sets a note beside a value. */
+.facts dd .state {
+    color: var(--ink-soft);
+    font-family: var(--font);
+    margin-left: 0.5rem;
+}
+
+/* Three lists, each stepped in under the thing it belongs to and none of them bulleted: the indent
+   already says what is under what, and a bullet in a sheet of names reads as a mark rather than as
+   a list. The assembly and the types are stored data, set in the face every stored value here is
+   read in; the kind between them is the sheet's own word, like the labels the Types tab counts
+   under, and is set in the page's face and in the soft ink so the types stay the ones being listed. */
+.assemblies,
+.kinds,
+.types {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.assemblies {
+    font-family: var(--mono);
+    font-size: var(--text-md);
+    overflow-wrap: anywhere;
+}
+
+    .assemblies > li + li {
+        margin-top: 0.75rem;
+    }
+
+.kinds,
+.types {
+    padding-left: 1.25rem;
+}
+
+.kind {
+    color: var(--ink-soft);
+    font-family: var(--font);
+}
+
+/* The sentence for a file that registered nothing, under that file's name and stepped in where
+   its list of kinds would start; and for what the archive also holds — so whichever answer is
+   given, it is read in the same weight. */
+.none {
+    color: var(--ink-soft);
+    font-family: var(--font);
+    font-size: var(--text-md);
+    margin: 0;
+    padding-top: 1rem;
+}
+
+    .assemblies .none {
+        padding-left: 1.25rem;
+        padding-top: 0;
+    }

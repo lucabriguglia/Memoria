@@ -41,6 +41,9 @@ public enum SectionKind
     /// <summary>The streams events are held in, which only the streamed model has.</summary>
     Streams,
 
+    /// <summary>A service: a named set of domain assemblies read over one store, as the Installed table lists one.</summary>
+    Service,
+
     /// <summary>A page of the documentation, which is outside the tool.</summary>
     Documentation,
 

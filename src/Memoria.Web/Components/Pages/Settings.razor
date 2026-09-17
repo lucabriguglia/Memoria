@@ -33,7 +33,7 @@
         <p class="lede">
             The zips uploaded, each carrying a manifest that names the services in it and the
             assemblies holding their domain types. They are read as soon as they arrive — the
-            application does not restart. A row opens what that zip declares.
+            application does not restart. Each service a zip declares opens a sheet of its own.
         </p>
 
         @if (Archives.Count == 0)
@@ -61,28 +61,43 @@
                 {
                     var archive = Archives[index];
                     var dialog = $"delete-{index}";
-                    var link = ArchiveLink(archive);
 
-                    @* The whole row is the way into the sheet, so every cell but the last carries
-                       the same link. Only the first is reachable by keyboard or read out: the rest
-                       repeat it. The last cell holds the row's one other control, and is not the
-                       row's link. *@
-                    <tr class="clickable">
+                    @* The row is the file; the services in it are each the way into a sheet of
+                       their own. Nothing else in the row leads anywhere, so the row is not a link
+                       and a service is marked as one — the mark a service is drawn with wherever
+                       it is listed, in front of its name. *@
+                    <tr>
                         <td class="name">
-                            <a href="@link">
-                                @archive.Name
-                                @if (archive.Refusal is not null)
-                                {
-                                    @* An archive that declares nothing, marked in the row so it
-                                       is not mistaken for one that is installed: the sheet says
-                                       why. *@
-                                    <span class="flag">No manifest</span>
-                                }
-                            </a>
+                            @archive.Name
+                            @if (archive.Refusal is not null)
+                            {
+                                @* An archive that declares nothing, marked in the row so it is not
+                                   mistaken for one that is installed: the services column says why. *@
+                                <span class="flag">No manifest</span>
+                            }
                         </td>
-                        <td>@Cell((link, $"{archive.Length / 1024:n0} KB"))</td>
-                        <td>@Cell((link, archive.UploadedUtc.ToLocalTime().ToString("g")))</td>
-                        <td class="services">@Cell((link, ServicesOf(archive)))</td>
+                        <td>@($"{archive.Length / 1024:n0} KB")</td>
+                        <td>@archive.UploadedUtc.ToLocalTime().ToString("g")</td>
+                        <td class="services">
+                            @if (archive.Refusal is { } refusal)
+                            {
+                                @* Why the archive declares nothing, in the words the upload would
+                                   have been refused with — the same sentence, since it is the same
+                                   rule. *@
+                                <span class="none">@refusal</span>
+                            }
+                            else
+                            {
+                                <ul class="service-links">
+                                    @foreach (var service in archive.Services)
+                                    {
+                                        <li>
+                                            <a class="service-link" href="@ServiceLink(service)"><SectionMark Kind="SectionKind.Service"/>@service.Name</a>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        </td>
                         <td class="actions">
                             @* Asked before it happens, because removing an archive takes the types it
                                brought away from everyone, not just from whoever pressed it. Opened the same
@@ -155,12 +170,14 @@
             </form>
         </dialog>
 
-        @* One archive's sheet, opened over the table it was listed in. Last in the markup because
+        @* One service's sheet, opened over the table it was listed in. Last in the markup because
            it covers the panel rather than sitting anywhere in it, and drawn only when the address
-           names an archive that is installed — so the table behind it is the table a reader left. *@
-        @if (Opened is { } opened)
+           names a service that is installed — so the table behind it is the table a reader left. *@
+        @if (Opened is var (opened, declaring) && opened is not null && declaring is not null)
         {
-            <ArchiveDialog Archive="opened" Catalogue="Catalogue" CloseLink="@InstalledLink"/>
+            <ServiceDialog Service="opened" Archive="declaring" Catalogue="Catalogue"
+                           View="@ViewAsked" ViewLink="view => ServiceLink(opened, view)"
+                           CloseLink="@InstalledLink"/>
         }
     </section>
 }
@@ -323,13 +340,6 @@ else if (Tab == TypesTab)
         </text>;
 
     /// <summary>
-    /// One cell of a row, inside the row's link: neither reachable by keyboard nor read out, since
-    /// the row is one target and the first cell is the one that carries it.
-    /// </summary>
-    private RenderFragment<(string Link, string Text)> Cell => cell =>
-        @<a href="@cell.Link" tabindex="-1" aria-hidden="true">@cell.Text</a>;
-
-    /// <summary>
     /// Whether the upload form should already be open. Asked for in the address so the page decides
     /// it, rather than the dialog's visibility depending on script having run.
     /// </summary>
@@ -346,34 +356,36 @@ else if (Tab == TypesTab)
     [SupplyParameterFromQuery(Name = "delete")]
     private string? DeleteAsked { get; set; }
 
-    /// <summary>The archive whose sheet the address asks to see, when it asks for one.</summary>
-    [SupplyParameterFromQuery(Name = "archive")]
-    private string? ArchiveAsked { get; set; }
+    /// <summary>The service whose sheet the address asks to see, by its address, when it asks for one.</summary>
+    [SupplyParameterFromQuery(Name = "service")]
+    private string? ServiceAsked { get; set; }
+
+    /// <summary>Which view of that sheet, when the address says; the sheet opens on its facts otherwise.</summary>
+    [SupplyParameterFromQuery(Name = "view")]
+    private string? ViewAsked { get; set; }
 
     /// <summary>
-    /// The archive the address asks to see the sheet of, or null when it asks for nothing or
-    /// for a name that is not installed — a name typed into the address bar opens nothing rather
-    /// than an empty sheet.
+    /// The service the address asks to see the sheet of, with the archive that declared it, or
+    /// nothing when it asks for nothing or for an address no installed service has — a name typed
+    /// into the address bar opens nothing rather than an empty sheet.
     /// </summary>
-    private InstalledArchive? Opened =>
-        Archives.FirstOrDefault(archive => archive.Name == ArchiveAsked);
+    private (Service? Service, InstalledArchive? Archive) Opened =>
+        Archives
+            .SelectMany(archive => archive.Services.Select(service => (Service: (Service?)service, Archive: (InstalledArchive?)archive)))
+            .FirstOrDefault(pair => pair.Service!.Slug == ServiceAsked);
 
     /// <summary>The Installed tab with nothing asked for, which is what closes the sheet.</summary>
     private static string InstalledLink => $"settings?tab={InstalledTab}";
 
     /// <summary>
-    /// The address that opens one archive's sheet over the Installed tab. Lands on the sheet, so
-    /// on a long list the reader arrives at what they opened rather than at the top of the page.
+    /// The address that opens one service's sheet over the Installed tab, on the view named or
+    /// on its facts. Lands on the sheet, so on a long list the reader arrives at what they opened
+    /// rather than at the top of the page.
     /// </summary>
-    private static string ArchiveLink(InstalledArchive archive) =>
-        $"{InstalledLink}&archive={Uri.EscapeDataString(archive.Name)}#{ArchiveDialog.Anchor}";
-
-    /// <summary>
-    /// The services an archive declares, named in the row; an archive that declares none is
-    /// marked in its first cell and says nothing here.
-    /// </summary>
-    private static string ServicesOf(InstalledArchive archive) =>
-        string.Join(", ", archive.Services.Select(service => service.Name));
+    private static string ServiceLink(Service service, string? view = null) =>
+        $"{InstalledLink}&service={Uri.EscapeDataString(service.Slug)}" +
+        (view is null || view == ServiceDialog.InfoView ? string.Empty : $"&view={view}") +
+        $"#{ServiceDialog.Anchor}";
 
     private DomainTypeCatalogue Catalogue => Types.Current;
 

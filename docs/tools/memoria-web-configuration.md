@@ -381,7 +381,7 @@ Keys the manifest carries that the tool does not read are ignored, so a later ve
 shape without an older tool refusing what it wrote.
 
 An archive already in the directory without a manifest — from before one was required — stays
-listed, marked **No manifest**, registers nothing, and its sheet says why. Add a manifest to the zip
+listed, marked **No manifest**, registers nothing, and its row says why. Add a manifest to the zip
 and upload it again.
 
 **Never include a `Memoria*` assembly.** Uploaded types must bind to the ones the process already

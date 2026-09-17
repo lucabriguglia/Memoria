@@ -39,6 +39,50 @@
         font-family: var(--font);
     }
 
+    /* One service to a line, each the way into its own sheet and nothing else in the row a link:
+       no markers, since the mark in front of each name is what says it is a place to go. */
+    .grid.archives .service-links {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+        .grid.archives .service-links li + li {
+            margin-top: 0.25rem;
+        }
+
+        .grid.archives .service-link {
+            align-items: center;
+            color: var(--ink);
+            display: inline-flex;
+            gap: 0.4rem;
+            text-decoration: none;
+        }
+
+            .grid.archives .service-link:hover {
+                color: var(--accent);
+            }
+
+            /* The mark, at the weight the tiles hold theirs at, and in the soft ink until the
+               name beside it is gone near. Reached with ::deep because SectionMark draws it. */
+            .grid.archives .service-link ::deep .glyph {
+                color: var(--ink-faint);
+                flex: none;
+                height: 1.05rem;
+                width: 1.05rem;
+            }
+
+            .grid.archives .service-link:hover ::deep .glyph {
+                color: var(--accent);
+            }
+
+    /* Why an archive declares nothing, where its services would be: the page's own words, in the
+       soft ink, since something is missing rather than wrong. */
+    .grid.archives .services .none {
+        color: var(--ink-soft);
+        font-size: var(--text-sm);
+    }
+
     /* The mark on an archive that declares nothing, beside its name so it is not mistaken for one
        that is installed: the sheet says why. Set the way the site marks a retired type — a small
        word in a soft box — rather than as an alert, since nothing failed; something is missing. */
@@ -54,25 +98,20 @@
         white-space: nowrap;
     }
 
-    /* The row's one other control, held at the end of the row it acts on, and not the row's link:
-       app.css moves a clickable row's padding onto the anchor that fills each cell, and this cell
-       keeps the padding an ordinary cell has, with the bin at its own size inside it. */
+    /* The row's one control, held at the end of the row it acts on, with the bin at its own size
+       inside the padding an ordinary cell has. */
     .grid.archives td.actions {
         text-align: right;
         white-space: nowrap;
     }
 
-    .grid.archives tr.clickable td.actions {
-        padding: 0.5rem 1rem;
-    }
-
-        .grid.archives tr.clickable td.actions .icon-link {
+        .grid.archives td.actions .icon-link {
             color: var(--ink-soft);
             display: inline-flex;
             padding: 0.25rem;
         }
 
-            .grid.archives tr.clickable td.actions .icon-link:hover {
+            .grid.archives td.actions .icon-link:hover {
                 color: var(--accent);
             }
 

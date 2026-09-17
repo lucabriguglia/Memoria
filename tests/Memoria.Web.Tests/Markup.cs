@@ -85,6 +85,15 @@ internal static class Markup
     public sealed record MenuItem(string Label, bool Marked);
 
     /// <summary>
+    /// The links the Installed table's Services column carries, in order: where each leads and
+    /// the name it shows, without the mark drawn in front of it.
+    /// </summary>
+    public static (string Href, string Name)[] ServiceLinks(string page) =>
+        Regex.Matches(page, "<a class=\"service-link\" href=\"(?<href>[^\"]+)\">(?<inner>.*?)</a>", RegexOptions.Singleline)
+            .Select(match => (match.Groups["href"].Value, Unmarked(match.Groups["inner"].Value).Trim()))
+            .ToArray();
+
+    /// <summary>
     /// Everything in the header's menus that can be chosen — each heading, each link and each
     /// button, on the bar and folded under a heading alike, in the order written. The brand is
     /// not one of them: it is the mark of the tool, not a place in it.

@@ -54,13 +54,13 @@ and who may read and update it. Only the assemblies a service names are scanned;
 zip is loaded as dependencies and registers nothing. A zip without a manifest is refused. See
 [What to put in a zip](memoria-web-configuration.md#what-to-put-in-a-zip).
 
-The Settings page lists what each archive declares. Every row of the installed archives table opens
-a sheet over that zip: its size and upload time, then each service by name — the connection string
-it reads over and whether that is configured, who may read and update it, and its assemblies with
-the domain types registered from each. A file that registered nothing says so on a line of its own,
-which is the case worth noticing: an assembly that did not load, or one built against another
-Memoria. A zip already there without a manifest is listed, marked **No manifest**, and its sheet
-says why.
+The Settings page lists what each archive declares: the file, its size and upload time, and each
+service on a line of its own. A service opens a sheet over the table, read two ways. **Info** is
+the address it is browsed under, the connection string it reads over and whether that is
+configured, and who may read and update it. **Types** is its assemblies with the domain types
+registered from each; a file that registered nothing says so on a line of its own, which is the
+case worth noticing: an assembly that did not load, or one built against another Memoria. A zip
+already there without a manifest is listed, marked **No manifest**, and its row says why.
 
 A type carrying `[Obsolete]` is marked as such wherever it is named, and says the attribute's own
 message wherever it is opened. Retired is not the same as old: a type with a later version beside it

@@ -18,7 +18,7 @@ namespace Memoria.Web.Tests.Features;
 /// </summary>
 public class SettingsSheetTests
 {
-    private const string Sheet = "/settings?tab=installed&archive=orders.zip";
+    private const string Sheet = "/settings?tab=installed&service=orders";
 
     [Fact]
     public async Task Refuses_an_upload_without_a_manifest_and_installs_nothing()
@@ -72,38 +72,61 @@ public class SettingsSheetTests
         }
     }
 
-    /// <summary>The row itself is the way into the sheet, not a mark somewhere on it.</summary>
+    /// <summary>
+    /// Each service in the row is the way into its own sheet, one to a line and marked as a place
+    /// to go; the row itself leads nowhere.
+    /// </summary>
     [Fact]
-    public async Task Lists_each_archive_as_a_row_that_opens_its_sheet()
+    public async Task Lists_each_service_on_its_own_line_as_a_link_that_opens_its_sheet()
     {
         using var web = MemoriaWeb.Open();
         var client = web.Client;
-        await client.PostAsync("/settings/upload", await Upload(client, Forms.Zip("Contoso.Orders.dll")));
+        var manifest = """
+            { "services": [
+                { "name": "Orders", "assemblies": ["Contoso.Orders.dll"], "connectionString": "Memoria" },
+                { "name": "Billing", "assemblies": ["Contoso.Orders.dll"], "connectionString": "Memoria" }
+            ] }
+            """;
+        await client.PostAsync("/settings/upload", await Upload(client, Forms.Zip("Contoso.Orders.dll", manifest)));
 
         var page = Markup.Plain(await client.GetStringAsync("/settings?tab=installed"));
 
-        page.Should().Contain("href=\"settings?tab=installed&amp;archive=orders.zip#archive\"");
+        using (new AssertionScope())
+        {
+            page.Should().NotContain("class=\"clickable\"");
+            page.Should().NotContain("archive=orders.zip");
+            Markup.ServiceLinks(page).Should().Equal(
+                ("settings?tab=installed&amp;service=orders#service", "Orders"),
+                ("settings?tab=installed&amp;service=billing#service", "Billing"));
+        }
     }
 
+    /// <summary>
+    /// The sheet opens on the service's facts: where it is browsed, what it reads over, and who
+    /// may read and update it. The types its assemblies registered are a second view.
+    /// </summary>
     [Fact]
-    public async Task Opens_a_sheet_naming_the_file_and_each_service_it_declares()
+    public async Task Opens_a_sheet_over_a_service_with_its_facts_and_its_types_as_two_views()
     {
         using var web = MemoriaWeb.Open();
         var client = web.Client;
         await client.PostAsync("/settings/upload", await Upload(client,
             Forms.Zip("Contoso.Orders.dll", readRoles: ["orders-team"], updateRoles: ["orders-leads"])));
 
-        var sheet = Markup.Plain(await client.GetStringAsync(Sheet));
+        var info = Markup.Plain(await client.GetStringAsync(Sheet));
+        var types = Markup.Plain(await client.GetStringAsync(Sheet + "&view=types"));
 
         using (new AssertionScope())
         {
-            sheet.Should().Contain("id=\"archive\"");
-            sheet.Should().Contain("orders.zip");
-            sheet.Should().Contain("Uploaded");
-            sheet.Should().Contain(">orders<");
-            sheet.Should().Contain("Contoso.Orders.dll");
-            sheet.Should().Contain("orders-team");
-            sheet.Should().Contain("orders-leads");
+            info.Should().Contain("id=\"service\"");
+            info.Should().Contain("id=\"service-title\"");
+            info.Should().Contain("aria-current=\"page\">Info<").And.NotContain("aria-current=\"page\">Types<");
+            types.Should().Contain("aria-current=\"page\">Types<");
+            info.Should().Contain("/orders");
+            info.Should().Contain("orders-team").And.Contain("orders-leads");
+            info.Should().NotContain("Contoso.Orders.dll");
+            info.Should().Contain("href=\"settings?tab=installed&amp;service=orders&amp;view=types#service\"");
+            types.Should().Contain("Contoso.Orders.dll").And.NotContain("orders-team");
         }
     }
 
@@ -126,12 +149,13 @@ public class SettingsSheetTests
             """;
         await client.PostAsync("/settings/upload", await Upload(client, Forms.Zip("Contoso.Orders.dll", manifest)));
 
-        var sheet = Markup.Plain(await client.GetStringAsync(Sheet));
+        var orders = Markup.Plain(await client.GetStringAsync(Sheet));
+        var billing = Markup.Plain(await client.GetStringAsync("/settings?tab=installed&service=billing"));
 
         using (new AssertionScope())
         {
-            sheet.Should().Contain("Memoria").And.Contain("SQLite");
-            sheet.Should().Contain("Billing").And.Contain("not configured");
+            orders.Should().Contain("Memoria").And.Contain("SQLite");
+            billing.Should().Contain("Billing").And.Contain("not configured");
         }
     }
 
@@ -149,7 +173,8 @@ public class SettingsSheetTests
 
     /// <summary>
     /// A zip put in the directory by hand, before manifests were required, is listed rather than
-    /// hidden — the row says it needs a manifest, registers nothing, and its sheet says why.
+    /// hidden — the row says it needs a manifest and why, where its services would be, and it
+    /// registers nothing.
     /// </summary>
     [Fact]
     public async Task Lists_an_archive_without_a_manifest_and_says_it_needs_one()
@@ -161,24 +186,20 @@ public class SettingsSheetTests
         var client = web.Client;
 
         var page = Markup.Plain(await client.GetStringAsync("/settings?tab=installed"));
-        var sheet = Markup.Plain(await client.GetStringAsync("/settings?tab=installed&archive=old.zip"));
 
-        using (new AssertionScope())
-        {
-            page.Should().Contain("old.zip").And.Contain("No manifest");
-            sheet.Should().Contain("memoria.json").And.Contain("required");
-        }
+        page.Should().Contain("old.zip").And.Contain("No manifest")
+            .And.Contain("memoria.json").And.Contain("required");
     }
 
     [Fact]
-    public async Task Opens_no_sheet_for_a_name_that_is_not_installed()
+    public async Task Opens_no_sheet_for_a_service_that_is_not_installed()
     {
         using var web = MemoriaWeb.Open();
         var client = web.Client;
 
-        var page = Markup.Plain(await client.GetStringAsync("/settings?tab=installed&archive=nothing.zip"));
+        var page = Markup.Plain(await client.GetStringAsync("/settings?tab=installed&service=nothing"));
 
-        page.Should().NotContain("id=\"archive\"");
+        page.Should().NotContain("id=\"service\"");
     }
 
     private static async Task<MultipartFormDataContent> Upload(HttpClient client, byte[] zip)

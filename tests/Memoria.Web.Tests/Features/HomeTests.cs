@@ -55,7 +55,7 @@ public class HomeTests
         {
             home.Should().Contain("href=\"orders-team-eu\"").And.Contain("Orders  Team (EU)");
             page.Should().Contain("<h1>Orders  Team (EU)</h1>").And.Contain("href=\"orders-team-eu/streamed\"");
-            Markup.MenuBar(page).Should().Equal("Home", "Orders  Team (EU)", "Streamed", "DCB", "Settings");
+            Markup.MenuBar(page).Should().Equal("Home", "Orders  Team (EU)", "Streamed", "DCB");
         }
     }
 
@@ -145,7 +145,7 @@ public class HomeTests
 
     /// <summary>
     /// Inside a service the bar is the service's: Home, the service's name leading to its page,
-    /// the model menus as they were, and Settings. Outside one there are no models to menu.
+    /// and the model menus as they were. Outside one there are no models to menu.
     /// </summary>
     [Fact]
     public async Task Draws_the_service_s_menu_on_the_bar_inside_it_and_none_outside()
@@ -157,8 +157,8 @@ public class HomeTests
 
         using (new AssertionScope())
         {
-            Markup.MenuBar(inside).Should().Equal("Home", "samples", "Streamed", "DCB", "Settings");
-            Markup.MenuBar(outside).Should().Equal("Home", "Settings");
+            Markup.MenuBar(inside).Should().Equal("Home", "samples", "Streamed", "DCB");
+            Markup.MenuBar(outside).Should().Equal("Home");
         }
     }
 

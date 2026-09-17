@@ -26,8 +26,9 @@
 
         @* The bar is the service's while a service is being read: its name, leading to its own
            page, and then the menus over its models exactly as they were drawn for the one store.
-           Outside a service there are no models to menu — Home lists the services, and the
-           settings are the tool's — so the bar is Home and Settings alone. *@
+           Outside a service there are no models to menu — Home lists the services — so the bar
+           is Home alone. Settings is not a place in a service either: it is the operator's, and
+           sits with their preferences at the far end. *@
         @if (Current.Inside)
         {
         <NavLink href="@Current.Segment" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Overview"/>@Current.Name</NavLink>
@@ -124,26 +125,24 @@
         }
         }
 
-        @* The theme is picked under Settings rather than up here: it is this browser's own
-           preference, which is what that tab holds, and the bar is for places to go. And a place
-           only an Administrator can go is left out for everyone else: the bar is for places to
-           go, not places to be turned away from. Open, the policy is met by anyone and the link
-           is there as it always was. *@
-        <AuthorizeView Policy="@Roles.Administrator">
-            <NavLink href="settings"><SectionMark Kind="SectionKind.Settings"/>Settings</NavLink>
-        </AuthorizeView>
     </nav>
 
-    @* What is the operator's own, at the far end of the bar away from the places to go: their
-       preferences, which are this browser's and nobody else's business, and — signed in — their
-       way out. Under their name, opened the way the section headings open, so the bar carries one
-       kind of menu. Open, there is nobody to name, and the preferences stand as a plain link where
-       the name would be. Sign-out is a form rather than a link, like every other write the pages
-       send: ending a session is one, and it carries the same token the others do so a page
-       elsewhere cannot end it on an operator's behalf. *@
+    @* What is the operator's own, at the far end of the bar away from the places to go: the
+       settings, which an Administrator keeps for the tool; their preferences, which are this
+       browser's and nobody else's business; and — signed in — their way out. Under their name,
+       opened the way the section headings open, so the bar carries one kind of menu. Settings
+       first, being the one that reaches furthest, and left out for whoever is not an
+       Administrator: the menu is for places to go, not places to be turned away from. Open, the
+       policy is met by anyone and there is nobody to name, so the two stand as plain links where
+       the name would be, in the order they would be listed under it. Sign-out is a form rather
+       than a link, like every other write the pages send: ending a session is one, and it carries
+       the same token the others do so a page elsewhere cannot end it on an operator's behalf. *@
     @if (SignIn is AuthenticationSettings.Disabled)
     {
         <nav class="operator" aria-label="Your settings">
+            <AuthorizeView Policy="@Roles.Administrator">
+                <NavLink href="settings"><SectionMark Kind="SectionKind.Settings"/>Settings</NavLink>
+            </AuthorizeView>
             <NavLink href="preferences" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Preferences"/>Preferences</NavLink>
         </nav>
     }
@@ -152,8 +151,11 @@
         <AuthorizeView>
             <Authorized>
                 <details class="menu operator">
-                    <summary class="@(InSection("preferences", underService: false) ? "active" : null)"><SectionMark Kind="SectionKind.Operator"/>@context.User.Identity?.Name</summary>
+                    <summary class="@(InSection("settings", underService: false) || InSection("preferences", underService: false) ? "active" : null)"><SectionMark Kind="SectionKind.Operator"/>@context.User.Identity?.Name</summary>
                     <div class="submenu">
+                        <AuthorizeView Policy="@Roles.Administrator" Context="administrator">
+                            <NavLink href="settings"><SectionMark Kind="SectionKind.Settings"/>Settings</NavLink>
+                        </AuthorizeView>
                         <NavLink href="preferences" Match="NavLinkMatch.All"><SectionMark Kind="SectionKind.Preferences"/>Preferences</NavLink>
                         <form method="post" action="logout">
                             <AntiforgeryToken/>
@@ -173,7 +175,7 @@
 <footer>
     <div class="footer-left">
         <span class="copyright">&copy; @DateTime.UtcNow.Year Luca Briguglia</span>
-        @* Down here rather than in the bar: the bar is for the store and the tool's own settings,
+        @* Down here rather than in the bar: the bar is for the store and its far end for the operator,
            and this is the page about the tool — the version, the licence, the documentation —
            which is what a footer is read for. It sits beside the copyright because that is the
            one line of it already written here. *@

@@ -18,7 +18,7 @@ public class OneModelTests
 
         var page = await web.Client.GetStringAsync("/samples");
 
-        Markup.MenuBar(page).Should().Equal("Home", "samples", "Streamed", "DCB", "Settings");
+        Markup.MenuBar(page).Should().Equal("Home", "samples", "Streamed", "DCB");
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class OneModelTests
 
         var page = await web.Client.GetStringAsync("/samples");
 
-        Markup.MenuBar(page).Should().Equal("Home", "samples", "Events", "Aggregates", "Projections", "Streams", "Settings");
+        Markup.MenuBar(page).Should().Equal("Home", "samples", "Events", "Aggregates", "Projections", "Streams");
         Markup.Header(page).Should().Contain("href=\"samples/streamed/events/types\"").And.NotContain("href=\"samples/dcb");
     }
 
@@ -39,7 +39,7 @@ public class OneModelTests
 
         var page = await web.Client.GetStringAsync("/samples");
 
-        Markup.MenuBar(page).Should().Equal("Home", "samples", "Events", "Aggregates", "Projections", "Settings");
+        Markup.MenuBar(page).Should().Equal("Home", "samples", "Events", "Aggregates", "Projections");
         Markup.Header(page).Should().Contain("href=\"samples/dcb/events/types\"").And.NotContain("href=\"samples/streamed");
     }
 

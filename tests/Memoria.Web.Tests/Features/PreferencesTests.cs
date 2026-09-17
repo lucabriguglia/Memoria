@@ -1,6 +1,7 @@
 using System.Net;
 using System.Threading.Tasks;
 using AwesomeAssertions;
+using AwesomeAssertions.Execution;
 using Xunit;
 
 namespace Memoria.Web.Tests.Features;
@@ -50,10 +51,34 @@ public class PreferencesTests
     {
         using var web = MemoriaWeb.SignedInAs("Ada Lovelace");
 
-        var header = Markup.Header(await web.Client.GetStringAsync("/"));
+        var page = await web.Client.GetStringAsync("/");
 
-        Markup.Unmarked(header).Should().MatchRegex("<summary[^>]*>[^<]*Ada Lovelace");
-        header.Should().Contain("href=\"preferences\"").And.Contain("action=\"logout\"");
+        Markup.Unmarked(Markup.Header(page)).Should().MatchRegex("<summary[^>]*>[^<]*Ada Lovelace");
+        Markup.OperatorMenu(page).Should().Equal("Ada Lovelace", "Preferences", "Sign out");
+        Markup.Header(page).Should().Contain("href=\"preferences\"").And.Contain("action=\"logout\"");
+    }
+
+    /// <summary>
+    /// Settings goes with the preferences rather than on the bar: an Administrator's own page,
+    /// first under their name, ahead of what every operator has. Whoever is not one still sees
+    /// nothing of it, and the bar holds the places to go alone.
+    /// </summary>
+    [Fact]
+    public async Task Opens_settings_first_under_an_administrators_name()
+    {
+        using var web = MemoriaWeb.SignedInAs("Ada Lovelace", ("roles", Admins))
+            .With("Authorization:Roles:Administrator", Admins);
+
+        var home = await web.Client.GetStringAsync("/");
+        var settings = await web.Client.GetStringAsync("/settings");
+
+        using (new AssertionScope())
+        {
+            Markup.OperatorMenu(home).Should().Equal("Ada Lovelace", "Settings", "Preferences", "Sign out");
+            Markup.MenuBar(home).Should().Equal("Home");
+            Markup.Unmarked(Markup.Header(settings)).Should()
+                .Contain("<summary class=\"active\">Ada Lovelace</summary>", "the name is marked while on a page under it");
+        }
     }
 
     [Fact]
@@ -64,5 +89,23 @@ public class PreferencesTests
         var header = Markup.Header(await web.Client.GetStringAsync("/"));
 
         header.Should().Contain("href=\"preferences\"").And.NotContain("action=\"logout\"");
+    }
+
+    /// <summary>
+    /// Open, there is no name to fold the two under, so they stand on the bar where the name
+    /// would be, Settings first, as they would be listed under it.
+    /// </summary>
+    [Fact]
+    public async Task Puts_settings_before_preferences_in_place_of_the_operator_when_running_open()
+    {
+        using var web = MemoriaWeb.Open();
+
+        var page = await web.Client.GetStringAsync("/");
+
+        using (new AssertionScope())
+        {
+            Markup.OperatorMenu(page).Should().Equal("Settings", "Preferences");
+            Markup.MenuBar(page).Should().Equal("Home");
+        }
     }
 }

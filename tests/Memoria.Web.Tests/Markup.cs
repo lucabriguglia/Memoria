@@ -81,6 +81,26 @@ internal static class Markup
         return [.. labels];
     }
 
+    /// <summary>
+    /// The labels of what is the operator's own, at the far end of the bar, in the order written:
+    /// the name heading the menu when there is one, then each link and button under it. Open,
+    /// there is no heading and the links stand on the bar in its place.
+    /// </summary>
+    public static string[] OperatorMenu(string page)
+    {
+        var header = Header(page);
+        var own = Regex.Match(
+            header,
+            "<(?<tag>nav|details) class=\"[^\"]*operator[^\"]*\"[^>]*>(?<inner>.*?)</\\k<tag>>",
+            RegexOptions.Singleline);
+
+        return Regex.Matches(
+                Unmarked(own.Groups["inner"].Value),
+                "<(?<tag>summary|a|button)\\b[^>]*>(?<label>[^<]*)</\\k<tag>>")
+            .Select(item => item.Groups["label"].Value.Trim())
+            .ToArray();
+    }
+
     /// <summary>One thing in a menu, and whether a mark is drawn in front of its words.</summary>
     public sealed record MenuItem(string Label, bool Marked);
 

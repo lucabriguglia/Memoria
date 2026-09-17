@@ -128,7 +128,8 @@ public sealed record Manifest(IReadOnlyList<Service> Services)
             assemblies,
             connectionString,
             ReadRoles: roles.ValueKind is JsonValueKind.Object ? Texts(roles, "read") : [],
-            UpdateRoles: roles.ValueKind is JsonValueKind.Object ? Texts(roles, "update") : []);
+            UpdateRoles: roles.ValueKind is JsonValueKind.Object ? Texts(roles, "update") : [],
+            Description: Text(element, "description"));
     }
 
     /// <summary>One string property, or null when absent, not a string, or blank.</summary>
@@ -173,6 +174,10 @@ public sealed record Manifest(IReadOnlyList<Service> Services)
 /// global roles reach it.
 /// </param>
 /// <param name="UpdateRoles">The claim values that let an operator update it as well. Update includes read.</param>
+/// <param name="Description">
+/// What the service is, in the manifest's own words, for the sheet that opens over it; null when
+/// the manifest says nothing, or nothing but blanks.
+/// </param>
 /// <remarks>
 /// Not the framework's <c>IDomainService</c>, which is the object a store is read through: this
 /// is the operator's word for the thing on the home page.
@@ -182,7 +187,8 @@ public sealed record Service(
     IReadOnlyList<string> Assemblies,
     string ConnectionString,
     IReadOnlyList<string> ReadRoles,
-    IReadOnlyList<string> UpdateRoles)
+    IReadOnlyList<string> UpdateRoles,
+    string? Description = null)
 {
     /// <summary>
     /// The address the service is browsed under — the first segment in front of every page that

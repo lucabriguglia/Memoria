@@ -32,13 +32,16 @@ internal static class Forms
         string service = "orders",
         string connectionString = "Memoria",
         string[]? readRoles = null,
-        string[]? updateRoles = null)
+        string[]? updateRoles = null,
+        string? description = null)
     {
         static string List(string[]? values) =>
             string.Join(", ", (values ?? []).Select(value => $"\"{value}\""));
 
+        var described = description is null ? string.Empty : $"\"description\": \"{description}\",";
+
         return Zip(entry, $$"""
-            { "services": [ { "name": "{{service}}", "assemblies": ["{{Path.GetFileName(entry)}}"],
+            { "services": [ { "name": "{{service}}", {{described}} "assemblies": ["{{Path.GetFileName(entry)}}"],
                               "connectionString": "{{connectionString}}",
                               "roles": { "read": [{{List(readRoles)}}], "update": [{{List(updateRoles)}}] } } ] }
             """);

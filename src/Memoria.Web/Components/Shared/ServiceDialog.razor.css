@@ -4,6 +4,12 @@
     margin-top: 1rem;
 }
 
+/* A sentence the manifest wrote rather than a value the store did, so it is read in the page's
+   face like the rest of the prose here. */
+.facts dd.prose {
+    font-family: var(--font);
+}
+
 /* What the configuration says about a name, beside the name: the sheet's own words, in the page's
    face, and softer than the name they are about. Spaced here rather than by the space in the
    markup, the way the facts card sets a note beside a value. */

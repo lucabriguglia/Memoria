@@ -2,6 +2,7 @@
   "services": [
     {
       "name": "Samples DCB",
+      "description": "The sample shop under the dynamic consistency boundary model: products, reviews and orders addressed by tag.",
       "assemblies": ["Memoria.Web.Samples.Dcb.dll"],
       "connectionString": "Memoria"
     }

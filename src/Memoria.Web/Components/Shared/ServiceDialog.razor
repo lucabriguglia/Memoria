@@ -110,6 +110,14 @@
                    sheets is reading one kind of surface. *@
                 <section class="tab-panel" aria-labelledby="@(Anchor)-tab-@InfoView">
                     <dl class="facts">
+                        @* What the service is, in the manifest's own words, first — when it has
+                           any: a row saying nothing is not drawn. Prose, so set in the page's
+                           face rather than the one the stored values under it are read in. *@
+                        @if (Service.Description is { } description)
+                        {
+                            <dt>Description</dt>
+                            <dd class="prose">@description</dd>
+                        }
                         @* Where the service is browsed: the address its name makes, which is
                            what a reader types and what the manifest never wrote. *@
                         <dt>Address</dt>

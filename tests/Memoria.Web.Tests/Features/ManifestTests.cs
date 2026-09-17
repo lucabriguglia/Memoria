@@ -55,6 +55,23 @@ public class ManifestTests
         manifest.Services.Select(service => service.Name).Should().Equal("orders", "billing");
     }
 
+    /// <summary>
+    /// A sentence about the service, for the sheet that opens over it: optional, and a blank one
+    /// is no description rather than an empty line.
+    /// </summary>
+    [Theory]
+    [InlineData("\"description\": \"Orders placed in the shop, one stream a customer.\",", "Orders placed in the shop, one stream a customer.")]
+    [InlineData("\"description\": \"   \",", null)]
+    [InlineData("", null)]
+    public void Reads_an_optional_description(string declared, string? expected)
+    {
+        var manifest = Manifest.Parse($$"""
+            { "services": [ { "name": "orders", {{declared}} "assemblies": ["Orders.dll"], "connectionString": "Orders" } ] }
+            """);
+
+        manifest.Services.Single().Description.Should().Be(expected);
+    }
+
     [Fact]
     public void Leaves_the_roles_empty_when_none_are_declared()
     {

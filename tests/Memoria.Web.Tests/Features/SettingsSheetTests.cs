@@ -159,6 +159,30 @@ public class SettingsSheetTests
         }
     }
 
+    /// <summary>
+    /// What the manifest says the service is, on the sheet's facts when it says anything; the
+    /// row is not drawn at all when it does not, rather than left blank.
+    /// </summary>
+    [Fact]
+    public async Task Shows_the_service_s_description_on_its_facts_when_the_manifest_gives_one()
+    {
+        using var web = MemoriaWeb.Open();
+        var client = web.Client;
+        await client.PostAsync("/settings/upload", await Upload(client,
+            Forms.Zip("Contoso.Orders.dll", description: "Orders placed in the shop, one stream a customer.")));
+        await client.PostAsync("/settings/upload", await Upload(client,
+            Forms.Zip("Contoso.Billing.dll", service: "billing"), file: "billing.zip"));
+
+        var described = Markup.Plain(await client.GetStringAsync(Sheet));
+        var plain = Markup.Plain(await client.GetStringAsync("/settings?tab=installed&service=billing"));
+
+        using (new AssertionScope())
+        {
+            described.Should().Contain("Orders placed in the shop, one stream a customer.");
+            plain.Should().NotContain("Description");
+        }
+    }
+
     [Fact]
     public async Task Says_when_a_service_declares_no_roles()
     {
@@ -202,14 +226,14 @@ public class SettingsSheetTests
         page.Should().NotContain("id=\"service\"");
     }
 
-    private static async Task<MultipartFormDataContent> Upload(HttpClient client, byte[] zip)
+    private static async Task<MultipartFormDataContent> Upload(HttpClient client, byte[] zip, string file = "orders.zip")
     {
         var page = await client.GetStringAsync("/settings");
 
         return new MultipartFormDataContent
         {
             { new StringContent(Forms.AntiforgeryToken(page)), Forms.AntiforgeryField },
-            { new ByteArrayContent(zip), "files", "orders.zip" }
+            { new ByteArrayContent(zip), "files", file }
         };
     }
 

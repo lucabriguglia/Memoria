@@ -2,6 +2,7 @@
   "services": [
     {
       "name": "Samples Streamed",
+      "description": "The sample shop under the streamed model: customers, orders and reviews as streams of events, folded into aggregates and projections.",
       "assemblies": ["Memoria.Web.Samples.Streamed.dll"],
       "connectionString": "Memoria"
     }

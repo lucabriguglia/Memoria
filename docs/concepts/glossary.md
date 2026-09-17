@@ -36,7 +36,7 @@ An aggregate reconstructed entirely from events, with no snapshot involved. Usef
 
 ## Manifest
 
-*Memoria Web.* The file a zip must carry at its root, `memoria.json`, declaring the [services](#service) the archive brings: for each, its name, the assemblies holding its domain types, the name of the connection string it is read over, and the claim values that may read and update it. An upload without one, or with one that breaks a rule, is refused with the rule. See [What to put in a zip](../tools/memoria-web-configuration.md#what-to-put-in-a-zip).
+*Memoria Web.* The file a zip must carry at its root, `memoria.json`, declaring the [services](#service) the archive brings: for each, its name, the assemblies holding its domain types, the name of the connection string it is read over, and optionally the claim values that may read and update it and a sentence saying what it is. An upload without one, or with one that breaks a rule, is refused with the rule. See [What to put in a zip](../tools/memoria-web-configuration.md#what-to-put-in-a-zip).
 
 ## Notification
 

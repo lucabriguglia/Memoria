@@ -358,6 +358,7 @@ manifest breaks a rule below; the Settings page says which.
   "services": [
     {
       "name": "orders",
+      "description": "Orders placed in the shop, one stream a customer.",
       "assemblies": ["Contoso.Orders.Domain.dll", "Contoso.Orders.Contracts.dll"],
       "connectionString": "Orders",
       "roles": {
@@ -376,6 +377,7 @@ manifest breaks a rule below; the Settings page says which.
 | `assemblies` | Yes, at least one | The assembly files the service's domain types are read from, by file name. Each must be in the zip. **Only these are scanned**; every other assembly in the zip is loaded as a dependency and registers nothing, whatever it carries |
 | `connectionString` | Yes | The **name** of an entry under `ConnectionStrings` in the tool's configuration — never the string itself, which stays with the deployment. Not checked at upload, since the configuration may be filled in afterwards; the archive's sheet on the Settings page says whether it is configured and which engine opens it |
 | `roles` | No | `read` and `update` are lists of claim values, read from the claim `Authorization:RoleClaimType` names, the same way the values under `Authorization:Roles:*` are. Update includes read. Absent, only the [global roles](#roles) reach the service |
+| `description` | No | A sentence saying what the service is, shown on the service's sheet under Settings. Absent or blank, the sheet says nothing |
 
 Keys the manifest carries that the tool does not read are ignored, so a later version may add to the
 shape without an older tool refusing what it wrote.

@@ -14,29 +14,38 @@ namespace Memoria.Web.Tests.Features;
 /// </summary>
 public class HomeTests
 {
+    /// <summary>
+    /// A service is listed one to a row, by name, with what its manifest says it is under the
+    /// name. Which models it registered under is not said here: that is what its own page lays
+    /// out, and every service said one of three things, which told a reader nothing.
+    /// </summary>
     [Fact]
-    public async Task Lists_each_installed_service_with_the_models_it_registered()
+    public async Task Lists_each_installed_service_in_its_own_row_with_its_description()
     {
-        using var web = MemoriaWeb.Open().WithSampleTypes();
+        using var web = MemoriaWeb.Open().WithSampleTypes()
+            .WithService("Orders", description: "Orders placed in the shop, one stream a customer.");
 
         var page = Markup.Plain(await web.Client.GetStringAsync("/"));
 
         using (new AssertionScope())
         {
-            page.Should().Contain("href=\"samples\"");
-            page.Should().Contain(">samples<");
-            page.Should().Contain("Streamed").And.Contain("DCB");
+            page.Should().Contain("class=\"tiles services\"");
+            page.Should().Contain("href=\"samples\"").And.Contain(">samples<");
+            page.Should().Contain("href=\"orders\"").And.Contain(">Orders<");
+            page.Should().Contain("<span class=\"detail\">Orders placed in the shop, one stream a customer.</span>");
+            page.Should().NotContain("Streamed").And.NotContain("DCB");
         }
     }
 
+    /// <summary>A service whose manifest says nothing of it has a name and no line under it.</summary>
     [Fact]
-    public async Task Says_which_model_a_service_registered_when_it_registered_one()
+    public async Task Draws_no_line_under_a_service_whose_manifest_gives_no_description()
     {
-        using var web = MemoriaWeb.Open().WithStreamedTypesOnly();
+        using var web = MemoriaWeb.Open().WithSampleTypes();
 
         var page = Markup.Plain(await web.Client.GetStringAsync("/"));
 
-        page.Should().Contain("href=\"samples\"").And.Contain("Streamed").And.NotContain(">DCB<");
+        page.Should().Contain(">samples<").And.NotContain("class=\"detail\"");
     }
 
     /// <summary>

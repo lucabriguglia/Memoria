@@ -93,7 +93,7 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
     /// <summary>The service every instance knowing types declares them under.</summary>
     public const string ServiceName = "samples";
 
-    private readonly List<(string Name, string ConnectionString, System.Reflection.Assembly? Assembly, string[] Read, string[] Update)> _services = [];
+    private readonly List<(string Name, string ConnectionString, System.Reflection.Assembly? Assembly, string[] Read, string[] Update, string? Description)> _services = [];
 
     /// <summary>
     /// The same instance declaring one more service, under the name given as a manifest would
@@ -101,18 +101,23 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
     /// given, unless said — and naming the assembly given, or the host's when none is: so the
     /// same types, or an emitted assembly's, are browsed under a second address made from that
     /// name, over a second store when one is named. The roles are the claim values the manifest
-    /// writes under <c>roles.read</c> and <c>roles.update</c>; none, unless said.
+    /// writes under <c>roles.read</c> and <c>roles.update</c>; none, unless said. The description
+    /// is the sentence the manifest writes under <c>description</c>; none, unless said.
     /// </summary>
     public MemoriaWeb WithService(
         string name, string connectionString = "Memoria", System.Reflection.Assembly? assembly = null,
-        string[]? read = null, string[]? update = null)
+        string[]? read = null, string[]? update = null, string? description = null)
     {
-        _services.Add((name, connectionString, assembly, read ?? [], update ?? []));
+        _services.Add((name, connectionString, assembly, read ?? [], update ?? [], description));
         return this;
     }
 
     /// <summary>The values as a JSON array's items, quoted and comma-separated.</summary>
     private static string Quoted(string[] values) => string.Join(", ", values.Select(value => $"\"{value}\""));
+
+    /// <summary>The description as the manifest would write it, or nothing when there is none.</summary>
+    private static string Described(string? description) =>
+        description is null ? string.Empty : $"\"description\": \"{description}\",";
 
     /// <summary>
     /// The same instance knowing the sample domain types this test assembly carries, as if they
@@ -367,28 +372,28 @@ internal sealed class MemoriaWeb : WebApplicationFactory<Program>
         // called. Nothing is extracted from them; the registry scans the assemblies it was given
         // — the host and any an extra service brought — and attributes their types to the service
         // naming each by that name. The host's own service comes first, when there is a host.
-        var declared = new List<(string Name, string ConnectionString, System.Reflection.Assembly Assembly, string[] Read, string[] Update)>();
+        var declared = new List<(string Name, string ConnectionString, System.Reflection.Assembly Assembly, string[] Read, string[] Update, string? Description)>();
 
         if (_host is { } host)
         {
-            declared.Add((ServiceName, "Memoria", host, [], []));
+            declared.Add((ServiceName, "Memoria", host, [], [], null));
         }
 
         declared.AddRange(_services
             .Where(service => service.Assembly is not null || _host is not null)
-            .Select(service => (service.Name, service.ConnectionString, service.Assembly ?? _host!, service.Read, service.Update)));
+            .Select(service => (service.Name, service.ConnectionString, service.Assembly ?? _host!, service.Read, service.Update, service.Description)));
 
         if (declared.Count > 0)
         {
             var zips = Path.Combine(ExtensionsDirectory, "zips");
             Directory.CreateDirectory(zips);
 
-            foreach (var ((name, connectionString, assembly, read, update), index) in declared.Select((service, index) => (service, index)))
+            foreach (var ((name, connectionString, assembly, read, update, description), index) in declared.Select((service, index) => (service, index)))
             {
                 using var archive = ZipFile.Open(Path.Combine(zips, $"service-{index}.zip"), ZipArchiveMode.Create);
                 using var manifest = new StreamWriter(archive.CreateEntry("memoria.json").Open());
                 manifest.Write($$"""
-                    { "services": [ { "name": "{{name}}", "assemblies": ["{{assembly.GetName().Name}}.dll"],
+                    { "services": [ { "name": "{{name}}", {{Described(description)}} "assemblies": ["{{assembly.GetName().Name}}.dll"],
                                       "connectionString": "{{connectionString}}",
                                       "roles": { "read": [{{Quoted(read)}}], "update": [{{Quoted(update)}}] } } ] }
                     """);

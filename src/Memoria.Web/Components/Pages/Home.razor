@@ -39,24 +39,26 @@ else
         to read its events, and the aggregates and projections snapshotted from them.
     </p>
 
+    @* One to a row: a service is read by its name and the sentence under it, and a sentence wants
+       the measure the page gives prose, not the third of it a tile in a grid gets. *@
     <ul class="tiles services">
         @foreach (var service in Visible)
         {
-            var store = Stores.For(service);
-            var shown = ShownModels.Of(Types.Current.For(service), store.Capabilities);
-
             <li>
                 @* Shown by the name the manifest wrote; reached by the address that name makes. *@
                 <a href="@service.Slug">
                     <SectionMark Kind="SectionKind.Overview"/>
                     <span class="body">
                         <span class="name">@service.Name</span>
-                        @* Which models the service registered types under, the same words its
-                           own page heads them with — so a reader knows before opening it whether
-                           they will find streams, boundaries, or both. Or that they will find
-                           nothing yet, and why: a store that cannot be reached is said here,
-                           where the person who can fix the configuration is looking. *@
-                        <span class="detail">@(store.Problem is { } problem ? $"Unreachable: {problem}" : Models(shown))</span>
+                        @* What the service is, in its manifest's own words, when the manifest
+                           says. Not which models it registered under: every service said one of
+                           three things there, which told a reader nothing its own page does not
+                           lay out better. A store that cannot be reached is still said here,
+                           first, where the person who can fix the configuration is looking. *@
+                        @if (Detail(service) is { } detail)
+                        {
+                            <span class="detail">@detail</span>
+                        }
                     </span>
                 </a>
             </li>
@@ -82,12 +84,11 @@ else
         Visible = Services.Where(service => Access.Grants(user, Roles.Reader, service)).ToList();
     }
 
-    /// <summary>What a service registered under, in the words the site names the models by.</summary>
-    private static string Models(ShownModels shown) => shown switch
-    {
-        { Both: true } => "Streamed and DCB.",
-        { Streamed: true } => "Streamed.",
-        _ => "DCB."
-    };
+    /// <summary>
+    /// The line under a service's name: that its store cannot be reached, and why, before
+    /// anything else; else what its manifest says it is; else nothing, and no line is drawn.
+    /// </summary>
+    private string? Detail(Service service) =>
+        Stores.For(service).Problem is { } problem ? $"Unreachable: {problem}" : service.Description;
 
 }

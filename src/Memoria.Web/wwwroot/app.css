@@ -551,6 +551,13 @@ h2:focus {
     padding: 0;
 }
 
+/* The services on the front door, one to a row. Each is a name with a sentence under it, and a
+   sentence wants the measure the page gives prose: three of them across, each a third of it, wrapped
+   into a column a few words wide and read as a grid of fragments rather than a list of things. */
+.tiles.services {
+    grid-template-columns: minmax(0, 1fr);
+}
+
     /* The whole card is the link, so the target is the tile a reader is already pointing at rather
        than the two words at the top of it. The sheet's white over the page's ground and carried by
        its rule, the way every other card here is drawn. */

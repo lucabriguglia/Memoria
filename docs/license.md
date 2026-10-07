@@ -25,7 +25,7 @@ The **framework** — every package published under the `Memoria` NuGet prefix �
 
 A **service** is one entry in the `services` list of a `statelens.json` manifest installed in the tool: a named set of domain assemblies read over one connection string, browsed at its own address. StateLens counts them itself, so nothing rests on your own assessment of your revenue, your headcount or your size.
 
-Versions of the framework up to and including 1.9.1 were released under the Apache License 2.0 and remain under it. Version 2.0.0-beta, released on 17/09/2026, was briefly offered under the Reciprocal Public License 1.5 or a commercial licence covering the packages; that arrangement was withdrawn four days later at 2.0.0-beta.2 and the framework returned to Apache 2.0. Anyone who took 2.0.0-beta under either of those licences keeps them — a version is licensed under the terms it was released with — and Apache 2.0 grants strictly more, so there is nothing to do about it.
+Versions of the framework up to and including 1.9.1 were released under the Apache License 2.0 and remain under it. Version 2.0.0-beta, released on 17/09/2026, was briefly offered under the Reciprocal Public License 1.5 or a commercial licence covering the packages; that arrangement was withdrawn four days later at 2.0.0-beta.2, the framework returned to Apache 2.0, and 2.0.0 shipped under it. Anyone who took 2.0.0-beta under either of those licences keeps them — a version is licensed under the terms it was released with — and Apache 2.0 grants strictly more, so there is nothing to do about it.
 
 ### Why the framework is free and the tool is not
 

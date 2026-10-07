@@ -14,7 +14,7 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>logo.png</PackageIcon>
-    <Version>2.0.0-beta.2</Version>
+    <Version>2.0.0</Version>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

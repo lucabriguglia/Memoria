@@ -91,6 +91,6 @@ read more than one context's store.
 ## Related
 
 - [Licence](../license.md) — Apache 2.0 for the framework, and where the tool's terms are
-- [Release notes](../release-notes.md) — everything in 2.0.0-beta, not only what needs action
+- [Release notes](../release-notes.md) — everything in 2.0.0, not only what needs action
 - [Publish to RabbitMQ](publish-to-rabbitmq.md)
 - [StateLens](../tools/index.md) — the separate tool, and where it went

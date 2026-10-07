@@ -1,8 +1,7 @@
 # Memoria&trade;
 
 [![Build](https://github.com/lucabriguglia/Memoria/actions/workflows/build.yml/badge.svg)](https://github.com/lucabriguglia/Memoria/actions/workflows/build.yml)
-[![NuGet](https://img.shields.io/nuget/v/Memoria?label=nuget%20stable)](https://www.nuget.org/packages/Memoria)
-[![NuGet pre-release](https://img.shields.io/nuget/vpre/Memoria?label=nuget%20pre-release)](https://www.nuget.org/packages/Memoria/absoluteLatest)
+[![NuGet](https://img.shields.io/nuget/v/Memoria?label=nuget)](https://www.nuget.org/packages/Memoria)
 [![Downloads](https://img.shields.io/nuget/dt/Memoria?label=downloads)](https://www.nuget.org/packages/Memoria)
 [![Licence](https://img.shields.io/badge/licence-Apache--2.0-blue)](https://www.apache.org/licenses/LICENSE-2.0)
 
@@ -52,9 +51,8 @@ dotnet add package Memoria.EventSourcing
 dotnet add package Memoria.EventSourcing.Store.EntityFrameworkCore
 ```
 
-2.0.0 is currently in beta, so add `--prerelease` to install it. The
-[install guide](https://lucabriguglia.github.io/Memoria/getting-started/install.html) explains when
-to reach for each of the [packages listed below](#-packages).
+The [install guide](https://lucabriguglia.github.io/Memoria/getting-started/install.html) explains
+when to reach for each of the [packages listed below](#-packages).
 
 ## 🔄 Quickstart
 
@@ -141,7 +139,7 @@ invitation, asked for through the site's [contact form](https://statelens.dev/co
 
 ## 📦 Packages
 
-Badges show the latest stable release. 2.0.0-beta is published as a pre-release on every package.
+Every package is published at the same version, so one number fits the whole set.
 
 | Package | Version | What it adds |
 |---------|---------|--------------|
@@ -213,6 +211,6 @@ services one instance reads, on the tool's [pricing page](https://statelens.dev/
 limit on people, instances or environments. Nothing of it is in this repository.
 
 Version 2.0.0-beta was briefly offered under the Reciprocal Public License 1.5 or a commercial
-licence covering the packages. That was withdrawn four days later at 2.0.0-beta.2 and the framework
-returned to Apache 2.0, where it had been throughout 1.x. Anyone who took 2.0.0-beta under the
-earlier terms keeps them; Apache 2.0 grants strictly more.
+licence covering the packages. That was withdrawn four days later at 2.0.0-beta.2, the framework
+returned to Apache 2.0, where it had been throughout 1.x, and 2.0.0 shipped under it. Anyone who
+took 2.0.0-beta under the earlier terms keeps them; Apache 2.0 grants strictly more.

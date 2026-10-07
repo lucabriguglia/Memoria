@@ -3,8 +3,8 @@
     <File Path="CODE_OF_CONDUCT.md" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Build.targets" />
-    <File Path="LICENSE" />
     <File Path="README.md" />
+    <File Path="LICENSE.md" />
     <File Path="logo.png" />
   </Folder>
   <Folder Name="/docs/">

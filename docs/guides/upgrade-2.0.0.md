@@ -34,9 +34,10 @@ upgrading needs no action from anybody.
 The packages went back with it: an SPDX `Apache-2.0` expression in place of the packed `LICENSE.md`,
 and no licence acceptance prompt on install.
 
-**[Memoria Web](../tools/index.md) is the exception**, and always was a separate question. The tool
-is a commercial product developed in its own repository, free over a single service and
-[paid above that](../license.md). If you only use the packages, none of that reaches you.
+**[The tool](../tools/index.md) is the exception**, and always was a separate question. Memoria
+Web then, [StateLens](https://statelens.dev/) now, it is a commercial product developed in its own
+repository, free over a single service and [paid above that](https://statelens.dev/pricing). If you
+only use the packages, none of that reaches you.
 
 <a name="rabbitmq"></a>
 ## 2. If you publish to RabbitMQ, a connection failure now surfaces later
@@ -89,7 +90,7 @@ read more than one context's store.
 
 ## Related
 
-- [Licence](../license.md) — Apache 2.0 for the framework, and the Memoria Web terms
+- [Licence](../license.md) — Apache 2.0 for the framework, and where the tool's terms are
 - [Release notes](../release-notes.md) — everything in 2.0.0-beta, not only what needs action
 - [Publish to RabbitMQ](publish-to-rabbitmq.md)
-- [Memoria Web](../tools/index.md) — the separate tool, and where it went
+- [StateLens](../tools/index.md) — the separate tool, and where it went

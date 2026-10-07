@@ -30,9 +30,9 @@ Everything in this repository is under the Apache License 2.0, and section 5 of 
 says your contribution comes in under the same terms the project goes out under. Send the pull
 request; there is no contributor agreement.
 
-[Memoria Web](https://lucabriguglia.github.io/Memoria/tools/), the browser tool that reads a store,
-is a separate commercial product developed in its own private repository. Nothing of it is here, so
-nothing here is affected by its licence.
+[StateLens](https://statelens.dev/), the browser tool that reads a store, is a separate commercial
+product developed in its own private repository. Nothing of it is here, so nothing here is affected
+by its licence.
 
 ## Building and testing
 

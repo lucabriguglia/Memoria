@@ -29,11 +29,10 @@ From Latin _memoria_ (memory).
 every package under the `Memoria` NuGet prefix, every version. Use it in anything, commercial or
 not, closed source or open, at any scale. No edition, no threshold, no key, nothing to sign.
 
-[Memoria Web](#-memoria-web), the browser tool that reads a store through your own domain
-assemblies, is a separate product developed in its own repository: commercial, free for a single
-service and paid above that, under
-[its own licence](https://lucabriguglia.github.io/Memoria/license.html). Nothing in this repository
-is part of it, and installing the packages never requires it.
+[StateLens](#-statelens), the browser tool that reads a store through your own domain assemblies
+and a manifest, is a separate product developed in its own repository: commercial, free for a
+single service and paid above that, under [its own licence](https://statelens.dev/docs/licence).
+Nothing in this repository is part of it, and installing the packages never requires it.
 
 **Already on 1.x?**
 [Upgrade to 2.0.0](https://lucabriguglia.github.io/Memoria/guides/upgrade-2.0.0.html) walks through
@@ -117,27 +116,28 @@ the [reference](https://lucabriguglia.github.io/Memoria/reference/) has the
 | **Event queries** | Filter applied events by event type, or by event property declared as key/value pairs on the aggregate id; query stream events from or up to a sequence, date or date range; retrieve every event applied to an aggregate |
 | **Providers** | Stores: EF Core (plus [ASP.NET Identity](https://lucabriguglia.github.io/Memoria/guides/integrate-aspnet-identity.html) and [PostgreSQL `jsonb`](https://lucabriguglia.github.io/Memoria/guides/use-postgres-jsonb.html) companions), Cosmos DB. Messaging: Azure Service Bus, RabbitMQ. Caching: in-memory, Redis. Validation: FluentValidation |
 | **Testing** | [In-memory variants](https://lucabriguglia.github.io/Memoria/guides/test-without-external-deps.html) of Cosmos DB, Service Bus and RabbitMQ, so a test suite needs no external dependency |
-| **Tooling** | [Memoria Web](#-memoria-web) — a separate browser tool that reads a store through your own domain assemblies, being made to read other frameworks' stores too |
+| **Tooling** | [StateLens](#-statelens) — a separate browser tool that reads any framework's store through your own domain assemblies and a manifest |
 
-## 🔎 Memoria Web
+## 🔎 StateLens
 
-A browser tool for reading an event-sourced store. Point it at a database, upload a zip of **your
-own** domain assemblies — with a `memoria.json` at its root naming the services in it — and it shows
-you the events that were appended, the aggregates and projections snapshotted from them, and the
-types both were written through. Open a row and the aggregate is folded from its events, so you can
-see the state a snapshot stands at and how far behind its history it is. It creates nothing and
-deletes nothing.
+[StateLens](https://statelens.dev/) is a browser tool for reading an event sourced store. Point it
+at a store, upload a zip of **your own** domain assemblies — with a `statelens.json` at its root
+naming the services in it — and it shows you the events that were appended, the aggregates and
+projections snapshotted from them, and the types both were written through. Open a row and the
+aggregate is folded from its events, so you can see the state a snapshot stands at and how far
+behind its history it is. It creates nothing and deletes nothing.
 
-It began here as a reader of Memoria stores. It now lives in its own repository, which is private,
-and **it is being made to read any framework's store, not only Memoria's**: a service's manifest
-tells the tool which uploaded types are the streams, events, aggregates and projections, how they
-are named and folded, and where in the store the events and snapshots are. Memoria's own stores are
-described the same way as anyone else's.
+It began here, as Memoria Web, a reader of Memoria stores. It lives in its own repository now, which
+is private, and **reads any framework's store, not only Memoria's**: a service's manifest tells the
+tool which uploaded types are the streams, events, aggregates and projections, how they are named
+and folded, and where in the store the events and snapshots are. Memoria's own stores are described
+the same way as anyone else's.
 
 It is a commercial product, separate from the framework: free over a single service, and
-[paid above that](https://lucabriguglia.github.io/Memoria/license.html). There is a hosted instance
-at [demo.getmemoria.io](https://demo.getmemoria.io), behind its sign-in, so access is by invitation:
-message me on [LinkedIn](https://www.linkedin.com/in/lucabriguglia) and I will send you one.
+[paid above that](https://statelens.dev/pricing), under the
+[StateLens Licence](https://statelens.dev/docs/licence). Its [documentation](https://statelens.dev/docs/statelens)
+is on its site, and a hosted instance at [demo.statelens.dev](https://demo.statelens.dev) is open by
+invitation, asked for through the site's [contact form](https://statelens.dev/contact).
 
 ## 📦 Packages
 
@@ -205,12 +205,12 @@ every package published under the `Memoria` NuGet prefix, every version, 1.x and
 whatever you like with it, licence that however you like, ship it to whomever you like. The full
 text is in [LICENSE.md](https://github.com/lucabriguglia/Memoria/blob/main/LICENSE.md).
 
-**Memoria Web is a commercial product**, developed in its own private repository and licensed
-separately under the [Memoria Web Licence](https://lucabriguglia.github.io/Memoria/license.html).
-Running it is what the licence governs, metered by *services* — a named set of domain assemblies
-read over one connection string. One service is free, and always will be. Above that it is $999,
-$2,499 or $4,999 USD a year, by how many services one instance reads, with no limit on people,
-instances or environments. Nothing of it is in this repository.
+**StateLens is a commercial product**, developed in its own private repository and licensed
+separately under the [StateLens Licence](https://statelens.dev/docs/licence). Running it is what
+the licence governs, metered by *services* — a named set of domain assemblies read over one
+connection string. One service is free, and always will be; above that it is priced by how many
+services one instance reads, on the tool's [pricing page](https://statelens.dev/pricing), with no
+limit on people, instances or environments. Nothing of it is in this repository.
 
 Version 2.0.0-beta was briefly offered under the Reciprocal Public License 1.5 or a commercial
 licence covering the packages. That was withdrawn four days later at 2.0.0-beta.2 and the framework

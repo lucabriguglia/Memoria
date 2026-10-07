@@ -1,6 +1,6 @@
 ---
 title: Tools
-description: "Memoria Web, the browser tool for reading an event-sourced store, is a separate product developed in its own repository. What it is, where it is going, and how it relates to the framework."
+description: "StateLens, the browser tool that reads an event sourced store through your own domain assemblies and a manifest, is a separate product with a site of its own. What it is and where it lives."
 nav_order: 6
 redirect_from:
   - /tools/memoria-web.html
@@ -11,35 +11,33 @@ redirect_from:
 
 # Tools
 
-## Memoria Web
+## StateLens
 
-Memoria Web is a browser tool for reading an event-sourced store: the events appended to it, the
-aggregates and projections snapshotted from them, and the types both were written through. Point it
-at a database, upload a zip of your own domain assemblies with a `memoria.json` at its root, and it
-folds an aggregate from its events so you can see the state a snapshot stands at and how far behind
-its history it is. It creates nothing and deletes nothing.
+[StateLens](https://statelens.dev/) is a browser tool for reading an event sourced store: the
+events appended to it, the aggregates and projections snapshotted from them, and the types both
+were written through. Point it at a store, upload a zip of your own domain assemblies with a
+`statelens.json` at its root, and it folds an aggregate from its events so you can see the state a
+snapshot stands at and how far behind its history it is. It creates nothing and deletes nothing.
 
-It began in this repository as a reader of Memoria stores. It now lives in its own repository, which
-is private, and its documentation lives with it: the pages that used to sit here — what each page
-shows, configuration, deployment and the sample data — moved there with the code, and the addresses
-they had redirect to this one.
+It began in this repository, as Memoria Web, a reader of Memoria stores. It reads any framework's
+store now: a service's manifest tells the tool which of the uploaded types are the streams, events,
+aggregates and projections, how they are named and folded, and where in the store the events and
+snapshots are. Memoria's own stores are described the same way as anyone else's; the tool knows no
+framework by name.
 
-**It is being made to read any framework's store, not only Memoria's.** A service tells the tool,
-through its manifest, which of the uploaded types are the streams, events, aggregates and
-projections, how they are named and folded, and where in the store the events and snapshots are.
-Memoria's own stores are described the same way as anyone else's; the tool knows no framework by
-name.
+It lives in its own private repository, and everything about it is on its site:
 
-It is a commercial product, separate from the framework: free over a single service, and paid above
-that, under the [Memoria Web Licence](../license.md#memoria-web-licence-agreement). The framework
-packages are Apache 2.0 regardless, nothing in them depends on the tool, and nothing in the tool
-changes their licence.
+- [What it shows](https://statelens.dev/docs/statelens), [configuration](https://statelens.dev/docs/configuration),
+  [deployment](https://statelens.dev/docs/deployment) and [the sample data](https://statelens.dev/docs/samples)
+- [Pricing](https://statelens.dev/pricing): a commercial product, separate from the framework, free
+  over a single service and paid above that, under the [StateLens Licence](https://statelens.dev/docs/licence)
+- A hosted instance at [demo.statelens.dev](https://demo.statelens.dev), behind its sign-in, so access
+  is by invitation: ask through the site's [contact form](https://statelens.dev/contact)
 
-There is a hosted instance at [demo.getmemoria.io](https://demo.getmemoria.io), behind its sign-in,
-so access is by invitation: message me on [LinkedIn](https://www.linkedin.com/in/lucabriguglia) and
-I will send you one. Ask the same way about anything else to do with the tool.
+The framework packages are Apache 2.0 regardless: nothing in them depends on the tool, and nothing
+in the tool changes their licence.
 
 ## Related
 
-- [Licence](../license.md) — Apache 2.0 for the framework, and the terms the tool is run under
+- [Licence](../license.md) — Apache 2.0 for the framework, and where the tool's terms are
 - [Release notes](../release-notes.md) — the versions of the framework the tool was developed alongside

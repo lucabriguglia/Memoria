@@ -23,7 +23,7 @@ dotnet add package Memoria
 | Understand what the pieces are before writing any | [Concepts: Overview](concepts/overview.md) |
 | Decide how to model consistency | [Streams or DCB?](guides/choose-streams-or-dcb.md) |
 | Look up an API or a settings key | [Reference](reference/) |
-| Read a store you already have | [Memoria Web](tools/index.md), a separate tool |
+| Read a store you already have | [StateLens](tools/index.md), a separate tool |
 | Move from an earlier version | [Upgrading](upgrading.md) |
 
 Everything is in the sidebar too: [Guides](guides/) for a task you already know you want to do,
@@ -52,9 +52,9 @@ looking something up.
 - [Repository](https://github.com/lucabriguglia/Memoria) ·
   [Examples](examples.md) ·
   [Release notes](release-notes.md)
-- [Licence](license.md) — the framework is Apache 2.0; Memoria Web is a separate commercial product,
+- [Licence](license.md) — the framework is Apache 2.0; StateLens is a separate commercial product,
   free for one service
-- [Memoria Web](tools/index.md) — the browser tool for reading a store, developed in its own
-  repository and being made to read any framework's store; a hosted
-  [demo](https://demo.getmemoria.io) is open by invitation
+- [StateLens](tools/index.md) — the browser tool for reading any framework's store, with a site of
+  its own at [statelens.dev](https://statelens.dev/); a hosted
+  [demo](https://demo.statelens.dev) is open by invitation
 - [Contributing](https://github.com/lucabriguglia/Memoria/blob/main/CONTRIBUTING.md)

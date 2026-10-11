@@ -95,6 +95,9 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
     /// <summary>The DCB context.s underlying connection, for ad hoc diagnostics.</summary>
     public System.Data.Common.DbConnection DcbConnection => _dcbContext!.Database.GetDbConnection();
 
+    /// <summary>The DCB database's connection string, for code that talks to it without the context.</summary>
+    public string DcbConnectionString => _dcbContext!.Database.GetConnectionString()!;
+
     public static ShowStreamId StreamId { get; } = new("show-1");
 
     public static StreamedSeatsId StreamedId { get; } = new("show-1");
@@ -217,7 +220,7 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
         };
     }
 
-    private static IHttpContextAccessor HttpContextAccessor() =>
+    internal static IHttpContextAccessor HttpContextAccessor() =>
         new HttpContextAccessor
         {
             HttpContext = new DefaultHttpContext

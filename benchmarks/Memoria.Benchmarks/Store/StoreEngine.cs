@@ -65,6 +65,13 @@ public static class SqlServerContainer
 
     private static string Start()
     {
+        // A server already running, for when Docker is not.
+        var existing = Environment.GetEnvironmentVariable("MEMORIA_BENCH_SQLSERVER");
+        if (!string.IsNullOrWhiteSpace(existing))
+        {
+            return existing;
+        }
+
         var container = new MsSqlBuilder(Image).Build();
 
         try
@@ -111,6 +118,13 @@ public static class PostgreSqlContainer
 
     private static string Start()
     {
+        // A server already running, for when Docker is not.
+        var existing = Environment.GetEnvironmentVariable("MEMORIA_BENCH_POSTGRES");
+        if (!string.IsNullOrWhiteSpace(existing))
+        {
+            return existing;
+        }
+
         var container = new Testcontainers.PostgreSql.PostgreSqlBuilder(Image).Build();
 
         try

@@ -1,4 +1,6 @@
 using System.Data.Common;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.AppendRoutine;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Entities;
 using Memoria.EventSourcing.Domain;
@@ -24,11 +26,22 @@ public static partial class DcbDbContextExtensions
     /// routine takes both, or none for an unconditional append. A boundary mixing the two cannot be
     /// built today; it keeps the Entity Framework Core path, which refuses it loudly.
     /// </para>
+    /// <para>
+    /// The SQL Server procedure takes less so far: a guarded append of events over a union boundary,
+    /// with nothing staged on the context. It commits a transaction of its own, so it cannot yet
+    /// join the one staged changes are saved in.
+    /// </para>
     /// </remarks>
-    private static bool AppendsThroughRoutine(this IDcbDbContext dcbDbContext, AppendCondition? condition) =>
+    private static bool AppendsThroughRoutine(this IDcbDbContext dcbDbContext, AppendCondition? condition,
+        bool savesAggregate) =>
         dcbDbContext is DcbDbContext context
-        && DcbAppendRoutine.For(context) is not null
-        && (condition is null || IsUnion(condition.Query) || IsIntersection(condition.Query));
+        && DcbAppendRoutine.For(context) is { } routine
+        && routine.For switch
+        {
+            DcbAppendRoutine.Engine.SqlServer => !savesAggregate && condition is not null && IsUnion(condition.Query)
+                                                 && !context.ChangeTracker.HasChanges(),
+            _ => condition is null || IsUnion(condition.Query) || IsIntersection(condition.Query)
+        };
 
     private static bool IsUnion(TagQuery query) => query.TagGroups.All(group => group.Count == 1);
 
@@ -120,10 +133,62 @@ public static partial class DcbDbContextExtensions
         }
     }
 
+    /// <remarks>
+    /// SQL Server's error number is read by name: the store has no SqlClient reference, and
+    /// <c>SqlException</c> reports no SQLSTATE.
+    /// </remarks>
     private static bool IsMissingRoutine(Exception exception) =>
-        exception is DbException { SqlState: DcbAppendRoutine.PostgreSqlUndefinedFunction };
+        exception is DbException { SqlState: DcbAppendRoutine.PostgreSqlUndefinedFunction }
+        || (exception is DbException
+            && exception.GetType().GetProperty("Number")?.GetValue(exception) is DcbAppendRoutine.SqlServerUndefinedProcedure);
 
-    private static async Task<AppendRoutineOutcome> CallAppendRoutine(this IDcbDbContext dcbDbContext,
+    private static Task<AppendRoutineOutcome> CallAppendRoutine(this IDcbDbContext dcbDbContext,
+        TaggedEvent[] events, AppendCondition? condition, List<string> affectedTags, DcbSnapshotEntity? snapshot,
+        CancellationToken cancellationToken) =>
+        DcbAppendRoutine.For((DcbDbContext)dcbDbContext)!.For == DcbAppendRoutine.Engine.SqlServer
+            ? dcbDbContext.CallAppendProcedure(events, condition, affectedTags, cancellationToken)
+            : dcbDbContext.CallAppendFunction(events, condition, affectedTags, snapshot, cancellationToken);
+
+    /// <summary>Calls the SQL Server procedure, its collections as JSON.</summary>
+    private static async Task<AppendRoutineOutcome> CallAppendProcedure(this IDcbDbContext dcbDbContext,
+        TaggedEvent[] events, AppendCondition? condition, List<string> affectedTags,
+        CancellationToken cancellationToken)
+    {
+        var context = (DcbDbContext)dcbDbContext;
+        var (createdDate, createdBy) = context.AuditStamp();
+
+        var eventsJson = JsonSerializer.Serialize(events.Select(taggedEvent => new AppendedEvent(
+            TypeBindings.GetEventBindingKey(taggedEvent.Event.GetType()),
+            DomainSerializer.Current.Serialize(taggedEvent.Event),
+            taggedEvent.Tags.Select(tag => tag.ToString()).ToArray())));
+
+        object?[] arguments =
+        [
+            JsonSerializer.Serialize(affectedTags),
+            condition is null ? null : JsonSerializer.Serialize(condition.Query.Tags.Select(tag => tag.ToString())),
+            condition?.AfterPosition ?? AppendCondition.NoEvents,
+            eventsJson,
+            createdDate,
+            createdBy
+        ];
+
+        var outcomes = await context.Database
+            .SqlQueryRaw<AppendRoutineOutcome>(
+                $"EXEC {DcbAppendRoutine.For(context)!.CallName} {{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}",
+                arguments!)
+            .ToListAsync(cancellationToken);
+
+        return outcomes.Single();
+    }
+
+    /// <summary>One event as the SQL Server procedure reads it from its JSON.</summary>
+    private sealed record AppendedEvent(
+        [property: JsonPropertyName("type")] string Type,
+        [property: JsonPropertyName("data")] string Data,
+        [property: JsonPropertyName("tags")] string[] Tags);
+
+    /// <summary>Calls the PostgreSQL function, its collections as arrays.</summary>
+    private static async Task<AppendRoutineOutcome> CallAppendFunction(this IDcbDbContext dcbDbContext,
         TaggedEvent[] events, AppendCondition? condition, List<string> affectedTags, DcbSnapshotEntity? snapshot,
         CancellationToken cancellationToken)
     {

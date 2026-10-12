@@ -74,7 +74,7 @@ public static partial class DcbDbContextExtensions
 
         var affectedTags = AffectedTags(events, condition);
 
-        if (dcbDbContext.AppendsThroughRoutine(condition))
+        if (dcbDbContext.AppendsThroughRoutine(condition, savesAggregate: false))
         {
             return await dcbDbContext.AppendThroughRoutine(events, condition, affectedTags, operation,
                 cancellationToken);

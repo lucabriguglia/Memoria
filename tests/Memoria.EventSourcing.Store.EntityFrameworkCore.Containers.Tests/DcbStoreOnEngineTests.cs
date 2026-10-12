@@ -190,8 +190,13 @@ public abstract partial class DcbStoreOnEngineTests
     /// The race the Entity Framework Core path's token guard exists for. Run only by engines whose
     /// appends take that path: the append routine locks the tag heads before it checks, so this
     /// window does not exist there, and the save it intercepts never happens.
-    /// <see cref="PostgreSqlSingleCallAppendTests"/> covers the race the routine does have.
+    /// <see cref="PostgreSqlSingleCallAppendTests"/> and <see cref="SqlServerSingleCallAppendTests"/>
+    /// cover the race the routine does have.
     /// </summary>
+    /// <remarks>
+    /// Conditioned on an intersection, which on SQL Server still takes the Entity Framework Core
+    /// path; a union goes through its procedure.
+    /// </remarks>
     protected Task ConditionedAppendIsRefusedWhenItsTagHeadMovesMidAppend() =>
         WithDatabase(async (dbContext, openAnother) =>
         {
@@ -205,8 +210,8 @@ public abstract partial class DcbStoreOnEngineTests
             var interceptor = MoveTagHeadFromAnotherConnection(SeatA1.ToString(), openAnother);
             var racing = openAnother([interceptor]);
 
-            var result = await racing.SaveEvents([Reserved("a1", "s7")],
-                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+            var result = await racing.SaveEvents([Reserved("a1", "s7", SeatA1, StudentS7)],
+                AppendCondition.NothingAppendedFor(TagQuery.AllOf(SeatA1, StudentS7)));
 
             interceptor.Fired.Should().BeTrue("the race must actually have been simulated");
             interceptor.SimulationFailure.Should().BeNull("a broken simulation proves nothing");

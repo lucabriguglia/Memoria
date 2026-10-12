@@ -73,6 +73,11 @@ public class PostgreSqlSingleCallAppendTests(PostgreSqlFixture fixture)
             { "SeatReleased:1", typeof(SeatReleasedEvent) }
         };
 
+        DcbTypeBindings.AggregateTypeBindings = new Dictionary<string, Type>
+        {
+            { "Seat:1", typeof(SeatAggregate) }
+        };
+
         var opened = new List<TestDbContext>();
         var database = new TestDatabase(fixture.ConnectionStringForFreshDatabase(), opened);
         var setup = database.Connect();
@@ -310,6 +315,161 @@ public class PostgreSqlSingleCallAppendTests(PostgreSqlFixture fixture)
 
             first.IsSuccess.Should().BeTrue(first.Failure?.Description);
             stale.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
+        });
+
+    private static readonly SeatId SeatA1Aggregate = new("a1");
+
+    private static async Task<SeatAggregate> StoredSeat(TestDbContext dbContext) =>
+        (await dbContext.GetAggregate(SeatA1Aggregate, ReadMode.SnapshotOnly)).Value!;
+
+    [RequiresDockerFact]
+    public Task A_guarded_aggregate_save_writing_its_first_snapshot_is_one_database_command() =>
+        WithDatabase(async database =>
+        {
+            var seat = new SeatAggregate();
+            seat.Reserve("a1", "s7");
+
+            var commands = new CommandCounter();
+            var result = await database.Connect(commands).SaveAggregate(SeatA1Aggregate, seat,
+                AppendCondition.NothingAppendedFor(SeatA1Aggregate.Boundary));
+
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            commands.Count.Should().Be(1, $"the save should be one round trip, but sent:\n{commands}");
+        });
+
+    [RequiresDockerFact]
+    public Task A_guarded_aggregate_save_replacing_its_snapshot_is_one_database_command() =>
+        WithDatabase(async database =>
+        {
+            var first = new SeatAggregate();
+            first.Reserve("a1", "s7");
+            await database.Connect().SaveAggregate(SeatA1Aggregate, first,
+                AppendCondition.NothingAppendedFor(SeatA1Aggregate.Boundary));
+
+            var seat = await StoredSeat(database.Connect());
+            seat.Reserve("a1", "s8");
+
+            var commands = new CommandCounter();
+            var result = await database.Connect(commands).SaveAggregate(SeatA1Aggregate, seat,
+                new AppendCondition(SeatA1Aggregate.Boundary, seat.LatestPosition));
+
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            commands.Count.Should().Be(1, $"the save should be one round trip, but sent:\n{commands}");
+        });
+
+    [RequiresDockerFact]
+    public Task A_saved_aggregate_reads_back_from_its_snapshot_at_the_position_it_appended() =>
+        WithDatabase(async database =>
+        {
+            var seat = new SeatAggregate();
+            seat.Reserve("a1", "s7");
+            seat.Reserve("a1", "s8");
+
+            var result = await database.Connect().SaveAggregate(SeatA1Aggregate, seat,
+                AppendCondition.NothingAppendedFor(SeatA1Aggregate.Boundary));
+
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            var appendedTo = await database.Connect().GetLatestPosition(SeatA1Aggregate.Boundary);
+            seat.LatestPosition.Should().Be(appendedTo, "the aggregate learns the position it appended to");
+
+            var stored = await StoredSeat(database.Connect());
+            stored.ReservedBy.Should().Be("s8");
+            stored.Version.Should().Be(2);
+            stored.LatestPosition.Should().Be(appendedTo);
+        });
+
+    [RequiresDockerFact]
+    public Task A_snapshot_only_save_is_one_database_command_and_is_not_checked() =>
+        WithDatabase(async database =>
+        {
+            var first = new SeatAggregate();
+            first.Reserve("a1", "s7");
+            await database.Connect().SaveAggregate(SeatA1Aggregate, first,
+                AppendCondition.NothingAppendedFor(SeatA1Aggregate.Boundary));
+
+            // Nothing to append, so nothing for the condition to guard: as on the Entity Framework
+            // Core path, a stale condition does not refuse it.
+            var seat = await StoredSeat(database.Connect());
+            var commands = new CommandCounter();
+            var result = await database.Connect(commands).SaveAggregate(SeatA1Aggregate, seat,
+                AppendCondition.NothingAppendedFor(SeatA1Aggregate.Boundary));
+
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            commands.Count.Should().Be(1, $"the save should be one round trip, but sent:\n{commands}");
+        });
+
+    [RequiresDockerFact]
+    public Task A_refused_aggregate_save_writes_neither_events_nor_snapshot() =>
+        WithDatabase(async database =>
+        {
+            await database.Connect().SaveEvents([Reserved("a1", "s7")], condition: null);
+
+            var seat = new SeatAggregate();
+            seat.Reserve("a1", "s8");
+            var result = await database.Connect().SaveAggregate(SeatA1Aggregate, seat,
+                AppendCondition.NothingAppendedFor(SeatA1Aggregate.Boundary));
+
+            result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
+            var reading = database.Connect();
+            (await reading.DcbEvents.CountAsync()).Should().Be(1);
+            (await reading.DcbSnapshots.CountAsync()).Should().Be(0);
+        });
+
+    [RequiresDockerFact]
+    public Task A_snapshot_keeps_its_creation_stamp_and_takes_a_new_update_stamp_when_replaced() =>
+        WithDatabase(async database =>
+        {
+            var created = new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero);
+            var time = new FakeTimeProvider(created);
+            var user = new HttpContextAccessor
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "auditor")], "Test"))
+                }
+            };
+
+            var first = new SeatAggregate();
+            first.Reserve("a1", "s7");
+            await database.Connect(time, user).SaveAggregate(SeatA1Aggregate, first,
+                AppendCondition.NothingAppendedFor(SeatA1Aggregate.Boundary));
+
+            time.Advance(TimeSpan.FromHours(1));
+            var seat = await StoredSeat(database.Connect());
+            seat.Reserve("a1", "s8");
+            await database.Connect(time, user).SaveAggregate(SeatA1Aggregate, seat,
+                new AppendCondition(SeatA1Aggregate.Boundary, seat.LatestPosition));
+
+            var snapshot = await database.Connect().DcbSnapshots.AsNoTracking().SingleAsync();
+            snapshot.CreatedDate.Should().Be(created);
+            snapshot.CreatedBy.Should().Be("auditor");
+            snapshot.UpdatedDate.Should().Be(created.AddHours(1));
+            snapshot.UpdatedBy.Should().Be("auditor");
+        });
+
+    [RequiresDockerFact]
+    public Task Saving_an_older_aggregate_does_not_replace_a_newer_snapshot() =>
+        WithDatabase(async database =>
+        {
+            var first = new SeatAggregate();
+            first.Reserve("a1", "s7");
+            await database.Connect().SaveAggregate(SeatA1Aggregate, first,
+                AppendCondition.NothingAppendedFor(SeatA1Aggregate.Boundary));
+            var older = await StoredSeat(database.Connect());
+
+            var newer = await StoredSeat(database.Connect());
+            newer.Reserve("a1", "s8");
+            await database.Connect().SaveAggregate(SeatA1Aggregate, newer,
+                new AppendCondition(SeatA1Aggregate.Boundary, newer.LatestPosition));
+
+            // A snapshot-only save of the instance read before the second save.
+            var result = await database.Connect().SaveAggregate(SeatA1Aggregate, older,
+                new AppendCondition(SeatA1Aggregate.Boundary, older.LatestPosition));
+
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            var stored = await StoredSeat(database.Connect());
+            stored.ReservedBy.Should().Be("s8", "the newer snapshot must survive");
+            stored.LatestPosition.Should().Be(newer.LatestPosition);
         });
 
     [RequiresDockerFact]

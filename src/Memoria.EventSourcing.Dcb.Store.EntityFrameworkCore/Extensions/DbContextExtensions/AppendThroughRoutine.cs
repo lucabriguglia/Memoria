@@ -1,5 +1,6 @@
 using System.Data.Common;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.AppendRoutine;
+using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Entities;
 using Memoria.EventSourcing.Domain;
 using Memoria.Results;
 using Microsoft.EntityFrameworkCore;
@@ -43,24 +44,30 @@ public static partial class DcbDbContextExtensions
     /// The refusal carries the boundary's latest position from the same call, so it costs no re-read.
     /// </remarks>
     private static async Task<Result> AppendThroughRoutine(this IDcbDbContext dcbDbContext, TaggedEvent[] events,
-        AppendCondition condition, List<string> affectedTags, string operation, CancellationToken cancellationToken)
+        AppendCondition condition, List<string> affectedTags, string operation, CancellationToken cancellationToken,
+        DcbSnapshotEntity? snapshot = null, Action<long>? appendedTo = null)
     {
         try
         {
             return await dcbDbContext.Appending(async token =>
             {
-                var outcome = await dcbDbContext.CallAppendRoutine(events, condition, affectedTags, token);
+                var outcome = await dcbDbContext.CallAppendRoutine(events, condition, affectedTags, snapshot, token);
 
                 if (outcome.Appended)
                 {
+                    if (outcome.LatestPosition is { } lastWritten)
+                    {
+                        appendedTo?.Invoke(lastWritten);
+                    }
+
                     return Result.Ok();
                 }
 
                 DcbDiagnostics.AddConcurrencyConflictEvent(condition.Query, condition.AfterPosition,
-                    outcome.LatestPosition);
+                    outcome.LatestPosition!.Value);
 
                 return DcbStoreFailures.ConcurrencyConflict(condition.Query, condition.AfterPosition,
-                    outcome.LatestPosition);
+                    outcome.LatestPosition!.Value);
             }, cancellationToken);
         }
         catch (Exception exception) when (IsMissingRoutine(exception))
@@ -85,7 +92,7 @@ public static partial class DcbDbContextExtensions
         exception is DbException { SqlState: DcbAppendRoutine.PostgreSqlUndefinedFunction };
 
     private static async Task<AppendRoutineOutcome> CallAppendRoutine(this IDcbDbContext dcbDbContext,
-        TaggedEvent[] events, AppendCondition condition, List<string> affectedTags,
+        TaggedEvent[] events, AppendCondition condition, List<string> affectedTags, DcbSnapshotEntity? snapshot,
         CancellationToken cancellationToken)
     {
         var (createdDate, createdBy) = ((DcbDbContext)dcbDbContext).AuditStamp();
@@ -114,7 +121,15 @@ public static partial class DcbDbContextExtensions
             tagEventIndex.ToArray(),
             tagValues.ToArray(),
             createdDate,
-            createdBy
+            createdBy,
+            snapshot?.Id,
+            snapshot?.SnapshotKind,
+            snapshot?.StoreId,
+            snapshot?.TagQuery,
+            snapshot?.ModelType,
+            snapshot?.Version ?? 0,
+            snapshot?.LatestPosition ?? 0L,
+            snapshot?.Data
         ];
 
         var outcomes = await dcbDbContext.Database
@@ -122,7 +137,8 @@ public static partial class DcbDbContextExtensions
                 $$"""
                 SELECT appended AS "Appended", latest_position AS "LatestPosition"
                 FROM {{DcbAppendRoutine.Name}}({0}::text[], {1}::text[], {2}::bigint, {3}::text[],
-                    {4}::text[], {5}::int[], {6}::text[], {7}::timestamptz, {8}::text)
+                    {4}::text[], {5}::int[], {6}::text[], {7}::timestamptz, {8}::text,
+                    {9}::text, {10}::text, {11}::text, {12}::text, {13}::text, {14}::int, {15}::bigint, {16}::text)
                 """, arguments!)
             .ToListAsync(cancellationToken);
 
@@ -131,13 +147,13 @@ public static partial class DcbDbContextExtensions
 
     /// <summary>What the append routine returns: whether it appended, and the boundary's position.</summary>
     /// <remarks>
-    /// When it appended, the position of the last event written; when it refused, where the
-    /// boundary had moved to.
+    /// When it appended, the position of the last event written, or null when there were none and
+    /// only a snapshot was written; when it refused, where the boundary had moved to.
     /// </remarks>
     private sealed class AppendRoutineOutcome
     {
         public bool Appended { get; init; }
 
-        public long LatestPosition { get; init; }
+        public long? LatestPosition { get; init; }
     }
 }

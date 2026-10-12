@@ -41,8 +41,12 @@ internal static class DcbAppendRoutine
         IsDefaultTable<DcbEventEntity>(model, "DcbEvents")
         && IsDefaultTable<DcbEventTagEntity>(model, "DcbEventTags")
         && IsDefaultTable<DcbTagHeadEntity>(model, "DcbTagHeads")
-        && model.FindEntityType(typeof(DcbEventEntity))?
-            .FindProperty(nameof(DcbEventEntity.Data))?.GetColumnType() == "text";
+        && IsDefaultTable<DcbSnapshotEntity>(model, "DcbSnapshots")
+        && IsText<DcbEventEntity>(model, nameof(DcbEventEntity.Data))
+        && IsText<DcbSnapshotEntity>(model, nameof(DcbSnapshotEntity.Data));
+
+    private static bool IsText<TEntity>(IModel model, string property) =>
+        model.FindEntityType(typeof(TEntity))?.FindProperty(property)?.GetColumnType() == "text";
 
     private static bool IsDefaultTable<TEntity>(IModel model, string table) =>
         model.FindEntityType(typeof(TEntity)) is { } entityType
@@ -77,6 +81,13 @@ internal static class DcbAppendRoutine
     /// Positions are taken from the identity sequence in event order before the events are written,
     /// so each event's tags can be written against its own position.
     /// </para>
+    /// <para>
+    /// A snapshot, when there is one, is written in the same transaction, at the later of the position
+    /// the model had folded to and the last event written. It never replaces a snapshot that is
+    /// further along: a save of an instance read before somebody else's save would otherwise put
+    /// the boundary's snapshot back. With no events there is nothing for the condition to guard, so
+    /// a snapshot-only save neither checks nor locks, as on the Entity Framework Core path.
+    /// </para>
     /// </remarks>
     private const string PostgreSqlDefinition = """
         CREATE OR REPLACE FUNCTION memoria_dcb_append_v1(
@@ -88,60 +99,92 @@ internal static class DcbAppendRoutine
             p_tag_event_index int[],
             p_tag_values text[],
             p_created_date timestamptz,
-            p_created_by text)
+            p_created_by text,
+            p_snapshot_id text,
+            p_snapshot_kind text,
+            p_snapshot_store_id text,
+            p_snapshot_tag_query text,
+            p_snapshot_model_type text,
+            p_snapshot_version int,
+            p_snapshot_latest_position bigint,
+            p_snapshot_data text)
         RETURNS TABLE (appended boolean, latest_position bigint)
         LANGUAGE plpgsql VOLATILE AS $memoria$
         DECLARE
             v_latest bigint;
             v_positions bigint[];
+            v_last bigint;
         BEGIN
-            IF p_boundary_tags IS NOT NULL THEN
-                SELECT coalesce(max("Position"), 0) INTO v_latest
-                FROM "DcbEventTags" WHERE "Tag" = ANY (p_boundary_tags);
+            IF cardinality(p_event_types) > 0 THEN
+                IF p_boundary_tags IS NOT NULL THEN
+                    SELECT coalesce(max("Position"), 0) INTO v_latest
+                    FROM "DcbEventTags" WHERE "Tag" = ANY (p_boundary_tags);
 
-                IF v_latest <> p_after_position THEN
-                    RETURN QUERY SELECT false, v_latest;
-                    RETURN;
+                    IF v_latest <> p_after_position THEN
+                        RETURN QUERY SELECT false, v_latest;
+                        RETURN;
+                    END IF;
                 END IF;
+
+                INSERT INTO "DcbTagHeads" ("Tag", "Token")
+                SELECT affected.tag, gen_random_uuid()
+                FROM unnest(p_affected_tags) WITH ORDINALITY AS affected (tag, ordinal)
+                ORDER BY affected.ordinal
+                ON CONFLICT ("Tag") DO NOTHING;
+
+                PERFORM 1
+                FROM unnest(p_affected_tags) WITH ORDINALITY AS affected (tag, ordinal)
+                JOIN "DcbTagHeads" head ON head."Tag" = affected.tag
+                ORDER BY affected.ordinal
+                FOR UPDATE OF head;
+
+                IF p_boundary_tags IS NOT NULL THEN
+                    SELECT coalesce(max("Position"), 0) INTO v_latest
+                    FROM "DcbEventTags" WHERE "Tag" = ANY (p_boundary_tags);
+
+                    IF v_latest <> p_after_position THEN
+                        RETURN QUERY SELECT false, v_latest;
+                        RETURN;
+                    END IF;
+                END IF;
+
+                UPDATE "DcbTagHeads" SET "Token" = gen_random_uuid() WHERE "Tag" = ANY (p_affected_tags);
+
+                SELECT array_agg(nextval(pg_get_serial_sequence('"DcbEvents"', 'Position')) ORDER BY event)
+                INTO v_positions
+                FROM generate_series(1, cardinality(p_event_types)) AS event;
+
+                INSERT INTO "DcbEvents" ("Position", "EventType", "Data", "CreatedDate", "CreatedBy")
+                SELECT written.position, written.event_type, written.data, p_created_date, p_created_by
+                FROM unnest(v_positions, p_event_types, p_event_data) AS written (position, event_type, data);
+
+                INSERT INTO "DcbEventTags" ("Position", "Tag")
+                SELECT v_positions[tagged.event], tagged.tag
+                FROM unnest(p_tag_event_index, p_tag_values) AS tagged (event, tag);
+
+                v_last := v_positions[cardinality(v_positions)];
             END IF;
 
-            INSERT INTO "DcbTagHeads" ("Tag", "Token")
-            SELECT affected.tag, gen_random_uuid()
-            FROM unnest(p_affected_tags) WITH ORDINALITY AS affected (tag, ordinal)
-            ORDER BY affected.ordinal
-            ON CONFLICT ("Tag") DO NOTHING;
-
-            PERFORM 1
-            FROM unnest(p_affected_tags) WITH ORDINALITY AS affected (tag, ordinal)
-            JOIN "DcbTagHeads" head ON head."Tag" = affected.tag
-            ORDER BY affected.ordinal
-            FOR UPDATE OF head;
-
-            IF p_boundary_tags IS NOT NULL THEN
-                SELECT coalesce(max("Position"), 0) INTO v_latest
-                FROM "DcbEventTags" WHERE "Tag" = ANY (p_boundary_tags);
-
-                IF v_latest <> p_after_position THEN
-                    RETURN QUERY SELECT false, v_latest;
-                    RETURN;
-                END IF;
+            IF p_snapshot_id IS NOT NULL THEN
+                INSERT INTO "DcbSnapshots" ("Id", "SnapshotKind", "StoreId", "TagQuery", "ModelType", "Version",
+                    "LatestPosition", "Data", "CreatedDate", "CreatedBy", "UpdatedDate", "UpdatedBy")
+                VALUES (p_snapshot_id, p_snapshot_kind, p_snapshot_store_id, p_snapshot_tag_query,
+                    p_snapshot_model_type, p_snapshot_version, greatest(p_snapshot_latest_position, v_last),
+                    p_snapshot_data, p_created_date, p_created_by, p_created_date, p_created_by)
+                ON CONFLICT ("Id") DO UPDATE SET
+                    "SnapshotKind" = EXCLUDED."SnapshotKind",
+                    "StoreId" = EXCLUDED."StoreId",
+                    "TagQuery" = EXCLUDED."TagQuery",
+                    "ModelType" = EXCLUDED."ModelType",
+                    "Version" = EXCLUDED."Version",
+                    "LatestPosition" = EXCLUDED."LatestPosition",
+                    "Data" = EXCLUDED."Data",
+                    "UpdatedDate" = EXCLUDED."UpdatedDate",
+                    "UpdatedBy" = EXCLUDED."UpdatedBy"
+                WHERE "DcbSnapshots"."LatestPosition" <= EXCLUDED."LatestPosition";
             END IF;
 
-            UPDATE "DcbTagHeads" SET "Token" = gen_random_uuid() WHERE "Tag" = ANY (p_affected_tags);
-
-            SELECT array_agg(nextval(pg_get_serial_sequence('"DcbEvents"', 'Position')) ORDER BY event)
-            INTO v_positions
-            FROM generate_series(1, cardinality(p_event_types)) AS event;
-
-            INSERT INTO "DcbEvents" ("Position", "EventType", "Data", "CreatedDate", "CreatedBy")
-            SELECT written.position, written.event_type, written.data, p_created_date, p_created_by
-            FROM unnest(v_positions, p_event_types, p_event_data) AS written (position, event_type, data);
-
-            INSERT INTO "DcbEventTags" ("Position", "Tag")
-            SELECT v_positions[tagged.event], tagged.tag
-            FROM unnest(p_tag_event_index, p_tag_values) AS tagged (event, tag);
-
-            RETURN QUERY SELECT true, v_positions[cardinality(v_positions)];
+            RETURN QUERY SELECT true, v_last;
         END
         $memoria$;
         """;

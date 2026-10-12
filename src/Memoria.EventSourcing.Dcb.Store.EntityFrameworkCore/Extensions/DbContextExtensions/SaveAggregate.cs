@@ -57,6 +57,14 @@ public static partial class DcbDbContextExtensions
 
         var affectedTags = AffectedTags(events, condition);
 
+        if (dcbDbContext.AppendsThroughRoutine(condition))
+        {
+            return await dcbDbContext.AppendThroughRoutine(events, condition!, affectedTags, operation,
+                cancellationToken,
+                snapshot: aggregate.Version > 0 ? aggregate.ToSnapshotEntity(aggregateId) : null,
+                appendedTo: lastWritten => aggregate.LatestPosition = Math.Max(aggregate.LatestPosition, lastWritten));
+        }
+
         try
         {
             // Through the execution strategy, for the reasons on Appending: the events and the

@@ -77,6 +77,9 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
         _streamedContext.Database.EnsureCreated();
         _dcbContext.Database.EnsureCreated();
 
+        // The routine the DCB store appends through on SQL Server and PostgreSQL; nothing on SQLite.
+        _dcbContext.Database.EnsureDcbAppendRoutineAsync().GetAwaiter().GetResult();
+
         Streamed = new EntityFrameworkCoreDomainService(_streamedContext);
         _dcb = new EntityFrameworkCoreDcbDomainService(_dcbContext);
     }
@@ -94,9 +97,6 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
 
     /// <summary>The DCB context.s underlying connection, for ad hoc diagnostics.</summary>
     public System.Data.Common.DbConnection DcbConnection => _dcbContext!.Database.GetDbConnection();
-
-    /// <summary>The DCB database's connection string, for code that talks to it without the context.</summary>
-    public string DcbConnectionString => _dcbContext!.Database.GetConnectionString()!;
 
     public static ShowStreamId StreamId { get; } = new("show-1");
 

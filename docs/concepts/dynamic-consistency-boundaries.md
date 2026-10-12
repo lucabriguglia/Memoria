@@ -130,6 +130,37 @@ Pass no condition to append unconditionally. That is correct only when the decis
 nothing it read — registering a student, defining a course. An unconditional append still makes
 conditioned appends over the same tags fail; it simply has nothing of its own to be invalidated.
 
+### When appends collide
+
+A refusal is the store working, not failing: the boundary moved, so the decision has to be made again
+against the new facts. Read the boundary again, fold it again, decide again and append again. When many
+writers share one boundary, wait a little between attempts, for a random time under a ceiling that
+grows with each refusal in a row. Retrying at once sends every loser straight back into the same race:
+
+```csharp
+for (var refusals = 0; ; refusals++)
+{
+    var position = (await dcb.GetLatestPosition(boundary)).Value;
+
+    var events = Decide(await dcb.GetEvents(boundary)); // fold and decide afresh every time
+
+    var result = await dcb.SaveEvents(events, new AppendCondition(boundary, position));
+    if (result.Failure?.Type != StoreFailures.ConcurrencyConflictType || refusals == 9)
+    {
+        return result;
+    }
+
+    // Full jitter: uniform under a ceiling of 1, 2, 4 ... 20 ms.
+    var ceiling = Math.Min(20, Math.Pow(2, refusals));
+    await Task.Delay(TimeSpan.FromMilliseconds(Random.Shared.NextDouble() * ceiling));
+}
+```
+
+With sixteen writers on one boundary, that backoff took the accepted appends per second from 366 to 660
+on one machine, and from 104 to 112 against a SQL Server container. The store leaves retrying to you
+because only the caller can decide again; [the benchmarks](https://github.com/lucabriguglia/Memoria/tree/main/benchmarks#under-contention)
+have the full measurements.
+
 ## Reading the boundary
 
 Read the position **before** the fold, and never after:
@@ -220,6 +251,31 @@ Once the model has been loaded, its own `Tags` are set from that boundary. A mod
 one entity can read them in `Apply` to know which ones it is about, and `Add` without explicit tags
 appends under the boundary the model was folded from.
 
+## How an append is written
+
+On **SQL Server and PostgreSQL** an append is one round trip: a call to the store's append routine, a
+stored procedure on SQL Server and a function on PostgreSQL, generated from your context's model. See
+[Install the store schema](../guides/install-the-store-schema.md#the-dynamic-consistency-boundary-store)
+for how it gets into the database. The routine:
+
+1. Reads the boundary's position and refuses at once if it has moved, before taking any lock.
+2. Locks the tag heads of every tag the append writes or is conditioned on, always in the same order,
+   so two appends over overlapping tags wait for each other rather than deadlocking.
+3. Reads the boundary again with the locks held, and refuses if it moved while the append waited.
+4. Writes the events, their tags and the snapshot, if there is one, and commits.
+
+Appends whose boundaries share no tag share no lock, so they run side by side. Each step reads
+afresh, so the check is correct with SQL Server's `READ_COMMITTED_SNAPSHOT` either on or off.
+
+On **SQLite** the store appends through Entity Framework Core instead: optimistically, guarding each
+tag head with a concurrency token, in a few statements. In process a round trip is almost free, so a
+routine would buy nothing. A context that implements `IDcbDbContext` without deriving from
+`DcbDbContext` takes that path on every engine.
+
+Changes you have staged on the same context — an entity of your own added before the append — are
+saved in the append's transaction on every path: they commit if the append is accepted and are left
+pending if it is refused.
+
 ## Snapshots
 
 A snapshot is keyed by the model **and the boundary that produced it**. The same aggregate id folded
@@ -228,6 +284,10 @@ than returning the wrong fold. All four [read modes](read-modes.md) behave as th
 
 ## What it costs
 
+- **One round trip per append on SQL Server and PostgreSQL**, against the streamed store's two, and in
+  the benchmarks a DCB append is cheaper than a streamed one on both. The price is a routine in the
+  database, installed alongside the tables. See [Streams or DCB?](../guides/choose-streams-or-dcb.md)
+  for the numbers.
 - **A row per distinct tag, forever.** `DcbTagHeads` holds one row per tag ever written under or
   conditioned on — one per student, per course, per order. Small, and the price of contention that
   follows the boundary instead of the whole store.

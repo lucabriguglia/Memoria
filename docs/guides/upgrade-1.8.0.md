@@ -2,7 +2,7 @@
 title: Upgrade to 1.8.0
 description: "Memoria 1.8.0 adds dynamic consistency boundaries in their own packages, and two properties move one level down the model hierarchy to make room."
 parent: Upgrading
-nav_order: 3
+nav_order: 4
 ---
 
 # Upgrade to 1.8.0

@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.AppendRoutine;
@@ -14,8 +15,12 @@ namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.AppendRoutine;
 /// </summary>
 /// <remarks>
 /// <para>
-/// PostgreSQL only, for now. SQL Server will follow with a stored procedure; SQLite keeps the Entity
-/// Framework Core path, because in process a round trip is almost free.
+/// A function on PostgreSQL and a stored procedure on SQL Server. SQLite keeps the Entity Framework
+/// Core path, because in process a round trip is almost free.
+/// </para>
+/// <para>
+/// The SQL Server procedure covers a guarded append over a union boundary of the default model so
+/// far; everything else on SQL Server keeps the Entity Framework Core path until it covers that too.
 /// </para>
 /// <para>
 /// Generated from the context's model, so it writes wherever the model maps the store's tables and
@@ -36,8 +41,13 @@ internal static class DcbAppendRoutine
 
     public const string PostgreSqlProvider = "Npgsql.EntityFrameworkCore.PostgreSQL";
 
+    public const string SqlServerProvider = "Microsoft.EntityFrameworkCore.SqlServer";
+
     /// <summary>The SQLSTATE PostgreSQL raises when a called function does not exist.</summary>
     public const string PostgreSqlUndefinedFunction = "42883";
+
+    /// <summary>The error number SQL Server raises when a called procedure does not exist.</summary>
+    public const int SqlServerUndefinedProcedure = 2812;
 
     /// <summary>What the default model maps, so its routine keeps the plain name.</summary>
     private static readonly string DefaultMapping = string.Join("|",
@@ -47,61 +57,98 @@ internal static class DcbAppendRoutine
         "DcbSnapshots", "Id", "SnapshotKind", "StoreId", "TagQuery", "ModelType", "Version", "LatestPosition",
         "Data", "text", "CreatedDate", "CreatedBy", "UpdatedDate", "UpdatedBy");
 
+    /// <summary>The default model's table and column names, whatever their types.</summary>
+    private static readonly string DefaultNames = DefaultMapping.Replace("|text|", "|");
+
     private static readonly ConditionalWeakTable<IModel, Shape> Shapes = new();
+
+    private static readonly ConditionalWeakTable<IModel, Fitted> SqlServerShapes = new();
 
     /// <summary>
     /// The routine for this context's model, or null where appends go through Entity Framework Core.
     /// Built once per model.
     /// </summary>
-    public static Shape? For(DbContext context) =>
-        context.Database.ProviderName == PostgreSqlProvider ? For(context.Model) : null;
+    /// <remarks>
+    /// The SQL Server procedure is built from the design-time model, because it compares tags under
+    /// their columns' collation, which the runtime model does not keep.
+    /// </remarks>
+    public static Shape? For(DbContext context) => context.Database.ProviderName switch
+    {
+        PostgreSqlProvider => For(context.Model),
+        SqlServerProvider => SqlServerShapes.GetValue(context.GetService<IDesignTimeModel>().Model, BuildSqlServer).Shape,
+        _ => null
+    };
 
     /// <summary>
     /// The PostgreSQL routine for a model: a context's runtime model, or a migration's target model.
     /// </summary>
     public static Shape For(IModel model) => Shapes.GetValue(model, Build);
 
+    /// <summary>The engine a routine is written for, which decides how it is called.</summary>
+    public enum Engine
+    {
+        PostgreSql,
+        SqlServer
+    }
+
     /// <summary>A model's routine.</summary>
+    /// <param name="For">The engine it is written for.</param>
     /// <param name="CallName">The name to call it by, quoted and qualified as needed.</param>
     /// <param name="DisplayName">The name to tell a person, for instance in a failure.</param>
     /// <param name="Definition">The statement that creates or replaces it.</param>
     /// <param name="Drop">The statement that drops it, if it exists.</param>
-    public sealed record Shape(string CallName, string DisplayName, string Definition, string Drop);
+    public sealed record Shape(Engine For, string CallName, string DisplayName, string Definition, string Drop);
+
+    /// <summary>A model's routine, or null when the model is not one the engine's routine fits yet.</summary>
+    private sealed record Fitted(Shape? Shape);
 
     /// <summary>The routine's parameter types, which identify it to <c>DROP FUNCTION</c>.</summary>
     private const string PostgreSqlSignature =
         "text[], text[], boolean, bigint, text[], text[], int[], text[], timestamptz, text, " +
         "text, text, text, text, text, int, bigint, text";
 
+    /// <summary>The store's four tables as a model maps them.</summary>
+    private sealed record StoreTables(MappedTable Events, MappedTable EventTags, MappedTable Heads, MappedTable Snapshots)
+    {
+        public static StoreTables Of(IModel model) => new(Mapped<DcbEventEntity>(model),
+            Mapped<DcbEventTagEntity>(model), Mapped<DcbTagHeadEntity>(model), Mapped<DcbSnapshotEntity>(model));
+
+        public bool AnySchema => Events.Schema is not null || EventTags.Schema is not null || Heads.Schema is not null
+                                 || Snapshots.Schema is not null;
+
+        /// <summary>Every table and column name, with the payload columns' types where they say so.</summary>
+        public string Mapping(bool withPayloadTypes) => string.Join("|", new[]
+        {
+            Events.Table, Events.Raw(nameof(DcbEventEntity.Position)), Events.Raw(nameof(DcbEventEntity.EventType)),
+            Events.Raw(nameof(DcbEventEntity.Data)),
+            withPayloadTypes ? Events.Type(nameof(DcbEventEntity.Data)) : null,
+            Events.Raw(nameof(DcbEventEntity.CreatedDate)), Events.Raw(nameof(DcbEventEntity.CreatedBy)),
+            EventTags.Table, EventTags.Raw(nameof(DcbEventTagEntity.Position)), EventTags.Raw(nameof(DcbEventTagEntity.Tag)),
+            Heads.Table, Heads.Raw(nameof(DcbTagHeadEntity.Tag)), Heads.Raw(nameof(DcbTagHeadEntity.Token)),
+            Snapshots.Table, Snapshots.Raw(nameof(DcbSnapshotEntity.Id)), Snapshots.Raw(nameof(DcbSnapshotEntity.SnapshotKind)),
+            Snapshots.Raw(nameof(DcbSnapshotEntity.StoreId)), Snapshots.Raw(nameof(DcbSnapshotEntity.TagQuery)),
+            Snapshots.Raw(nameof(DcbSnapshotEntity.ModelType)), Snapshots.Raw(nameof(DcbSnapshotEntity.Version)),
+            Snapshots.Raw(nameof(DcbSnapshotEntity.LatestPosition)), Snapshots.Raw(nameof(DcbSnapshotEntity.Data)),
+            withPayloadTypes ? Snapshots.Type(nameof(DcbSnapshotEntity.Data)) : null,
+            Snapshots.Raw(nameof(DcbSnapshotEntity.CreatedDate)), Snapshots.Raw(nameof(DcbSnapshotEntity.CreatedBy)),
+            Snapshots.Raw(nameof(DcbSnapshotEntity.UpdatedDate)), Snapshots.Raw(nameof(DcbSnapshotEntity.UpdatedBy))
+        }.Where(part => part is not null));
+    }
+
     private static Shape Build(IModel model)
     {
-        var events = Mapped<DcbEventEntity>(model);
-        var eventTags = Mapped<DcbEventTagEntity>(model);
-        var heads = Mapped<DcbTagHeadEntity>(model);
-        var snapshots = Mapped<DcbSnapshotEntity>(model);
+        var tables = StoreTables.Of(model);
+        var (events, eventTags, heads, snapshots) = tables;
 
         var eventsDataType = events.Type(nameof(DcbEventEntity.Data));
         var snapshotsDataType = snapshots.Type(nameof(DcbSnapshotEntity.Data));
 
-        var mapping = string.Join("|",
-            events.Table, events.Raw(nameof(DcbEventEntity.Position)), events.Raw(nameof(DcbEventEntity.EventType)),
-            events.Raw(nameof(DcbEventEntity.Data)), eventsDataType, events.Raw(nameof(DcbEventEntity.CreatedDate)),
-            events.Raw(nameof(DcbEventEntity.CreatedBy)),
-            eventTags.Table, eventTags.Raw(nameof(DcbEventTagEntity.Position)), eventTags.Raw(nameof(DcbEventTagEntity.Tag)),
-            heads.Table, heads.Raw(nameof(DcbTagHeadEntity.Tag)), heads.Raw(nameof(DcbTagHeadEntity.Token)),
-            snapshots.Table, snapshots.Raw(nameof(DcbSnapshotEntity.Id)), snapshots.Raw(nameof(DcbSnapshotEntity.SnapshotKind)),
-            snapshots.Raw(nameof(DcbSnapshotEntity.StoreId)), snapshots.Raw(nameof(DcbSnapshotEntity.TagQuery)),
-            snapshots.Raw(nameof(DcbSnapshotEntity.ModelType)), snapshots.Raw(nameof(DcbSnapshotEntity.Version)),
-            snapshots.Raw(nameof(DcbSnapshotEntity.LatestPosition)), snapshots.Raw(nameof(DcbSnapshotEntity.Data)),
-            snapshotsDataType, snapshots.Raw(nameof(DcbSnapshotEntity.CreatedDate)),
-            snapshots.Raw(nameof(DcbSnapshotEntity.CreatedBy)), snapshots.Raw(nameof(DcbSnapshotEntity.UpdatedDate)),
-            snapshots.Raw(nameof(DcbSnapshotEntity.UpdatedBy)));
+        var mapping = tables.Mapping(withPayloadTypes: true);
 
         string callName;
         string displayName;
 
-        if (mapping == DefaultMapping && events.Schema is null && eventTags.Schema is null && heads.Schema is null
-            && snapshots.Schema is null)
+        if (mapping == DefaultMapping && !tables.AnySchema)
         {
             callName = Name;
             displayName = Name;
@@ -113,9 +160,28 @@ internal static class DcbAppendRoutine
             displayName = events.Schema is null ? name : $"{events.Schema}.{name}";
         }
 
-        return new Shape(callName, displayName,
+        return new Shape(Engine.PostgreSql, callName, displayName,
             PostgreSqlDefinition(callName, events, eventTags, heads, snapshots, eventsDataType, snapshotsDataType),
             $"DROP FUNCTION IF EXISTS {callName}({PostgreSqlSignature});");
+    }
+
+    /// <summary>
+    /// The SQL Server procedure for a model, or none for a model that maps the store's tables
+    /// anywhere but where the default model does: the procedure is written for the default names.
+    /// </summary>
+    private static Fitted BuildSqlServer(IModel model)
+    {
+        var tables = StoreTables.Of(model);
+
+        if (tables.Mapping(withPayloadTypes: false) != DefaultNames || tables.AnySchema)
+        {
+            return new Fitted(null);
+        }
+
+        var callName = BracketQuote(Name);
+
+        return new Fitted(new Shape(Engine.SqlServer, callName, Name, SqlServerDefinition(callName, tables),
+            $"DROP PROCEDURE IF EXISTS {callName};"));
     }
 
     private static string Hash(string mapping) =>
@@ -149,7 +215,23 @@ internal static class DcbAppendRoutine
 
         /// <summary>The store type a property maps to.</summary>
         public string Type(string property) => EntityType.FindProperty(property)!.GetColumnType(Store)!;
+
+        /// <summary>The table, bracketed for SQL Server.</summary>
+        public string Bracketed => BracketQuote(Store.Name);
+
+        /// <summary>The column a property maps to, bracketed for SQL Server.</summary>
+        public string BracketedColumn(string property) => BracketQuote(Raw(property));
+
+        /// <summary>
+        /// A <c>COLLATE</c> clause for the collation a property's column is mapped with, or nothing
+        /// where the model leaves the database default.
+        /// </summary>
+        public string CollateAs(string property) =>
+            EntityType.FindProperty(property)!.GetCollation(Store) is { } collation ? $" COLLATE {collation}" : "";
     }
+
+    /// <summary>Quotes a SQL Server identifier.</summary>
+    private static string BracketQuote(string name) => $"[{name.Replace("]", "]]")}]";
 
     /// <remarks>
     /// Found by name rather than by CLR type: a migration's target model is rebuilt from the
@@ -161,6 +243,193 @@ internal static class DcbAppendRoutine
                          ?? throw new InvalidOperationException($"The model does not map {typeof(TEntity).Name}.");
 
         return new MappedTable(entityType, StoreObjectIdentifier.Table(entityType.GetTableName()!, entityType.GetSchema()));
+    }
+
+    /// <summary>The SQL Server procedure.</summary>
+    /// <remarks>
+    /// <para>
+    /// The same shape as the PostgreSQL function: refuse early without locks, lock the tag heads,
+    /// read the boundary again with them held, then write. Each statement in a procedure reads
+    /// afresh — under locking READ COMMITTED it takes its own locks, under READ_COMMITTED_SNAPSHOT it
+    /// gets its own snapshot — so either way the read after the locks sees every append that held
+    /// them first. It owns its transaction, so the call is one round trip with no separate BEGIN or
+    /// COMMIT, and it answers with one row, as the function does.
+    /// </para>
+    /// <para>
+    /// Collections arrive as JSON, read with typed <c>OPENJSON … WITH</c> rather than table-valued
+    /// parameters, which would need user-defined table types and SqlClient's own parameter type.
+    /// Typed to the tag column's type and collated to its collation, because a comparison with
+    /// <c>OPENJSON</c>'s untyped <c>nvarchar(max)</c> cannot seek.
+    /// </para>
+    /// <para>
+    /// <b>Seeks, never scans, on anything locked, and no <c>HOLDLOCK</c>.</b> A scanning update takes
+    /// update locks on every row it reads — other appends' heads, held to their commit — and that
+    /// deadlocked appends sharing nothing. A missing key under <c>HOLDLOCK</c> locks the gap around
+    /// it, and appends introducing neighbouring tags deadlocked on those gaps. Hence
+    /// <c>FORCESEEK</c> on every statement that locks, and nested loops for the foreign key check
+    /// from the tags to the events, which the optimiser otherwise made a scan of the events.
+    /// </para>
+    /// <para>
+    /// Heads usually exist, so the token replacement — which is the lock — comes first. Only when it
+    /// finds fewer heads than tags are the missing ones created, outside the transaction, a duplicate
+    /// key meaning another append created the head first, and the replacement tried again.
+    /// </para>
+    /// <para>
+    /// <b>Nothing in tempdb on a one-event append</b>, the common case: its position comes from
+    /// <c>SCOPE_IDENTITY()</c> and its payload through variables. Every call allocating in tempdb
+    /// made disjoint writers queue on its allocation pages. A multi-event append keeps one table
+    /// variable for the positions its insert generates: identity values follow an
+    /// <c>INSERT … SELECT … ORDER BY</c>, so ranked they map back to the events.
+    /// </para>
+    /// </remarks>
+    private static string SqlServerDefinition(string callName, StoreTables tables)
+    {
+        var (events, eventTags, heads, _) = tables;
+
+        var e = events.Bracketed;
+        var ePosition = events.BracketedColumn(nameof(DcbEventEntity.Position));
+        var eType = events.BracketedColumn(nameof(DcbEventEntity.EventType));
+        var eData = events.BracketedColumn(nameof(DcbEventEntity.Data));
+        var eCreatedDate = events.BracketedColumn(nameof(DcbEventEntity.CreatedDate));
+        var eCreatedBy = events.BracketedColumn(nameof(DcbEventEntity.CreatedBy));
+        var eventTypeType = events.Type(nameof(DcbEventEntity.EventType));
+        var eventDataType = events.Type(nameof(DcbEventEntity.Data));
+        var createdByType = events.Type(nameof(DcbEventEntity.CreatedBy));
+
+        var t = eventTags.Bracketed;
+        var tPosition = eventTags.BracketedColumn(nameof(DcbEventTagEntity.Position));
+        var tTag = eventTags.BracketedColumn(nameof(DcbEventTagEntity.Tag));
+        var tagType = eventTags.Type(nameof(DcbEventTagEntity.Tag));
+        var tCollate = eventTags.CollateAs(nameof(DcbEventTagEntity.Tag));
+
+        var h = heads.Bracketed;
+        var hTag = heads.BracketedColumn(nameof(DcbTagHeadEntity.Tag));
+        var hToken = heads.BracketedColumn(nameof(DcbTagHeadEntity.Token));
+        var hCollate = heads.CollateAs(nameof(DcbTagHeadEntity.Tag));
+
+        var boundaryRead = $$"""
+                    SELECT @latest = ISNULL(MAX(latest.[Position]), 0)
+                    FROM OPENJSON(@boundary_tags) WITH ([Tag] {{tagType}} '$') b
+                    CROSS APPLY (SELECT TOP (1) t.{{tPosition}} AS [Position]
+                                 FROM {{t}} t WITH (FORCESEEK)
+                                 WHERE t.{{tTag}} = b.[Tag]{{tCollate}}
+                                 ORDER BY t.{{tPosition}} DESC) latest;
+        """;
+
+        return $$"""
+            CREATE OR ALTER PROCEDURE {{callName}}
+                @affected_tags nvarchar(max),
+                @boundary_tags nvarchar(max),
+                @after_position bigint,
+                @events nvarchar(max),
+                @created_date datetimeoffset,
+                @created_by {{createdByType}}
+            AS
+            BEGIN
+                SET NOCOUNT ON;
+                SET XACT_ABORT ON;
+
+                DECLARE @latest bigint;
+
+                IF @boundary_tags IS NOT NULL
+                BEGIN
+            {{boundaryRead}}
+
+                    IF @latest <> @after_position
+                    BEGIN
+                        SELECT CAST(0 AS bit) AS [Appended], @latest AS [LatestPosition];
+                        RETURN;
+                    END;
+                END;
+
+                DECLARE @affected_count int = (SELECT COUNT(*) FROM OPENJSON(@affected_tags));
+                DECLARE @attempts int = 0;
+
+                WHILE 1 = 1
+                BEGIN
+                    BEGIN TRANSACTION;
+
+                    UPDATE h SET {{hToken}} = NEWID()
+                    FROM OPENJSON(@affected_tags) WITH ([Tag] {{tagType}} '$') a
+                    JOIN {{h}} h WITH (FORCESEEK, ROWLOCK) ON h.{{hTag}} = a.[Tag]{{hCollate}}
+                    OPTION (FORCE ORDER, LOOP JOIN);
+
+                    IF @@ROWCOUNT = @affected_count BREAK;
+
+                    ROLLBACK TRANSACTION;
+
+                    SET @attempts += 1;
+                    IF @attempts > 10 THROW 50000, 'The tag heads for this append could not be created.', 1;
+
+                    BEGIN TRY
+                        INSERT {{h}} ({{hTag}}, {{hToken}})
+                        SELECT a.[Tag]{{hCollate}}, NEWID()
+                        FROM OPENJSON(@affected_tags) WITH ([Tag] {{tagType}} '$') a
+                        WHERE NOT EXISTS (SELECT 1 FROM {{h}} h WITH (FORCESEEK)
+                                          WHERE h.{{hTag}} = a.[Tag]{{hCollate}});
+                    END TRY
+                    BEGIN CATCH
+                        IF ERROR_NUMBER() NOT IN (2601, 2627) THROW;
+                    END CATCH;
+                END;
+
+                IF @boundary_tags IS NOT NULL
+                BEGIN
+            {{boundaryRead}}
+
+                    IF @latest <> @after_position
+                    BEGIN
+                        ROLLBACK TRANSACTION;
+                        SELECT CAST(0 AS bit) AS [Appended], @latest AS [LatestPosition];
+                        RETURN;
+                    END;
+                END;
+
+                DECLARE @count int = (SELECT COUNT(*) FROM OPENJSON(@events));
+                DECLARE @last bigint;
+
+                IF @count = 1
+                BEGIN
+                    DECLARE @event_type {{eventTypeType}}, @event_data {{eventDataType}};
+                    SELECT @event_type = x.[type], @event_data = x.[data]
+                    FROM OPENJSON(@events) WITH ([type] {{eventTypeType}} '$.type', [data] {{eventDataType}} '$.data') x;
+
+                    INSERT {{e}} ({{eType}}, {{eData}}, {{eCreatedDate}}, {{eCreatedBy}})
+                    VALUES (@event_type, @event_data, @created_date, @created_by);
+
+                    SET @last = CAST(SCOPE_IDENTITY() AS bigint);
+
+                    INSERT {{t}} ({{tPosition}}, {{tTag}})
+                    SELECT @last, tag.[Tag]{{tCollate}}
+                    FROM OPENJSON(@events, '$[0].tags') WITH ([Tag] {{tagType}} '$') tag
+                    OPTION (LOOP JOIN);
+                END
+                ELSE
+                BEGIN
+                    DECLARE @positions TABLE ([Position] bigint PRIMARY KEY);
+
+                    INSERT {{e}} ({{eType}}, {{eData}}, {{eCreatedDate}}, {{eCreatedBy}})
+                    OUTPUT INSERTED.{{ePosition}} INTO @positions ([Position])
+                    SELECT x.[type], x.[data], @created_date, @created_by
+                    FROM OPENJSON(@events) e
+                    CROSS APPLY OPENJSON(e.[value]) WITH ([type] {{eventTypeType}} '$.type', [data] {{eventDataType}} '$.data') x
+                    ORDER BY CAST(e.[key] AS int);
+
+                    INSERT {{t}} ({{tPosition}}, {{tTag}})
+                    SELECT p.[Position], tag.[Tag]{{tCollate}}
+                    FROM (SELECT [Position], ROW_NUMBER() OVER (ORDER BY [Position]) - 1 AS [Ordinal] FROM @positions) p
+                    JOIN OPENJSON(@events) e ON CAST(e.[key] AS int) = p.[Ordinal]
+                    CROSS APPLY OPENJSON(e.[value], '$.tags') WITH ([Tag] {{tagType}} '$') tag
+                    OPTION (LOOP JOIN);
+
+                    SET @last = (SELECT MAX([Position]) FROM @positions);
+                END;
+
+                COMMIT TRANSACTION;
+
+                SELECT CAST(1 AS bit) AS [Appended], @last AS [LatestPosition];
+            END
+            """;
     }
 
     /// <summary>

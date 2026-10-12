@@ -20,19 +20,26 @@ public static partial class DcbDbContextExtensions
     /// written for.
     /// </para>
     /// <para>
-    /// Not yet for an unconditional append or an intersection boundary, and not when the caller has
-    /// changes staged on the context: those keep the Entity Framework Core path until the routine
-    /// covers them, so nothing regresses in the meantime. Staged changes have always been saved with
-    /// the append, all or nothing, and the routine call alone would leave them behind.
+    /// Every boundary the public factories build is a union or a single intersection, and the
+    /// routine takes both, or none for an unconditional append. A boundary mixing the two cannot be
+    /// built today; it keeps the Entity Framework Core path, which refuses it loudly.
+    /// </para>
+    /// <para>
+    /// Not yet when the caller has changes staged on the context: those keep the Entity Framework
+    /// Core path until the routine covers them. Staged changes have always been saved with the
+    /// append, all or nothing, and the routine call alone would leave them behind.
     /// </para>
     /// </remarks>
     private static bool AppendsThroughRoutine(this IDcbDbContext dcbDbContext, AppendCondition? condition) =>
         dcbDbContext is DcbDbContext context
         && DcbAppendRoutine.Definition(dcbDbContext.Database.ProviderName) is not null
         && DcbAppendRoutine.FitsModel(context.Model)
-        && condition is not null
-        && condition.Query.TagGroups.All(group => group.Count == 1)
+        && (condition is null || IsUnion(condition.Query) || IsIntersection(condition.Query))
         && !dcbDbContext.ChangeTracker.HasChanges();
+
+    private static bool IsUnion(TagQuery query) => query.TagGroups.All(group => group.Count == 1);
+
+    private static bool IsIntersection(TagQuery query) => query.TagGroups.Count == 1;
 
     /// <summary>
     /// Appends through the database's append routine: the boundary check, the tag head locks and
@@ -44,7 +51,7 @@ public static partial class DcbDbContextExtensions
     /// The refusal carries the boundary's latest position from the same call, so it costs no re-read.
     /// </remarks>
     private static async Task<Result> AppendThroughRoutine(this IDcbDbContext dcbDbContext, TaggedEvent[] events,
-        AppendCondition condition, List<string> affectedTags, string operation, CancellationToken cancellationToken,
+        AppendCondition? condition, List<string> affectedTags, string operation, CancellationToken cancellationToken,
         DcbSnapshotEntity? snapshot = null, Action<long>? appendedTo = null)
     {
         try
@@ -63,7 +70,8 @@ public static partial class DcbDbContextExtensions
                     return Result.Ok();
                 }
 
-                DcbDiagnostics.AddConcurrencyConflictEvent(condition.Query, condition.AfterPosition,
+                // Only a conditioned append can be refused: an unconditional one has nothing to check.
+                DcbDiagnostics.AddConcurrencyConflictEvent(condition!.Query, condition.AfterPosition,
                     outcome.LatestPosition!.Value);
 
                 return DcbStoreFailures.ConcurrencyConflict(condition.Query, condition.AfterPosition,
@@ -72,9 +80,9 @@ public static partial class DcbDbContextExtensions
         }
         catch (Exception exception) when (IsMissingRoutine(exception))
         {
-            DcbDiagnostics.AddException(exception, operation, condition.Query);
+            DcbDiagnostics.AddException(exception, operation, condition?.Query);
 
-            return DcbStoreFailures.StorageFailure(operation, condition.Query) with
+            return DcbStoreFailures.StorageFailure(operation, condition?.Query) with
             {
                 Description = $"The database has no '{DcbAppendRoutine.Name}' routine, which this store appends " +
                               "through. Install it with Database.EnsureDcbAppendRoutineAsync(), in an EF Core " +
@@ -92,7 +100,7 @@ public static partial class DcbDbContextExtensions
         exception is DbException { SqlState: DcbAppendRoutine.PostgreSqlUndefinedFunction };
 
     private static async Task<AppendRoutineOutcome> CallAppendRoutine(this IDcbDbContext dcbDbContext,
-        TaggedEvent[] events, AppendCondition condition, List<string> affectedTags, DcbSnapshotEntity? snapshot,
+        TaggedEvent[] events, AppendCondition? condition, List<string> affectedTags, DcbSnapshotEntity? snapshot,
         CancellationToken cancellationToken)
     {
         var (createdDate, createdBy) = ((DcbDbContext)dcbDbContext).AuditStamp();
@@ -114,8 +122,9 @@ public static partial class DcbDbContextExtensions
         object?[] arguments =
         [
             affectedTags.ToArray(),
-            condition.Query.Tags.Select(tag => tag.ToString()).ToArray(),
-            condition.AfterPosition,
+            condition?.Query.Tags.Select(tag => tag.ToString()).ToArray(),
+            condition is not null && !IsUnion(condition.Query),
+            condition?.AfterPosition ?? AppendCondition.NoEvents,
             events.Select(taggedEvent => TypeBindings.GetEventBindingKey(taggedEvent.Event.GetType())).ToArray(),
             events.Select(taggedEvent => DomainSerializer.Current.Serialize(taggedEvent.Event)).ToArray(),
             tagEventIndex.ToArray(),
@@ -136,9 +145,9 @@ public static partial class DcbDbContextExtensions
             .SqlQueryRaw<AppendRoutineOutcome>(
                 $$"""
                 SELECT appended AS "Appended", latest_position AS "LatestPosition"
-                FROM {{DcbAppendRoutine.Name}}({0}::text[], {1}::text[], {2}::bigint, {3}::text[],
-                    {4}::text[], {5}::int[], {6}::text[], {7}::timestamptz, {8}::text,
-                    {9}::text, {10}::text, {11}::text, {12}::text, {13}::text, {14}::int, {15}::bigint, {16}::text)
+                FROM {{DcbAppendRoutine.Name}}({0}::text[], {1}::text[], {2}::boolean, {3}::bigint,
+                    {4}::text[], {5}::text[], {6}::int[], {7}::text[], {8}::timestamptz, {9}::text,
+                    {10}::text, {11}::text, {12}::text, {13}::text, {14}::text, {15}::int, {16}::bigint, {17}::text)
                 """, arguments!)
             .ToListAsync(cancellationToken);
 

@@ -82,6 +82,12 @@ internal static class DcbAppendRoutine
     /// so each event's tags can be written against its own position.
     /// </para>
     /// <para>
+    /// A boundary is either a union — events carrying any of its tags — or an intersection — events
+    /// carrying every one of them, found as the positions with a row for each tag. With no boundary
+    /// the append is unconditional: nothing is checked, but the heads are still locked and their
+    /// tokens replaced, so it still refuses every conditioned append over its tags that read before it.
+    /// </para>
+    /// <para>
     /// A snapshot, when there is one, is written in the same transaction, at the later of the position
     /// the model had folded to and the last event written. It never replaces a snapshot that is
     /// further along: a save of an instance read before somebody else's save would otherwise put
@@ -93,6 +99,7 @@ internal static class DcbAppendRoutine
         CREATE OR REPLACE FUNCTION memoria_dcb_append_v1(
             p_affected_tags text[],
             p_boundary_tags text[],
+            p_boundary_is_intersection boolean,
             p_after_position bigint,
             p_event_types text[],
             p_event_data text[],
@@ -117,8 +124,16 @@ internal static class DcbAppendRoutine
         BEGIN
             IF cardinality(p_event_types) > 0 THEN
                 IF p_boundary_tags IS NOT NULL THEN
-                    SELECT coalesce(max("Position"), 0) INTO v_latest
-                    FROM "DcbEventTags" WHERE "Tag" = ANY (p_boundary_tags);
+                    IF p_boundary_is_intersection THEN
+                        SELECT coalesce(max(matched.position), 0) INTO v_latest
+                        FROM (SELECT "Position" AS position FROM "DcbEventTags"
+                              WHERE "Tag" = ANY (p_boundary_tags)
+                              GROUP BY "Position"
+                              HAVING count(*) = cardinality(p_boundary_tags)) AS matched;
+                    ELSE
+                        SELECT coalesce(max("Position"), 0) INTO v_latest
+                        FROM "DcbEventTags" WHERE "Tag" = ANY (p_boundary_tags);
+                    END IF;
 
                     IF v_latest <> p_after_position THEN
                         RETURN QUERY SELECT false, v_latest;
@@ -139,8 +154,16 @@ internal static class DcbAppendRoutine
                 FOR UPDATE OF head;
 
                 IF p_boundary_tags IS NOT NULL THEN
-                    SELECT coalesce(max("Position"), 0) INTO v_latest
-                    FROM "DcbEventTags" WHERE "Tag" = ANY (p_boundary_tags);
+                    IF p_boundary_is_intersection THEN
+                        SELECT coalesce(max(matched.position), 0) INTO v_latest
+                        FROM (SELECT "Position" AS position FROM "DcbEventTags"
+                              WHERE "Tag" = ANY (p_boundary_tags)
+                              GROUP BY "Position"
+                              HAVING count(*) = cardinality(p_boundary_tags)) AS matched;
+                    ELSE
+                        SELECT coalesce(max("Position"), 0) INTO v_latest
+                        FROM "DcbEventTags" WHERE "Tag" = ANY (p_boundary_tags);
+                    END IF;
 
                     IF v_latest <> p_after_position THEN
                         RETURN QUERY SELECT false, v_latest;

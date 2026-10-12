@@ -105,7 +105,15 @@ public abstract class SqlServerSingleCallAppendTests(SqlServerFixture fixture)
         {
             foreach (var context in opened)
             {
-                await context.DisposeAsync();
+                try
+                {
+                    await context.DisposeAsync();
+                }
+                catch
+                {
+                    // A context a failed test left mid-command cannot be disposed cleanly; cleanup
+                    // must not mask the result.
+                }
             }
 
             SqlConnection.ClearAllPools();
@@ -400,11 +408,13 @@ public abstract class SqlServerSingleCallAppendTests(SqlServerFixture fixture)
                 }
             };
             var dbContext = database.Connect(new FakeTimeProvider(now), user);
+            await using var throughEntityFrameworkCore =
+                InterfaceOnlyDcbDbContext.OnSqlServer(database.ConnectionString, new FakeTimeProvider(now), user);
 
-            // Conditioned goes through the procedure; unconditional still goes through Entity
-            // Framework Core, so the second is the reference the first must match.
+            // The first goes through the procedure; the second through Entity Framework Core, the
+            // reference the first must match.
             await dbContext.SaveEvents([Reserved("a1", "s7")], AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
-            await dbContext.SaveEvents([Reserved("a2", "s7")], condition: null);
+            await throughEntityFrameworkCore.SaveEvents([Reserved("a2", "s7")], condition: null);
 
             var stamps = await database.Connect().DcbEvents.AsNoTracking()
                 .OrderBy(e => e.Position)
@@ -629,6 +639,187 @@ public abstract class SqlServerSingleCallAppendTests(SqlServerFixture fixture)
             }
 
             failures.Should().BeEmpty("aggregates that share nothing never fail each other");
+            (await database.Connect().DcbSnapshots.CountAsync()).Should().Be(writers * rounds);
+        });
+
+    private static readonly Tag StudentS7 = new("student", "s7");
+
+    [RequiresDockerFact]
+    public Task An_append_conditioned_on_an_intersection_is_one_database_command() =>
+        WithDatabase(async database =>
+        {
+            var boundary = TagQuery.AllOf(SeatA1, StudentS7);
+            var commands = new CommandCounter();
+            var dbContext = database.Connect(commands);
+
+            var first = await dbContext.SaveEvents([Reserved("a1", "s7", SeatA1, StudentS7)],
+                AppendCondition.NothingAppendedFor(boundary));
+            var stale = await dbContext.SaveEvents([Reserved("a1", "s7", SeatA1, StudentS7)],
+                AppendCondition.NothingAppendedFor(boundary));
+
+            first.IsSuccess.Should().BeTrue(first.Failure?.Description);
+            stale.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
+            commands.Count.Should().Be(2, $"each append should be one round trip, but sent:\n{commands}");
+        });
+
+    [RequiresDockerFact]
+    public Task An_aggregate_save_conditioned_on_an_intersection_is_one_database_command() =>
+        WithDatabase(async database =>
+        {
+            var seatForStudent = new SeatForStudentId("a1");
+            var seat = new SeatAggregate();
+            seat.Reserve("a1", "s7");
+
+            var commands = new CommandCounter();
+            var result = await database.Connect(commands).SaveAggregate(seatForStudent, seat,
+                AppendCondition.NothingAppendedFor(seatForStudent.Boundary));
+
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            commands.Count.Should().Be(1, $"the save should be one round trip, but sent:\n{commands}");
+        });
+
+    [RequiresDockerFact]
+    public Task An_event_carrying_only_some_of_an_intersection_s_tags_does_not_move_it() =>
+        WithDatabase(async database =>
+        {
+            var dbContext = database.Connect();
+            await dbContext.SaveEvents([Reserved("a1", "s8", SeatA1)], condition: null);
+
+            var result = await dbContext.SaveEvents([Reserved("a1", "s7", SeatA1, StudentS7)],
+                AppendCondition.NothingAppendedFor(TagQuery.AllOf(SeatA1, StudentS7)));
+
+            result.IsSuccess.Should().BeTrue("an event tagged with the seat alone is outside the seat-and-student boundary");
+        });
+
+    [RequiresDockerFact]
+    public Task An_append_on_an_intersection_waiting_on_a_tag_head_is_refused_when_the_holder_appends_into_it() =>
+        WithDatabase(async database =>
+        {
+            var result = await AppendWhileTheHolderCommits(database,
+                [Reserved("a1", "s7", SeatA1, StudentS7)],
+                AppendCondition.NothingAppendedFor(TagQuery.AllOf(SeatA1, StudentS7)),
+                holderTags: [SeatA1, StudentS7]);
+
+            result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType,
+                "the holder appended an event carrying every tag of the boundary");
+        });
+
+    [RequiresDockerFact]
+    public Task An_append_on_an_intersection_waiting_on_a_tag_head_is_accepted_when_the_holder_appends_beside_it() =>
+        WithDatabase(async database =>
+        {
+            var result = await AppendWhileTheHolderCommits(database,
+                [Reserved("a1", "s7", SeatA1, StudentS7)],
+                AppendCondition.NothingAppendedFor(TagQuery.AllOf(SeatA1, StudentS7)),
+                holderTags: [SeatA1]);
+
+            result.IsSuccess.Should().BeTrue("the holder's event carries the seat but not the student");
+        });
+
+    /// <summary>
+    /// Holds the first tag head the append contends on, starts the append so it waits for it, then
+    /// commits an event under <paramref name="holderTags"/> and releases the head, returning what the
+    /// append decided.
+    /// </summary>
+    private static async Task<Memoria.Results.Result> AppendWhileTheHolderCommits(TestDatabase database,
+        TaggedEvent[] events, AppendCondition condition, Tag[] holderTags)
+    {
+        var holder = database.Connect();
+
+        // The heads have to exist for the holder to lock one; an unrelated append creates them.
+        await holder.SaveEvents([Reserved("z9", "z9", holderTags.Concat(condition.Query.Tags).Distinct().ToArray())],
+            condition: null);
+        var position = await holder.GetLatestPosition(condition.Query);
+        condition = new AppendCondition(condition.Query, position);
+
+        await using var holding = await holder.Database.BeginTransactionAsync();
+        var held = condition.Query.Tags.Select(tag => tag.ToString()).Order(StringComparer.Ordinal).First();
+        await holder.Database.ExecuteSqlRawAsync("UPDATE [DcbTagHeads] SET [Token] = NEWID() WHERE [Tag] = {0}", held);
+
+        var waiting = database.Connect().SaveEvents(events, condition);
+        await UntilAnAppendIsWaitingOnALock(database.ConnectionString);
+
+        await holder.Database.ExecuteSqlRawAsync(
+            """
+            INSERT [DcbEvents] ([EventType], [Data], [CreatedDate]) VALUES ('SeatReserved:1', {0}, SYSDATETIMEOFFSET());
+            DECLARE @position bigint = CAST(SCOPE_IDENTITY() AS bigint);
+            INSERT [DcbEventTags] ([Position], [Tag]) SELECT @position, [value] FROM OPENJSON({1});
+            """,
+            DomainSerializer.Current.Serialize(new SeatReservedEvent("a1", "s8")),
+            System.Text.Json.JsonSerializer.Serialize(holderTags.Select(tag => tag.ToString())));
+        await holding.CommitAsync();
+
+        return await waiting;
+    }
+
+    [RequiresDockerFact]
+    public Task An_unconditional_append_is_one_database_command() =>
+        WithDatabase(async database =>
+        {
+            var commands = new CommandCounter();
+
+            var result = await database.Connect(commands).SaveEvents([Reserved("a1", "s7")], condition: null);
+
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            commands.Count.Should().Be(1, $"the append should be one round trip, but sent:\n{commands}");
+        });
+
+    [RequiresDockerFact]
+    public Task An_unconditional_aggregate_save_is_one_database_command() =>
+        WithDatabase(async database =>
+        {
+            var seat = new SeatAggregate();
+            seat.Reserve("a1", "s7");
+
+            var commands = new CommandCounter();
+            var result = await database.Connect(commands).SaveAggregate(SeatA1Aggregate, seat, condition: null);
+
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            commands.Count.Should().Be(1, $"the save should be one round trip, but sent:\n{commands}");
+            (await StoredSeat(database.Connect())).ReservedBy.Should().Be("s7");
+        });
+
+    [RequiresDockerFact]
+    public Task An_unconditional_append_refuses_a_conditioned_append_that_read_before_it() =>
+        WithDatabase(async database =>
+        {
+            var dbContext = database.Connect();
+            await dbContext.SaveEvents([Reserved("a1", "s7")], condition: null);
+            var position = await dbContext.GetLatestPosition(TagQuery.AnyOf(SeatA1));
+
+            var unconditional = await dbContext.SaveEvents([Reserved("a1", "s8")], condition: null);
+            var conditioned = await dbContext.SaveEvents([Reserved("a1", "s9")],
+                new AppendCondition(TagQuery.AnyOf(SeatA1), position));
+
+            unconditional.IsSuccess.Should().BeTrue(unconditional.Failure?.Description);
+            conditioned.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
+        });
+
+    [RequiresDockerFact]
+    public Task Concurrent_unconditional_first_saves_of_disjoint_aggregates_all_succeed() =>
+        WithDatabase(async database =>
+        {
+            // S2 found these refusing each other on the Entity Framework Core path.
+            const int writers = 16;
+            const int rounds = 5;
+
+            var failures = new List<string>();
+            for (var round = 0; round < rounds; round++)
+            {
+                var thisRound = round;
+                failures.AddRange(await AllAtOnce(writers, async (writer, dbContext) =>
+                {
+                    var seatId = new SeatId($"u{thisRound}-{writer:00}");
+                    var seat = new SeatAggregate();
+                    seat.Reserve($"u{thisRound}-{writer:00}", "s1");
+
+                    var result = await dbContext.SaveAggregate(seatId, seat, condition: null);
+
+                    return result.IsSuccess ? [] : [$"{seatId.Boundary}: {result.Failure!.Type} {result.Failure.Description}"];
+                }, database));
+            }
+
+            failures.Should().BeEmpty("unconditional saves of aggregates that share nothing never fail each other");
             (await database.Connect().DcbSnapshots.CountAsync()).Should().Be(writers * rounds);
         });
 }

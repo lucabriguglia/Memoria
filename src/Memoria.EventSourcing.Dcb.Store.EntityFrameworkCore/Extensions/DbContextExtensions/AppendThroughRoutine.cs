@@ -27,20 +27,15 @@ public static partial class DcbDbContextExtensions
     /// built today; it keeps the Entity Framework Core path, which refuses it loudly.
     /// </para>
     /// <para>
-    /// The SQL Server procedure takes less so far: a guarded append or aggregate save over a union
-    /// boundary, with nothing staged on the context. It commits a transaction of its own, so it
-    /// cannot yet join the one staged changes are saved in.
+    /// On SQL Server, only with nothing staged on the context: the procedure commits a transaction of
+    /// its own, so it cannot yet join the one staged changes are saved in.
     /// </para>
     /// </remarks>
     private static bool AppendsThroughRoutine(this IDcbDbContext dcbDbContext, AppendCondition? condition) =>
         dcbDbContext is DcbDbContext context
         && DcbAppendRoutine.For(context) is { } routine
-        && routine.For switch
-        {
-            DcbAppendRoutine.Engine.SqlServer => condition is not null && IsUnion(condition.Query)
-                                                 && !context.ChangeTracker.HasChanges(),
-            _ => condition is null || IsUnion(condition.Query) || IsIntersection(condition.Query)
-        };
+        && (condition is null || IsUnion(condition.Query) || IsIntersection(condition.Query))
+        && (routine.For != DcbAppendRoutine.Engine.SqlServer || !context.ChangeTracker.HasChanges());
 
     private static bool IsUnion(TagQuery query) => query.TagGroups.All(group => group.Count == 1);
 
@@ -165,6 +160,7 @@ public static partial class DcbDbContextExtensions
         [
             JsonSerializer.Serialize(affectedTags),
             condition is null ? null : JsonSerializer.Serialize(condition.Query.Tags.Select(tag => tag.ToString())),
+            condition is not null && !IsUnion(condition.Query),
             condition?.AfterPosition ?? AppendCondition.NoEvents,
             eventsJson,
             createdDate,
@@ -182,7 +178,7 @@ public static partial class DcbDbContextExtensions
         var outcomes = await context.Database
             .SqlQueryRaw<AppendRoutineOutcome>(
                 $"EXEC {DcbAppendRoutine.For(context)!.CallName} {{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, " +
-                "{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}",
+                "{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}",
                 arguments!)
             .ToListAsync(cancellationToken);
 

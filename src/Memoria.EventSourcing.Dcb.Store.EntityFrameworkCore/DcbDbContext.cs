@@ -2,6 +2,7 @@ using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Configurations;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Entities;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Interceptors;
 using Memoria.EventSourcing.Domain;
+using Memoria.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -99,4 +100,11 @@ public abstract class DcbDbContext(
     /// Gets or sets the persisted folds of a boundary into an aggregate or a projection.
     /// </summary>
     public DbSet<DcbSnapshotEntity> DcbSnapshots { get; set; } = null!;
+
+    /// <summary>
+    /// The audit values an append stamps, for writes that bypass the change tracker and so the
+    /// <see cref="AuditInterceptor"/>: the same time source and the same user it would use.
+    /// </summary>
+    internal (DateTimeOffset CreatedDate, string? CreatedBy) AuditStamp() =>
+        (timeProvider.GetUtcNow(), httpContextAccessor.GetCurrentUserNameIdentifier());
 }

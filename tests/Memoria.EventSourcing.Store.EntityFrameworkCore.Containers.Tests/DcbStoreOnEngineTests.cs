@@ -89,6 +89,7 @@ public abstract partial class DcbStoreOnEngineTests
         try
         {
             await dbContext.Database.EnsureCreatedAsync();
+            await dbContext.Database.EnsureDcbAppendRoutineAsync();
 
             await body(dbContext, interceptors =>
             {
@@ -185,8 +186,13 @@ public abstract partial class DcbStoreOnEngineTests
             dbContext.DcbEvents.Count().Should().Be(1);
         });
 
-    [RequiresDockerFact]
-    public Task AConditionedAppendIsRefusedWhenItsTagHeadMovesMidAppend() =>
+    /// <summary>
+    /// The race the Entity Framework Core path's token guard exists for. Run only by engines whose
+    /// appends take that path: the append routine locks the tag heads before it checks, so this
+    /// window does not exist there, and the save it intercepts never happens.
+    /// <see cref="PostgreSqlSingleCallAppendTests"/> covers the race the routine does have.
+    /// </summary>
+    protected Task ConditionedAppendIsRefusedWhenItsTagHeadMovesMidAppend() =>
         WithDatabase(async (dbContext, openAnother) =>
         {
             // The window the MAX pre-check cannot see, and the only place the token does any work.
@@ -331,6 +337,10 @@ public class SqlServerDcbStoreTests(SqlServerFixture fixture) : DcbStoreOnEngine
 
     protected override TestDbContext ConnectRetrying(string connectionString) =>
         DcbStoreSchema.OnSqlServerRetrying(connectionString);
+
+    [RequiresDockerFact]
+    public Task AConditionedAppendIsRefusedWhenItsTagHeadMovesMidAppend() =>
+        ConditionedAppendIsRefusedWhenItsTagHeadMovesMidAppend();
 }
 
 [Trait("Category", "Container")]

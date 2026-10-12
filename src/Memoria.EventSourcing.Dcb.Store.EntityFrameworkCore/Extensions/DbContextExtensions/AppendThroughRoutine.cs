@@ -26,16 +26,11 @@ public static partial class DcbDbContextExtensions
     /// routine takes both, or none for an unconditional append. A boundary mixing the two cannot be
     /// built today; it keeps the Entity Framework Core path, which refuses it loudly.
     /// </para>
-    /// <para>
-    /// On SQL Server, only with nothing staged on the context: the procedure commits a transaction of
-    /// its own, so it cannot yet join the one staged changes are saved in.
-    /// </para>
     /// </remarks>
     private static bool AppendsThroughRoutine(this IDcbDbContext dcbDbContext, AppendCondition? condition) =>
         dcbDbContext is DcbDbContext context
-        && DcbAppendRoutine.For(context) is { } routine
-        && (condition is null || IsUnion(condition.Query) || IsIntersection(condition.Query))
-        && (routine.For != DcbAppendRoutine.Engine.SqlServer || !context.ChangeTracker.HasChanges());
+        && DcbAppendRoutine.For(context) is not null
+        && (condition is null || IsUnion(condition.Query) || IsIntersection(condition.Query));
 
     private static bool IsUnion(TagQuery query) => query.TagGroups.All(group => group.Count == 1);
 

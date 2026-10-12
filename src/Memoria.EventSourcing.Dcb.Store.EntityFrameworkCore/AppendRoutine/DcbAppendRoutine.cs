@@ -19,9 +19,8 @@ namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.AppendRoutine;
 /// Core path, because in process a round trip is almost free.
 /// </para>
 /// <para>
-/// The SQL Server procedure covers every append and aggregate save of the default model with
-/// nothing staged on the context so far; everything else on SQL Server keeps the Entity Framework
-/// Core path until it covers that too.
+/// The SQL Server procedure covers every append and aggregate save of the default model so far; a
+/// remapped model on SQL Server keeps the Entity Framework Core path until it covers that too.
 /// </para>
 /// <para>
 /// Generated from the context's model, so it writes wherever the model maps the store's tables and
@@ -260,8 +259,15 @@ internal static class DcbAppendRoutine
     /// read the boundary again with them held, then write. Each statement in a procedure reads
     /// afresh — under locking READ COMMITTED it takes its own locks, under READ_COMMITTED_SNAPSHOT it
     /// gets its own snapshot — so either way the read after the locks sees every append that held
-    /// them first. It owns its transaction, so the call is one round trip with no separate BEGIN or
-    /// COMMIT, and it answers with one row, as the function does.
+    /// them first. It answers with one row, as the function does.
+    /// </para>
+    /// <para>
+    /// Called alone it owns its transaction, so the call is one round trip with no separate BEGIN or
+    /// COMMIT. Called inside the transaction changes staged on the context are saved in, it joins it:
+    /// its <c>BEGIN</c> and <c>COMMIT</c> only nest, and its work is bracketed by a savepoint, so a
+    /// refusal undoes the procedure's own work and leaves the caller's transaction, and what it
+    /// saved, for the caller to roll back. A refusal is not an error, so <c>XACT_ABORT</c>, which
+    /// ends the caller's transaction on any error, only does so when the append fails.
     /// </para>
     /// <para>
     /// Collections arrive as JSON, read with typed <c>OPENJSON … WITH</c> rather than table-valued
@@ -279,8 +285,10 @@ internal static class DcbAppendRoutine
     /// </para>
     /// <para>
     /// Heads usually exist, so the token replacement — which is the lock — comes first. Only when it
-    /// finds fewer heads than tags are the missing ones created, outside the transaction, a duplicate
-    /// key meaning another append created the head first, and the replacement tried again.
+    /// finds fewer heads than tags are the missing ones created, outside the procedure's transaction
+    /// (inside the caller's, when there is one), a duplicate key meaning another append created the
+    /// head first, and the replacement tried again. <c>XACT_ABORT</c> is off for that insert, so a
+    /// duplicate key ends the statement and not a caller's transaction.
     /// </para>
     /// <para>
     /// <b>Nothing in tempdb on a one-event append</b>, the common case: its position comes from
@@ -419,6 +427,7 @@ internal static class DcbAppendRoutine
                     WHILE 1 = 1
                     BEGIN
                         BEGIN TRANSACTION;
+                        SAVE TRANSACTION memoria_dcb_append;
 
                         UPDATE h SET {{hToken}} = NEWID()
                         FROM OPENJSON(@affected_tags) WITH ([Tag] {{tagType}} '$') a
@@ -427,11 +436,13 @@ internal static class DcbAppendRoutine
 
                         IF @@ROWCOUNT = @affected_count BREAK;
 
-                        ROLLBACK TRANSACTION;
+                        ROLLBACK TRANSACTION memoria_dcb_append;
+                        COMMIT TRANSACTION;
 
                         SET @attempts += 1;
                         IF @attempts > 10 THROW 50000, 'The tag heads for this append could not be created.', 1;
 
+                        SET XACT_ABORT OFF;
                         BEGIN TRY
                             INSERT {{h}} ({{hTag}}, {{hToken}})
                             SELECT a.[Tag]{{hCollate}}, NEWID()
@@ -442,6 +453,7 @@ internal static class DcbAppendRoutine
                         BEGIN CATCH
                             IF ERROR_NUMBER() NOT IN (2601, 2627) THROW;
                         END CATCH;
+                        SET XACT_ABORT ON;
                     END;
 
                     IF @boundary_tags IS NOT NULL
@@ -450,7 +462,8 @@ internal static class DcbAppendRoutine
 
                         IF @latest <> @after_position
                         BEGIN
-                            ROLLBACK TRANSACTION;
+                            ROLLBACK TRANSACTION memoria_dcb_append;
+                            COMMIT TRANSACTION;
                             SELECT CAST(0 AS bit) AS [Appended], @latest AS [LatestPosition];
                             RETURN;
                         END;

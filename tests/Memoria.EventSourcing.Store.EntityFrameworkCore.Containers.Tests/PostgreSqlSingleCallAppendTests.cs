@@ -827,7 +827,11 @@ public class AppendRoutineOnOtherEnginesTests
         await using var dbContext = new TestDbContext(
             new DbContextOptionsBuilder<DcbDbContext>().UseSqlite(connection).Options,
             TimeProvider.System, new StubHttpContextAccessor());
-        TypeBindings.EventTypeBindings = new Dictionary<string, Type> { { "SeatReserved:1", typeof(SeatReservedEvent) } };
+        TypeBindings.EventTypeBindings = new Dictionary<string, Type>
+        {
+            { "SeatReserved:1", typeof(SeatReservedEvent) },
+            { "SeatReleased:1", typeof(SeatReleasedEvent) }
+        };
         await dbContext.Database.EnsureCreatedAsync();
 
         await dbContext.Database.EnsureDcbAppendRoutineAsync();

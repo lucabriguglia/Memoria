@@ -215,6 +215,69 @@ public abstract partial class DcbStoreOnEngineTests
             result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
         });
 
+    /// <summary>
+    /// A change staged on the context, standing in for any entity of the caller's own: a snapshot row
+    /// added by hand needs no schema beyond the store's.
+    /// </summary>
+    private static Dcb.Store.EntityFrameworkCore.Entities.DcbSnapshotEntity StagedRow(string id, string data = "{}") => new()
+    {
+        Id = id,
+        SnapshotKind = Dcb.Store.EntityFrameworkCore.Entities.DcbSnapshotEntity.ProjectionKind,
+        StoreId = id,
+        TagQuery = "staged",
+        ModelType = "Staged:1",
+        Version = 1,
+        LatestPosition = 0,
+        Data = data
+    };
+
+    [RequiresDockerFact]
+    public Task ARefusedAppendIntroducingATagSavesNoStagedChange() =>
+        WithDatabase(async (dbContext, openAnother) =>
+        {
+            await dbContext.SaveEvents([Reserved("a1", "s6")], condition: null);
+            dbContext.DcbSnapshots.Add(StagedRow("staged-1"));
+
+            var result = await dbContext.SaveEvents([Reserved("a1", "s7", SeatA1, StudentS7)],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+            result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
+            dbContext.ChangeTracker.HasChanges().Should().BeTrue("the caller still holds what it staged");
+            (await openAnother([]).DcbSnapshots.CountAsync()).Should().Be(0, "a refused append commits nothing staged");
+        });
+
+    [RequiresDockerFact]
+    public Task AStagedChangeThatCannotBeSavedFailsAnAppendIntroducingATag() =>
+        WithDatabase(async (dbContext, openAnother) =>
+        {
+            var existing = openAnother([]);
+            existing.DcbSnapshots.Add(StagedRow("staged-1"));
+            await existing.SaveChangesAsync();
+
+            dbContext.DcbSnapshots.Add(StagedRow("staged-1", data: "{\"again\":true}"));
+
+            var result = await dbContext.SaveEvents([Reserved("a1", "s7", SeatA1, StudentS7)],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+            result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.StorageFailureType);
+            (await openAnother([]).DcbEvents.CountAsync()).Should().Be(0);
+        });
+
+    [RequiresDockerFact]
+    public Task AnAcceptedAppendIntroducingATagCommitsTheStagedChangeWithIt() =>
+        WithDatabase(async (dbContext, openAnother) =>
+        {
+            dbContext.DcbSnapshots.Add(StagedRow("staged-1"));
+
+            var result = await dbContext.SaveEvents([Reserved("a1", "s7", SeatA1, StudentS7)],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            var reading = openAnother([]);
+            (await reading.DcbSnapshots.CountAsync()).Should().Be(1);
+            (await reading.DcbEvents.CountAsync()).Should().Be(1);
+        });
+
     [RequiresDockerFact]
     public Task TwoUnconditionalAppendsOverOneTagBothSucceed() =>
         WithDatabase(async (dbContext, openAnother) =>

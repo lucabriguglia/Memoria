@@ -70,6 +70,12 @@ public static partial class DcbDbContextExtensions
 
         var affectedTags = AffectedTags(events, condition);
 
+        if (dcbDbContext.AppendsThroughRoutine(condition))
+        {
+            return await dcbDbContext.AppendThroughRoutine(events, condition!, affectedTags, operation,
+                cancellationToken);
+        }
+
         try
         {
             // Outside the catch below, so the strategy is the one that decides what is worth trying

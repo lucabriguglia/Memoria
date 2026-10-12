@@ -1,0 +1,143 @@
+using System.Data.Common;
+using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.AppendRoutine;
+using Memoria.EventSourcing.Domain;
+using Memoria.Results;
+using Microsoft.EntityFrameworkCore;
+
+namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
+
+public static partial class DcbDbContextExtensions
+{
+    /// <summary>
+    /// Whether this append goes through the database's append routine rather than Entity Framework
+    /// Core.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Only on an engine that has a routine, only from a <see cref="DcbDbContext"/>, which carries
+    /// the audit values the routine stamps, and only where the model is the one the routine is
+    /// written for.
+    /// </para>
+    /// <para>
+    /// Not yet for an unconditional append or an intersection boundary, and not when the caller has
+    /// changes staged on the context: those keep the Entity Framework Core path until the routine
+    /// covers them, so nothing regresses in the meantime. Staged changes have always been saved with
+    /// the append, all or nothing, and the routine call alone would leave them behind.
+    /// </para>
+    /// </remarks>
+    private static bool AppendsThroughRoutine(this IDcbDbContext dcbDbContext, AppendCondition? condition) =>
+        dcbDbContext is DcbDbContext context
+        && DcbAppendRoutine.Definition(dcbDbContext.Database.ProviderName) is not null
+        && DcbAppendRoutine.FitsModel(context.Model)
+        && condition is not null
+        && condition.Query.TagGroups.All(group => group.Count == 1)
+        && !dcbDbContext.ChangeTracker.HasChanges();
+
+    /// <summary>
+    /// Appends through the database's append routine: the boundary check, the tag head locks and
+    /// the writes in one round trip.
+    /// </summary>
+    /// <remarks>
+    /// Through the execution strategy, like the Entity Framework Core path, so a deployment that
+    /// retries transient failures retries this too. A refusal leaves as a value and is never retried.
+    /// The refusal carries the boundary's latest position from the same call, so it costs no re-read.
+    /// </remarks>
+    private static async Task<Result> AppendThroughRoutine(this IDcbDbContext dcbDbContext, TaggedEvent[] events,
+        AppendCondition condition, List<string> affectedTags, string operation, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await dcbDbContext.Appending(async token =>
+            {
+                var outcome = await dcbDbContext.CallAppendRoutine(events, condition, affectedTags, token);
+
+                if (outcome.Appended)
+                {
+                    return Result.Ok();
+                }
+
+                DcbDiagnostics.AddConcurrencyConflictEvent(condition.Query, condition.AfterPosition,
+                    outcome.LatestPosition);
+
+                return DcbStoreFailures.ConcurrencyConflict(condition.Query, condition.AfterPosition,
+                    outcome.LatestPosition);
+            }, cancellationToken);
+        }
+        catch (Exception exception) when (IsMissingRoutine(exception))
+        {
+            DcbDiagnostics.AddException(exception, operation, condition.Query);
+
+            return DcbStoreFailures.StorageFailure(operation, condition.Query) with
+            {
+                Description = $"The database has no '{DcbAppendRoutine.Name}' routine, which this store appends " +
+                              "through. Install it with Database.EnsureDcbAppendRoutineAsync(), in an EF Core " +
+                              "migration, or with the DCB install script for this engine."
+            };
+        }
+        catch (Exception exception)
+        {
+            return await dcbDbContext.AppendFailure(exception, operation, condition, affectedTags,
+                cancellationToken);
+        }
+    }
+
+    private static bool IsMissingRoutine(Exception exception) =>
+        exception is DbException { SqlState: DcbAppendRoutine.PostgreSqlUndefinedFunction };
+
+    private static async Task<AppendRoutineOutcome> CallAppendRoutine(this IDcbDbContext dcbDbContext,
+        TaggedEvent[] events, AppendCondition condition, List<string> affectedTags,
+        CancellationToken cancellationToken)
+    {
+        var (createdDate, createdBy) = ((DcbDbContext)dcbDbContext).AuditStamp();
+
+        // Each tag row names its event by its 1-based place in the append.
+        var tagEventIndex = new List<int>();
+        var tagValues = new List<string>();
+        for (var i = 0; i < events.Length; i++)
+        {
+            foreach (var tag in events[i].Tags)
+            {
+                tagEventIndex.Add(i + 1);
+                tagValues.Add(tag.ToString());
+            }
+        }
+
+        // Plain values rather than provider parameters, so the store needs no Npgsql reference; the
+        // casts tell PostgreSQL what each one is, including the ones that arrive as null.
+        object?[] arguments =
+        [
+            affectedTags.ToArray(),
+            condition.Query.Tags.Select(tag => tag.ToString()).ToArray(),
+            condition.AfterPosition,
+            events.Select(taggedEvent => TypeBindings.GetEventBindingKey(taggedEvent.Event.GetType())).ToArray(),
+            events.Select(taggedEvent => DomainSerializer.Current.Serialize(taggedEvent.Event)).ToArray(),
+            tagEventIndex.ToArray(),
+            tagValues.ToArray(),
+            createdDate,
+            createdBy
+        ];
+
+        var outcomes = await dcbDbContext.Database
+            .SqlQueryRaw<AppendRoutineOutcome>(
+                $$"""
+                SELECT appended AS "Appended", latest_position AS "LatestPosition"
+                FROM {{DcbAppendRoutine.Name}}({0}::text[], {1}::text[], {2}::bigint, {3}::text[],
+                    {4}::text[], {5}::int[], {6}::text[], {7}::timestamptz, {8}::text)
+                """, arguments!)
+            .ToListAsync(cancellationToken);
+
+        return outcomes.Single();
+    }
+
+    /// <summary>What the append routine returns: whether it appended, and the boundary's position.</summary>
+    /// <remarks>
+    /// When it appended, the position of the last event written; when it refused, where the
+    /// boundary had moved to.
+    /// </remarks>
+    private sealed class AppendRoutineOutcome
+    {
+        public bool Appended { get; init; }
+
+        public long LatestPosition { get; init; }
+    }
+}

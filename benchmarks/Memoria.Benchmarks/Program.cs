@@ -22,7 +22,7 @@ if (args.Contains("--spike-check"))
 
 if (args.Contains("--contention"))
 {
-    await ContentionSpike.Run(SpikeEngine(args), args.FirstOrDefault(arg => arg.StartsWith("--only="))?["--only=".Length..], args.Contains("--rcsi"));
+    await ContentionBenchmark.Run(SpikeEngine(args), args.FirstOrDefault(arg => arg.StartsWith("--only="))?["--only=".Length..], args.Contains("--rcsi"));
     return;
 }
 

@@ -256,11 +256,13 @@ public class PostgreSqlSingleCallAppendTests(PostgreSqlFixture fixture)
                 }
             };
             var dbContext = database.Connect(new FakeTimeProvider(now), user);
+            await using var throughEntityFrameworkCore =
+                InterfaceOnlyDcbDbContext.OnPostgreSql(database.ConnectionString, new FakeTimeProvider(now), user);
 
-            // Conditioned goes through the routine; unconditional still goes through Entity Framework
-            // Core, so the second is the reference the first must match.
+            // The first goes through the routine; the second through Entity Framework Core, the
+            // reference the first must match.
             await dbContext.SaveEvents([Reserved("a1", "s7")], AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
-            await dbContext.SaveEvents([Reserved("a2", "s7")], condition: null);
+            await throughEntityFrameworkCore.SaveEvents([Reserved("a2", "s7")], condition: null);
 
             var stamps = await database.Connect().DcbEvents.AsNoTracking()
                 .OrderBy(e => e.Position)

@@ -41,6 +41,13 @@ public abstract partial class DcbStoreOnEngineTests
     /// <summary>Opens a context whose transient failures the provider would retry.</summary>
     protected abstract TestDbContext ConnectRetrying(string connectionString);
 
+    /// <summary>
+    /// Opens a context that implements the store's interface without deriving from its context, which
+    /// the store appends for through Entity Framework Core rather than the engine's routine.
+    /// </summary>
+    protected abstract InterfaceOnlyDcbDbContext ConnectInterfaceOnly(string connectionString,
+        params IInterceptor[] interceptors);
+
     private static TaggedEvent Reserved(string seat, string student, params Tag[] tags) =>
         new(new SeatReservedEvent(seat, student), tags.Length > 0 ? tags : [new Tag("seat", seat)]);
 
@@ -187,17 +194,13 @@ public abstract partial class DcbStoreOnEngineTests
         });
 
     /// <summary>
-    /// The race the Entity Framework Core path's token guard exists for. Run only by engines whose
-    /// appends take that path: the append routine locks the tag heads before it checks, so this
-    /// window does not exist there, and the save it intercepts never happens.
-    /// <see cref="PostgreSqlSingleCallAppendTests"/> and <see cref="SqlServerSingleCallAppendTests"/>
-    /// cover the race the routine does have.
+    /// The race the Entity Framework Core path's token guard exists for, through a context that takes
+    /// that path on every engine. The append routine locks the tag heads before it checks, so this
+    /// window does not exist there; <see cref="PostgreSqlSingleCallAppendTests"/> and
+    /// <see cref="SqlServerSingleCallAppendTests"/> cover the race the routine does have.
     /// </summary>
-    /// <remarks>
-    /// Conditioned on an intersection, which on SQL Server still takes the Entity Framework Core
-    /// path; a union goes through its procedure.
-    /// </remarks>
-    protected Task ConditionedAppendIsRefusedWhenItsTagHeadMovesMidAppend() =>
+    [RequiresDockerFact]
+    public Task AConditionedAppendIsRefusedWhenItsTagHeadMovesMidAppend() =>
         WithDatabase(async (dbContext, openAnother) =>
         {
             // The window the MAX pre-check cannot see, and the only place the token does any work.
@@ -208,10 +211,10 @@ public abstract partial class DcbStoreOnEngineTests
             // that row at this point, so nothing is holding it, and Npgsql refuses a second statement
             // on the connection the append is using.
             var interceptor = MoveTagHeadFromAnotherConnection(SeatA1.ToString(), openAnother);
-            var racing = openAnother([interceptor]);
+            await using var racing = ConnectInterfaceOnly(dbContext.Database.GetConnectionString()!, interceptor);
 
-            var result = await racing.SaveEvents([Reserved("a1", "s7", SeatA1, StudentS7)],
-                AppendCondition.NothingAppendedFor(TagQuery.AllOf(SeatA1, StudentS7)));
+            var result = await racing.SaveEvents([Reserved("a1", "s7")],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
 
             interceptor.Fired.Should().BeTrue("the race must actually have been simulated");
             interceptor.SimulationFailure.Should().BeNull("a broken simulation proves nothing");
@@ -406,9 +409,9 @@ public class SqlServerDcbStoreTests(SqlServerFixture fixture) : DcbStoreOnEngine
     protected override TestDbContext ConnectRetrying(string connectionString) =>
         DcbStoreSchema.OnSqlServerRetrying(connectionString);
 
-    [RequiresDockerFact]
-    public Task AConditionedAppendIsRefusedWhenItsTagHeadMovesMidAppend() =>
-        ConditionedAppendIsRefusedWhenItsTagHeadMovesMidAppend();
+    protected override InterfaceOnlyDcbDbContext ConnectInterfaceOnly(string connectionString,
+        params IInterceptor[] interceptors) =>
+        InterfaceOnlyDcbDbContext.OnSqlServer(connectionString, interceptors);
 }
 
 [Trait("Category", "Container")]
@@ -422,4 +425,8 @@ public class PostgreSqlDcbStoreTests(PostgreSqlFixture fixture) : DcbStoreOnEngi
 
     protected override TestDbContext ConnectRetrying(string connectionString) =>
         DcbStoreSchema.OnPostgreSqlRetrying(connectionString);
+
+    protected override InterfaceOnlyDcbDbContext ConnectInterfaceOnly(string connectionString,
+        params IInterceptor[] interceptors) =>
+        InterfaceOnlyDcbDbContext.OnPostgreSql(connectionString, interceptors);
 }

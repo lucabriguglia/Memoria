@@ -155,10 +155,25 @@ public class PostgreSqlAppendRoutineInstallTests(PostgreSqlFixture fixture)
             await fromEnsure.Database.EnsureCreatedAsync();
             await fromEnsure.Database.EnsureDcbAppendRoutineAsync();
 
+            // The script's line endings are whatever the checkout gave it; what it installs is
+            // compared, not how its lines end.
             var expected = await DefaultRoutineDefinition(fromEnsure);
-            (await DefaultRoutineDefinition(fromScript)).Should().Be(expected,
+            (await DefaultRoutineDefinition(fromScript)).ReplaceLineEndings("\n").Should().Be(expected,
                 "the install script must not drift from the routine the store generates");
             (await DefaultRoutineDefinition(fromMigration)).Should().Be(expected);
+        });
+
+    [RequiresDockerFact]
+    public Task The_generated_routine_ends_its_lines_the_same_whatever_machine_built_the_store() =>
+        WithDatabase(async connectionString =>
+        {
+            // A raw string literal takes the line endings of its source file, so a store built from a
+            // Windows checkout would install a routine that differs from one built on Linux.
+            await using var dbContext = Default(connectionString);
+            await dbContext.Database.EnsureCreatedAsync();
+            await dbContext.Database.EnsureDcbAppendRoutineAsync();
+
+            (await DefaultRoutineDefinition(dbContext)).Should().NotContain("\r");
         });
 }
 

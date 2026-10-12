@@ -19,9 +19,9 @@ namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.AppendRoutine;
 /// Core path, because in process a round trip is almost free.
 /// </para>
 /// <para>
-/// The SQL Server procedure covers a guarded append or aggregate save over a union boundary of the
-/// default model so far; everything else on SQL Server keeps the Entity Framework Core path until it
-/// covers that too.
+/// The SQL Server procedure covers every append and aggregate save of the default model with
+/// nothing staged on the context so far; everything else on SQL Server keeps the Entity Framework
+/// Core path until it covers that too.
 /// </para>
 /// <para>
 /// Generated from the context's model, so it writes wherever the model maps the store's tables and
@@ -162,7 +162,7 @@ internal static class DcbAppendRoutine
         }
 
         return new Shape(Engine.PostgreSql, callName, displayName,
-            PostgreSqlDefinition(callName, events, eventTags, heads, snapshots, eventsDataType, snapshotsDataType),
+            Portable(PostgreSqlDefinition(callName, events, eventTags, heads, snapshots, eventsDataType, snapshotsDataType)),
             $"DROP FUNCTION IF EXISTS {callName}({PostgreSqlSignature});");
     }
 
@@ -181,9 +181,16 @@ internal static class DcbAppendRoutine
 
         var callName = BracketQuote(Name);
 
-        return new Fitted(new Shape(Engine.SqlServer, callName, Name, SqlServerDefinition(callName, tables),
+        return new Fitted(new Shape(Engine.SqlServer, callName, Name, Portable(SqlServerDefinition(callName, tables)),
             $"DROP PROCEDURE IF EXISTS {callName};"));
     }
+
+    /// <summary>
+    /// A definition with its lines ended by <c>\n</c>, however its source file ends them. A raw
+    /// string literal takes the line endings of the file it is written in, so without this a store
+    /// built from a Windows checkout would install a routine that differs from one built on Linux.
+    /// </summary>
+    private static string Portable(string definition) => definition.ReplaceLineEndings("\n");
 
     private static string Hash(string mapping) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(mapping)))[..8];
@@ -283,6 +290,11 @@ internal static class DcbAppendRoutine
     /// <c>INSERT … SELECT … ORDER BY</c>, so ranked they map back to the events.
     /// </para>
     /// <para>
+    /// Boundaries as on PostgreSQL: a union is the latest event carrying any of its tags, an
+    /// intersection the latest position with a row for every one of them. With no boundary the append
+    /// is unconditional: nothing is checked, but the heads are still locked and their tokens replaced.
+    /// </para>
+    /// <para>
     /// A snapshot, when there is one, is written in the same transaction, at the later of the position
     /// the model had folded to and the last event written, and never over a snapshot that is further
     /// along. Update first, insert only when there is no row: no <c>HOLDLOCK</c> here either, since a
@@ -343,18 +355,27 @@ internal static class DcbAppendRoutine
         """;
 
         var boundaryRead = $$"""
-                        SELECT @latest = ISNULL(MAX(latest.[Position]), 0)
-                        FROM OPENJSON(@boundary_tags) WITH ([Tag] {{tagType}} '$') b
-                        CROSS APPLY (SELECT TOP (1) t.{{tPosition}} AS [Position]
-                                     FROM {{t}} t WITH (FORCESEEK)
-                                     WHERE t.{{tTag}} = b.[Tag]{{tCollate}}
-                                     ORDER BY t.{{tPosition}} DESC) latest;
+                        IF @boundary_is_intersection = 1
+                            SELECT @latest = ISNULL(MAX(matched.[Position]), 0)
+                            FROM (SELECT t.{{tPosition}} AS [Position]
+                                  FROM OPENJSON(@boundary_tags) WITH ([Tag] {{tagType}} '$') b
+                                  JOIN {{t}} t WITH (FORCESEEK) ON t.{{tTag}} = b.[Tag]{{tCollate}}
+                                  GROUP BY t.{{tPosition}}
+                                  HAVING COUNT(*) = @boundary_count) matched;
+                        ELSE
+                            SELECT @latest = ISNULL(MAX(latest.[Position]), 0)
+                            FROM OPENJSON(@boundary_tags) WITH ([Tag] {{tagType}} '$') b
+                            CROSS APPLY (SELECT TOP (1) t.{{tPosition}} AS [Position]
+                                         FROM {{t}} t WITH (FORCESEEK)
+                                         WHERE t.{{tTag}} = b.[Tag]{{tCollate}}
+                                         ORDER BY t.{{tPosition}} DESC) latest;
         """;
 
         return $$"""
             CREATE OR ALTER PROCEDURE {{callName}}
                 @affected_tags nvarchar(max),
                 @boundary_tags nvarchar(max),
+                @boundary_is_intersection bit,
                 @after_position bigint,
                 @events nvarchar(max),
                 @created_date datetimeoffset,
@@ -373,6 +394,7 @@ internal static class DcbAppendRoutine
                 SET XACT_ABORT ON;
 
                 DECLARE @latest bigint;
+                DECLARE @boundary_count int = (SELECT COUNT(*) FROM OPENJSON(@boundary_tags));
                 DECLARE @count int = (SELECT COUNT(*) FROM OPENJSON(@events));
                 DECLARE @last bigint;
 

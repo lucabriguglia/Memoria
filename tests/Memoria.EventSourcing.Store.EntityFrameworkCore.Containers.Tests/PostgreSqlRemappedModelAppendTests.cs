@@ -64,7 +64,11 @@ public class PostgreSqlRemappedModelAppendTests(PostgreSqlFixture fixture)
     {
         Assert.True(fixture.IsAvailable, fixture.UnavailableReason);
 
-        TypeBindings.EventTypeBindings = new Dictionary<string, Type> { { "SeatReserved:1", typeof(SeatReservedEvent) } };
+        TypeBindings.EventTypeBindings = new Dictionary<string, Type>
+        {
+            { "SeatReserved:1", typeof(SeatReservedEvent) },
+            { "SeatReleased:1", typeof(SeatReleasedEvent) }
+        };
         DcbTypeBindings.AggregateTypeBindings = new Dictionary<string, Type> { { "Seat:1", typeof(SeatAggregate) } };
 
         await body(fixture.ConnectionStringForFreshDatabase());

@@ -45,7 +45,11 @@ public class PostgreSqlAppendRoutineInstallTests(PostgreSqlFixture fixture)
     private async Task WithDatabase(Func<string, Task> body)
     {
         Assert.True(fixture.IsAvailable, fixture.UnavailableReason);
-        TypeBindings.EventTypeBindings = new Dictionary<string, Type> { { "SeatReserved:1", typeof(SeatReservedEvent) } };
+        TypeBindings.EventTypeBindings = new Dictionary<string, Type>
+        {
+            { "SeatReserved:1", typeof(SeatReservedEvent) },
+            { "SeatReleased:1", typeof(SeatReleasedEvent) }
+        };
 
         await body(fixture.ConnectionStringForFreshDatabase());
         NpgsqlConnection.ClearAllPools();

@@ -695,7 +695,7 @@ public abstract class SqlServerSingleCallAppendTests(SqlServerFixture fixture)
     public Task An_append_on_an_intersection_waiting_on_a_tag_head_is_refused_when_the_holder_appends_into_it() =>
         WithDatabase(async database =>
         {
-            var result = await AppendWhileTheHolderCommits(database,
+            var result = await AppendWhileTheHolderCommits(database.ConnectionString,
                 [Reserved("a1", "s7", SeatA1, StudentS7)],
                 AppendCondition.NothingAppendedFor(TagQuery.AllOf(SeatA1, StudentS7)),
                 holderTags: [SeatA1, StudentS7]);
@@ -708,7 +708,7 @@ public abstract class SqlServerSingleCallAppendTests(SqlServerFixture fixture)
     public Task An_append_on_an_intersection_waiting_on_a_tag_head_is_accepted_when_the_holder_appends_beside_it() =>
         WithDatabase(async database =>
         {
-            var result = await AppendWhileTheHolderCommits(database,
+            var result = await AppendWhileTheHolderCommits(database.ConnectionString,
                 [Reserved("a1", "s7", SeatA1, StudentS7)],
                 AppendCondition.NothingAppendedFor(TagQuery.AllOf(SeatA1, StudentS7)),
                 holderTags: [SeatA1]);
@@ -721,10 +721,11 @@ public abstract class SqlServerSingleCallAppendTests(SqlServerFixture fixture)
     /// commits an event under <paramref name="holderTags"/> and releases the head, returning what the
     /// append decided.
     /// </summary>
-    private static async Task<Memoria.Results.Result> AppendWhileTheHolderCommits(TestDatabase database,
-        TaggedEvent[] events, AppendCondition condition, Tag[] holderTags)
+    private static async Task<Memoria.Results.Result> AppendWhileTheHolderCommits(string connectionString,
+        TaggedEvent[] events, AppendCondition condition, Tag[] holderTags, TestDbContext? appending = null)
     {
-        var holder = database.Connect();
+        await using var holder = DcbStoreSchema.OnSqlServer(connectionString);
+        await using var appendingByDefault = DcbStoreSchema.OnSqlServer(connectionString);
 
         // The heads have to exist for the holder to lock one; an unrelated append creates them.
         await holder.SaveEvents([Reserved("z9", "z9", holderTags.Concat(condition.Query.Tags).Distinct().ToArray())],
@@ -736,8 +737,8 @@ public abstract class SqlServerSingleCallAppendTests(SqlServerFixture fixture)
         var held = condition.Query.Tags.Select(tag => tag.ToString()).Order(StringComparer.Ordinal).First();
         await holder.Database.ExecuteSqlRawAsync("UPDATE [DcbTagHeads] SET [Token] = NEWID() WHERE [Tag] = {0}", held);
 
-        var waiting = database.Connect().SaveEvents(events, condition);
-        await UntilAnAppendIsWaitingOnALock(database.ConnectionString);
+        var waiting = (appending ?? appendingByDefault).SaveEvents(events, condition);
+        await UntilAnAppendIsWaitingOnALock(connectionString);
 
         await holder.Database.ExecuteSqlRawAsync(
             """
@@ -822,6 +823,293 @@ public abstract class SqlServerSingleCallAppendTests(SqlServerFixture fixture)
             failures.Should().BeEmpty("unconditional saves of aggregates that share nothing never fail each other");
             (await database.Connect().DcbSnapshots.CountAsync()).Should().Be(writers * rounds);
         });
+
+    [RequiresDockerFact]
+    public Task A_change_staged_on_the_context_commits_with_the_append() =>
+        WithStagingDatabase(async database =>
+        {
+            await using var dbContext = database.ConnectStaging();
+            dbContext.Bookings.Add(new PostgreSqlSingleCallAppendTests.Booking { Id = "b1", Seat = "a1" });
+
+            var result = await dbContext.SaveEvents([Reserved("a1", "s7")],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            dbContext.ChangeTracker.HasChanges().Should().BeFalse(
+                "what was staged is now saved; leaving it pending would insert it again on the next save");
+            await using var reading = database.ConnectStaging();
+            (await reading.Bookings.CountAsync()).Should().Be(1);
+            (await reading.DcbEvents.CountAsync()).Should().Be(1);
+        });
+
+    [RequiresDockerFact]
+    public Task A_change_staged_on_the_context_commits_with_an_aggregate_save() =>
+        WithStagingDatabase(async database =>
+        {
+            await using var dbContext = database.ConnectStaging();
+            dbContext.Bookings.Add(new PostgreSqlSingleCallAppendTests.Booking { Id = "b1", Seat = "a1" });
+            var seat = new SeatAggregate();
+            seat.Reserve("a1", "s7");
+
+            var result = await dbContext.SaveAggregate(SeatA1Aggregate, seat,
+                AppendCondition.NothingAppendedFor(SeatA1Aggregate.Boundary));
+
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            await using var reading = database.ConnectStaging();
+            (await reading.Bookings.CountAsync()).Should().Be(1);
+            (await reading.DcbSnapshots.CountAsync()).Should().Be(1);
+        });
+
+    [RequiresDockerFact]
+    public Task A_refused_append_saves_no_staged_change_and_leaves_it_pending() =>
+        WithStagingDatabase(async database =>
+        {
+            await using var dbContext = database.ConnectStaging();
+            await dbContext.SaveEvents([Reserved("a1", "s7")], condition: null);
+            dbContext.Bookings.Add(new PostgreSqlSingleCallAppendTests.Booking { Id = "b1", Seat = "a1" });
+
+            var result = await dbContext.SaveEvents([Reserved("a1", "s8", SeatA1, StudentS7)],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+            result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
+            dbContext.ChangeTracker.HasChanges().Should().BeTrue("the caller still holds what it staged");
+            await using var reading = database.ConnectStaging();
+            (await reading.Bookings.CountAsync()).Should().Be(0);
+            (await reading.DcbEvents.CountAsync()).Should().Be(1);
+        });
+
+    [RequiresDockerFact]
+    public Task A_refusal_decided_with_the_locks_held_saves_no_staged_change_and_leaves_the_context_usable() =>
+        WithStagingDatabase(async database =>
+        {
+            // The procedure refuses here after it has taken the locks, inside the transaction the
+            // staged change was saved in: it must undo only its own work, not end that transaction.
+            await using var dbContext = database.ConnectStaging();
+            dbContext.Bookings.Add(new PostgreSqlSingleCallAppendTests.Booking { Id = "b1", Seat = "a1" });
+
+            var refused = await AppendWhileTheHolderCommits(database.ConnectionString, [Reserved("a1", "s7")],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)), holderTags: [SeatA1], dbContext);
+
+            refused.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType, refused.Failure.Description);
+            dbContext.ChangeTracker.HasChanges().Should().BeTrue("the caller still holds what it staged");
+            await using (var reading = database.ConnectStaging())
+            {
+                (await reading.Bookings.CountAsync()).Should().Be(0);
+            }
+
+            var latest = await dbContext.GetLatestPosition(TagQuery.AnyOf(SeatA1));
+            var accepted = await dbContext.SaveEvents([Reserved("a1", "s9")],
+                new AppendCondition(TagQuery.AnyOf(SeatA1), latest));
+
+            accepted.IsSuccess.Should().BeTrue(accepted.Failure?.Description);
+            await using var after = database.ConnectStaging();
+            (await after.Bookings.CountAsync()).Should().Be(1, "the next accepted append saves what was staged");
+        });
+
+    [RequiresDockerFact]
+    public Task A_refusal_decided_with_the_locks_held_leaves_the_caller_s_own_transaction_usable() =>
+        WithDatabase(async database =>
+        {
+            // The procedure joins a transaction the caller opened, and a refusal must undo only its
+            // own work: the caller can go on to append again and commit what it chose to.
+            await using var dbContext = DcbStoreSchema.OnSqlServer(database.ConnectionString);
+            await using var transaction = await dbContext.Database.BeginTransactionAsync();
+
+            var refused = await AppendWhileTheHolderCommits(database.ConnectionString, [Reserved("a1", "s7")],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)), holderTags: [SeatA1], dbContext);
+
+            refused.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType, refused.Failure.Description);
+
+            var latest = await dbContext.GetLatestPosition(TagQuery.AnyOf(SeatA1));
+            var accepted = await dbContext.SaveEvents([Reserved("a1", "s9")],
+                new AppendCondition(TagQuery.AnyOf(SeatA1), latest));
+            accepted.IsSuccess.Should().BeTrue(accepted.Failure?.Description);
+            await transaction.CommitAsync();
+
+            (await database.Connect().DcbEvents.CountAsync()).Should().Be(3,
+                "the seeding append, the holder's and the caller's accepted append");
+        });
+
+    [RequiresDockerFact]
+    public Task A_staged_change_that_cannot_be_saved_fails_the_append() =>
+        WithStagingDatabase(async database =>
+        {
+            await using (var existing = database.ConnectStaging())
+            {
+                existing.Bookings.Add(new PostgreSqlSingleCallAppendTests.Booking { Id = "b1", Seat = "a1" });
+                await existing.SaveChangesAsync();
+            }
+
+            await using var dbContext = database.ConnectStaging();
+            dbContext.Bookings.Add(new PostgreSqlSingleCallAppendTests.Booking { Id = "b1", Seat = "a2" });
+
+            var result = await dbContext.SaveEvents([Reserved("a1", "s7", SeatA1, StudentS7)],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+            result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.StorageFailureType);
+            await using var reading = database.ConnectStaging();
+            (await reading.DcbEvents.CountAsync()).Should().Be(0, "nothing is appended when the staged change fails");
+            (await reading.Bookings.SingleAsync()).Seat.Should().Be("a1");
+        });
+
+    [RequiresDockerFact]
+    public Task A_retried_append_saves_its_staged_change_again() =>
+        WithStagingDatabase(async database =>
+        {
+            var failOnce = new FailTheProcedureOnce();
+            await using var dbContext = database.ConnectStaging(retrying: true, interceptors: failOnce);
+            dbContext.Bookings.Add(new PostgreSqlSingleCallAppendTests.Booking { Id = "b1", Seat = "a1" });
+
+            var result = await dbContext.SaveEvents([Reserved("a1", "s7")],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+            failOnce.Failed.Should().BeTrue("the first attempt must actually have failed");
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            await using var reading = database.ConnectStaging();
+            (await reading.Bookings.CountAsync()).Should().Be(1, "the retry saves the staged change it rolled back");
+            (await reading.DcbEvents.CountAsync()).Should().Be(1);
+        });
+
+    [RequiresDockerFact]
+    public Task Concurrent_appends_with_staged_changes_each_introducing_a_new_tag_all_succeed() =>
+        WithStagingDatabase(async database =>
+        {
+            // Inside the caller's transaction the procedure creates missing heads in it, so a
+            // duplicate key from a head another append created must not doom that transaction.
+            const int writers = 16;
+            const int rounds = 5;
+            var failures = new ConcurrentBag<string>();
+
+            for (var round = 0; round < rounds; round++)
+            {
+                using var start = new Barrier(writers);
+                var thisRound = round;
+
+                await Task.WhenAll(Enumerable.Range(0, writers).Select(writer => Task.Run(async () =>
+                {
+                    await using var dbContext = database.ConnectStaging();
+                    await dbContext.Database.OpenConnectionAsync();
+                    var seat = new Tag("seat", $"n{thisRound}-{writer:00}");
+                    dbContext.Bookings.Add(new PostgreSqlSingleCallAppendTests.Booking
+                    {
+                        Id = $"b{thisRound}-{writer:00}", Seat = seat.ToString()
+                    });
+                    start.SignalAndWait();
+
+                    // A shared tag too, so writers race to create the same head as well as their own.
+                    var result = await dbContext.SaveEvents(
+                        [Reserved($"n{thisRound}-{writer:00}", "s1", seat, new Tag("round", $"{thisRound}"))],
+                        AppendCondition.NothingAppendedFor(TagQuery.AnyOf(seat)));
+
+                    if (result.IsNotSuccess)
+                    {
+                        failures.Add($"{seat}: {result.Failure!.Type} {result.Failure.Description}");
+                    }
+                })));
+            }
+
+            failures.Should().BeEmpty("appends introducing different tags never fail each other");
+            await using var reading = database.ConnectStaging();
+            (await reading.Bookings.CountAsync()).Should().Be(writers * rounds);
+        });
+
+    [RequiresDockerFact]
+    public Task Procedure_and_entity_framework_core_appends_racing_on_one_boundary_are_never_both_accepted() =>
+        WithDatabase(async database =>
+        {
+            // Half the writers through the procedure, half through a context the store appends for
+            // through Entity Framework Core, all on one boundary.
+            const int writers = 8;
+            const int appendsEach = 25;
+            var acceptedOn = new ConcurrentBag<long>();
+            var failures = new ConcurrentBag<string>();
+            var boundary = TagQuery.AnyOf(SeatA1);
+
+            await Task.WhenAll(Enumerable.Range(0, writers).Select(writer => Task.Run(async () =>
+            {
+                await using DbContext dbContext = writer % 2 == 0
+                    ? DcbStoreSchema.OnSqlServer(database.ConnectionString)
+                    : InterfaceOnlyDcbDbContext.OnSqlServer(database.ConnectionString);
+                var store = (IDcbDbContext)dbContext;
+
+                for (var accepted = 0; accepted < appendsEach;)
+                {
+                    var seen = await store.GetLatestPosition(boundary);
+                    var result = await store.SaveEvents([Reserved("a1", $"s{writer}-{accepted}")],
+                        new AppendCondition(boundary, seen));
+
+                    if (result.IsSuccess)
+                    {
+                        acceptedOn.Add(seen);
+                        accepted++;
+                    }
+                    else if (result.Failure!.Type != EventSourcing.StoreFailures.ConcurrencyConflictType)
+                    {
+                        failures.Add($"writer {writer}: {result.Failure.Type} {result.Failure.Description}");
+                        accepted++;
+                    }
+                }
+            })));
+
+            failures.Should().BeEmpty("a writer losing a race is refused, never failed");
+            acceptedOn.Should().OnlyHaveUniqueItems("no two appends may be accepted against the same position");
+        });
+
+    /// <summary>A database with the store's schema plus an entity of the caller's own.</summary>
+    private sealed class StagingDatabase(string connectionString)
+    {
+        public string ConnectionString => connectionString;
+
+        public PostgreSqlSingleCallAppendTests.StagingDbContext ConnectStaging(params IInterceptor[] interceptors) =>
+            ConnectStaging(retrying: false, interceptors);
+
+        public PostgreSqlSingleCallAppendTests.StagingDbContext ConnectStaging(bool retrying,
+            params IInterceptor[] interceptors) =>
+            new(new DbContextOptionsBuilder<DcbDbContext>()
+                .UseSqlServer(connectionString, sqlServer =>
+                {
+                    if (retrying)
+                    {
+                        sqlServer.EnableRetryOnFailure();
+                    }
+                })
+                .AddInterceptors(interceptors)
+                .Options);
+    }
+
+    private Task WithStagingDatabase(Func<StagingDatabase, Task> body) =>
+        WithDatabase(async database =>
+        {
+            var staging = new StagingDatabase(database.ConnectionString);
+
+            // The store's schema is already there; the caller's own table is added beside it.
+            await using (var setup = staging.ConnectStaging())
+            {
+                await setup.Database.ExecuteSqlRawAsync(
+                    "CREATE TABLE [Bookings] ([Id] nvarchar(450) NOT NULL PRIMARY KEY, [Seat] nvarchar(max) NOT NULL)");
+            }
+
+            await body(staging);
+        });
+
+    /// <summary>Fails the first call to the append procedure with an error the retrying strategy retries.</summary>
+    private sealed class FailTheProcedureOnce : DbCommandInterceptor
+    {
+        public bool Failed { get; private set; }
+
+        public override ValueTask<InterceptionResult<System.Data.Common.DbDataReader>> ReaderExecutingAsync(
+            System.Data.Common.DbCommand command, CommandEventData eventData,
+            InterceptionResult<System.Data.Common.DbDataReader> result, CancellationToken cancellationToken = default)
+        {
+            if (!Failed && command.CommandText.Contains("memoria_dcb_append"))
+            {
+                Failed = true;
+                throw new TimeoutException("Simulated transient failure.");
+            }
+
+            return ValueTask.FromResult(result);
+        }
+    }
 }
 
 [Trait("Category", "Container")]

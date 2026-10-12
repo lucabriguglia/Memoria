@@ -57,7 +57,8 @@ public class PostgreSqlDcbJsonbTests(PostgreSqlFixture fixture)
 
         TypeBindings.EventTypeBindings = new Dictionary<string, Type>
         {
-            { "SeatReserved:1", typeof(SeatReservedEvent) }
+            { "SeatReserved:1", typeof(SeatReservedEvent) },
+            { "SeatReleased:1", typeof(SeatReleasedEvent) }
         };
         DcbTypeBindings.AggregateTypeBindings = new Dictionary<string, Type>
         {

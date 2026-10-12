@@ -19,8 +19,9 @@ namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.AppendRoutine;
 /// Core path, because in process a round trip is almost free.
 /// </para>
 /// <para>
-/// The SQL Server procedure covers a guarded append over a union boundary of the default model so
-/// far; everything else on SQL Server keeps the Entity Framework Core path until it covers that too.
+/// The SQL Server procedure covers a guarded append or aggregate save over a union boundary of the
+/// default model so far; everything else on SQL Server keeps the Entity Framework Core path until it
+/// covers that too.
 /// </para>
 /// <para>
 /// Generated from the context's model, so it writes wherever the model maps the store's tables and
@@ -281,10 +282,20 @@ internal static class DcbAppendRoutine
     /// variable for the positions its insert generates: identity values follow an
     /// <c>INSERT … SELECT … ORDER BY</c>, so ranked they map back to the events.
     /// </para>
+    /// <para>
+    /// A snapshot, when there is one, is written in the same transaction, at the later of the position
+    /// the model had folded to and the last event written, and never over a snapshot that is further
+    /// along. Update first, insert only when there is no row: no <c>HOLDLOCK</c> here either, since a
+    /// range lock around a missing key is what deadlocked first snapshots of aggregates sharing
+    /// nothing. Two saves of one boundary are already serialised by its head locks, so a duplicate
+    /// key is a snapshot-only save racing, and falls back to the update; <c>XACT_ABORT</c> is off for
+    /// the insert so that error ends the statement, not the transaction. With no events there is
+    /// nothing for the condition to guard, so a snapshot-only save neither checks nor locks.
+    /// </para>
     /// </remarks>
     private static string SqlServerDefinition(string callName, StoreTables tables)
     {
-        var (events, eventTags, heads, _) = tables;
+        var (events, eventTags, heads, snapshots) = tables;
 
         var e = events.Bracketed;
         var ePosition = events.BracketedColumn(nameof(DcbEventEntity.Position));
@@ -307,13 +318,37 @@ internal static class DcbAppendRoutine
         var hToken = heads.BracketedColumn(nameof(DcbTagHeadEntity.Token));
         var hCollate = heads.CollateAs(nameof(DcbTagHeadEntity.Tag));
 
+        var s = snapshots.Bracketed;
+        var sId = snapshots.BracketedColumn(nameof(DcbSnapshotEntity.Id));
+        var sKind = snapshots.BracketedColumn(nameof(DcbSnapshotEntity.SnapshotKind));
+        var sStoreId = snapshots.BracketedColumn(nameof(DcbSnapshotEntity.StoreId));
+        var sTagQuery = snapshots.BracketedColumn(nameof(DcbSnapshotEntity.TagQuery));
+        var sModelType = snapshots.BracketedColumn(nameof(DcbSnapshotEntity.ModelType));
+        var sVersion = snapshots.BracketedColumn(nameof(DcbSnapshotEntity.Version));
+        var sLatestPosition = snapshots.BracketedColumn(nameof(DcbSnapshotEntity.LatestPosition));
+        var sData = snapshots.BracketedColumn(nameof(DcbSnapshotEntity.Data));
+        var sCreatedDate = snapshots.BracketedColumn(nameof(DcbSnapshotEntity.CreatedDate));
+        var sCreatedBy = snapshots.BracketedColumn(nameof(DcbSnapshotEntity.CreatedBy));
+        var sUpdatedDate = snapshots.BracketedColumn(nameof(DcbSnapshotEntity.UpdatedDate));
+        var sUpdatedBy = snapshots.BracketedColumn(nameof(DcbSnapshotEntity.UpdatedBy));
+
+        var snapshotUpdate = $$"""
+                        UPDATE s
+                        SET {{sKind}} = @snapshot_kind, {{sStoreId}} = @snapshot_store_id,
+                            {{sTagQuery}} = @snapshot_tag_query, {{sModelType}} = @snapshot_model_type,
+                            {{sVersion}} = @snapshot_version, {{sLatestPosition}} = @snapshot_position,
+                            {{sData}} = @snapshot_data, {{sUpdatedDate}} = @created_date, {{sUpdatedBy}} = @created_by
+                        FROM {{s}} s WITH (FORCESEEK, ROWLOCK)
+                        WHERE s.{{sId}} = @snapshot_id AND s.{{sLatestPosition}} <= @snapshot_position;
+        """;
+
         var boundaryRead = $$"""
-                    SELECT @latest = ISNULL(MAX(latest.[Position]), 0)
-                    FROM OPENJSON(@boundary_tags) WITH ([Tag] {{tagType}} '$') b
-                    CROSS APPLY (SELECT TOP (1) t.{{tPosition}} AS [Position]
-                                 FROM {{t}} t WITH (FORCESEEK)
-                                 WHERE t.{{tTag}} = b.[Tag]{{tCollate}}
-                                 ORDER BY t.{{tPosition}} DESC) latest;
+                        SELECT @latest = ISNULL(MAX(latest.[Position]), 0)
+                        FROM OPENJSON(@boundary_tags) WITH ([Tag] {{tagType}} '$') b
+                        CROSS APPLY (SELECT TOP (1) t.{{tPosition}} AS [Position]
+                                     FROM {{t}} t WITH (FORCESEEK)
+                                     WHERE t.{{tTag}} = b.[Tag]{{tCollate}}
+                                     ORDER BY t.{{tPosition}} DESC) latest;
         """;
 
         return $$"""
@@ -323,106 +358,149 @@ internal static class DcbAppendRoutine
                 @after_position bigint,
                 @events nvarchar(max),
                 @created_date datetimeoffset,
-                @created_by {{createdByType}}
+                @created_by {{createdByType}},
+                @snapshot_id {{snapshots.Type(nameof(DcbSnapshotEntity.Id))}},
+                @snapshot_kind {{snapshots.Type(nameof(DcbSnapshotEntity.SnapshotKind))}},
+                @snapshot_store_id {{snapshots.Type(nameof(DcbSnapshotEntity.StoreId))}},
+                @snapshot_tag_query {{snapshots.Type(nameof(DcbSnapshotEntity.TagQuery))}},
+                @snapshot_model_type {{snapshots.Type(nameof(DcbSnapshotEntity.ModelType))}},
+                @snapshot_version int,
+                @snapshot_latest_position bigint,
+                @snapshot_data {{snapshots.Type(nameof(DcbSnapshotEntity.Data))}}
             AS
             BEGIN
                 SET NOCOUNT ON;
                 SET XACT_ABORT ON;
 
                 DECLARE @latest bigint;
-
-                IF @boundary_tags IS NOT NULL
-                BEGIN
-            {{boundaryRead}}
-
-                    IF @latest <> @after_position
-                    BEGIN
-                        SELECT CAST(0 AS bit) AS [Appended], @latest AS [LatestPosition];
-                        RETURN;
-                    END;
-                END;
-
-                DECLARE @affected_count int = (SELECT COUNT(*) FROM OPENJSON(@affected_tags));
-                DECLARE @attempts int = 0;
-
-                WHILE 1 = 1
-                BEGIN
-                    BEGIN TRANSACTION;
-
-                    UPDATE h SET {{hToken}} = NEWID()
-                    FROM OPENJSON(@affected_tags) WITH ([Tag] {{tagType}} '$') a
-                    JOIN {{h}} h WITH (FORCESEEK, ROWLOCK) ON h.{{hTag}} = a.[Tag]{{hCollate}}
-                    OPTION (FORCE ORDER, LOOP JOIN);
-
-                    IF @@ROWCOUNT = @affected_count BREAK;
-
-                    ROLLBACK TRANSACTION;
-
-                    SET @attempts += 1;
-                    IF @attempts > 10 THROW 50000, 'The tag heads for this append could not be created.', 1;
-
-                    BEGIN TRY
-                        INSERT {{h}} ({{hTag}}, {{hToken}})
-                        SELECT a.[Tag]{{hCollate}}, NEWID()
-                        FROM OPENJSON(@affected_tags) WITH ([Tag] {{tagType}} '$') a
-                        WHERE NOT EXISTS (SELECT 1 FROM {{h}} h WITH (FORCESEEK)
-                                          WHERE h.{{hTag}} = a.[Tag]{{hCollate}});
-                    END TRY
-                    BEGIN CATCH
-                        IF ERROR_NUMBER() NOT IN (2601, 2627) THROW;
-                    END CATCH;
-                END;
-
-                IF @boundary_tags IS NOT NULL
-                BEGIN
-            {{boundaryRead}}
-
-                    IF @latest <> @after_position
-                    BEGIN
-                        ROLLBACK TRANSACTION;
-                        SELECT CAST(0 AS bit) AS [Appended], @latest AS [LatestPosition];
-                        RETURN;
-                    END;
-                END;
-
                 DECLARE @count int = (SELECT COUNT(*) FROM OPENJSON(@events));
                 DECLARE @last bigint;
 
-                IF @count = 1
-                BEGIN
-                    DECLARE @event_type {{eventTypeType}}, @event_data {{eventDataType}};
-                    SELECT @event_type = x.[type], @event_data = x.[data]
-                    FROM OPENJSON(@events) WITH ([type] {{eventTypeType}} '$.type', [data] {{eventDataType}} '$.data') x;
-
-                    INSERT {{e}} ({{eType}}, {{eData}}, {{eCreatedDate}}, {{eCreatedBy}})
-                    VALUES (@event_type, @event_data, @created_date, @created_by);
-
-                    SET @last = CAST(SCOPE_IDENTITY() AS bigint);
-
-                    INSERT {{t}} ({{tPosition}}, {{tTag}})
-                    SELECT @last, tag.[Tag]{{tCollate}}
-                    FROM OPENJSON(@events, '$[0].tags') WITH ([Tag] {{tagType}} '$') tag
-                    OPTION (LOOP JOIN);
-                END
+                IF @count = 0
+                    BEGIN TRANSACTION;
                 ELSE
                 BEGIN
-                    DECLARE @positions TABLE ([Position] bigint PRIMARY KEY);
+                    IF @boundary_tags IS NOT NULL
+                    BEGIN
+            {{boundaryRead}}
 
-                    INSERT {{e}} ({{eType}}, {{eData}}, {{eCreatedDate}}, {{eCreatedBy}})
-                    OUTPUT INSERTED.{{ePosition}} INTO @positions ([Position])
-                    SELECT x.[type], x.[data], @created_date, @created_by
-                    FROM OPENJSON(@events) e
-                    CROSS APPLY OPENJSON(e.[value]) WITH ([type] {{eventTypeType}} '$.type', [data] {{eventDataType}} '$.data') x
-                    ORDER BY CAST(e.[key] AS int);
+                        IF @latest <> @after_position
+                        BEGIN
+                            SELECT CAST(0 AS bit) AS [Appended], @latest AS [LatestPosition];
+                            RETURN;
+                        END;
+                    END;
 
-                    INSERT {{t}} ({{tPosition}}, {{tTag}})
-                    SELECT p.[Position], tag.[Tag]{{tCollate}}
-                    FROM (SELECT [Position], ROW_NUMBER() OVER (ORDER BY [Position]) - 1 AS [Ordinal] FROM @positions) p
-                    JOIN OPENJSON(@events) e ON CAST(e.[key] AS int) = p.[Ordinal]
-                    CROSS APPLY OPENJSON(e.[value], '$.tags') WITH ([Tag] {{tagType}} '$') tag
-                    OPTION (LOOP JOIN);
+                    DECLARE @affected_count int = (SELECT COUNT(*) FROM OPENJSON(@affected_tags));
+                    DECLARE @attempts int = 0;
 
-                    SET @last = (SELECT MAX([Position]) FROM @positions);
+                    WHILE 1 = 1
+                    BEGIN
+                        BEGIN TRANSACTION;
+
+                        UPDATE h SET {{hToken}} = NEWID()
+                        FROM OPENJSON(@affected_tags) WITH ([Tag] {{tagType}} '$') a
+                        JOIN {{h}} h WITH (FORCESEEK, ROWLOCK) ON h.{{hTag}} = a.[Tag]{{hCollate}}
+                        OPTION (FORCE ORDER, LOOP JOIN);
+
+                        IF @@ROWCOUNT = @affected_count BREAK;
+
+                        ROLLBACK TRANSACTION;
+
+                        SET @attempts += 1;
+                        IF @attempts > 10 THROW 50000, 'The tag heads for this append could not be created.', 1;
+
+                        BEGIN TRY
+                            INSERT {{h}} ({{hTag}}, {{hToken}})
+                            SELECT a.[Tag]{{hCollate}}, NEWID()
+                            FROM OPENJSON(@affected_tags) WITH ([Tag] {{tagType}} '$') a
+                            WHERE NOT EXISTS (SELECT 1 FROM {{h}} h WITH (FORCESEEK)
+                                              WHERE h.{{hTag}} = a.[Tag]{{hCollate}});
+                        END TRY
+                        BEGIN CATCH
+                            IF ERROR_NUMBER() NOT IN (2601, 2627) THROW;
+                        END CATCH;
+                    END;
+
+                    IF @boundary_tags IS NOT NULL
+                    BEGIN
+            {{boundaryRead}}
+
+                        IF @latest <> @after_position
+                        BEGIN
+                            ROLLBACK TRANSACTION;
+                            SELECT CAST(0 AS bit) AS [Appended], @latest AS [LatestPosition];
+                            RETURN;
+                        END;
+                    END;
+
+                    IF @count = 1
+                    BEGIN
+                        DECLARE @event_type {{eventTypeType}}, @event_data {{eventDataType}};
+                        SELECT @event_type = x.[type], @event_data = x.[data]
+                        FROM OPENJSON(@events) WITH ([type] {{eventTypeType}} '$.type', [data] {{eventDataType}} '$.data') x;
+
+                        INSERT {{e}} ({{eType}}, {{eData}}, {{eCreatedDate}}, {{eCreatedBy}})
+                        VALUES (@event_type, @event_data, @created_date, @created_by);
+
+                        SET @last = CAST(SCOPE_IDENTITY() AS bigint);
+
+                        INSERT {{t}} ({{tPosition}}, {{tTag}})
+                        SELECT @last, tag.[Tag]{{tCollate}}
+                        FROM OPENJSON(@events, '$[0].tags') WITH ([Tag] {{tagType}} '$') tag
+                        OPTION (LOOP JOIN);
+                    END
+                    ELSE
+                    BEGIN
+                        DECLARE @positions TABLE ([Position] bigint PRIMARY KEY);
+
+                        INSERT {{e}} ({{eType}}, {{eData}}, {{eCreatedDate}}, {{eCreatedBy}})
+                        OUTPUT INSERTED.{{ePosition}} INTO @positions ([Position])
+                        SELECT x.[type], x.[data], @created_date, @created_by
+                        FROM OPENJSON(@events) e
+                        CROSS APPLY OPENJSON(e.[value]) WITH ([type] {{eventTypeType}} '$.type', [data] {{eventDataType}} '$.data') x
+                        ORDER BY CAST(e.[key] AS int);
+
+                        INSERT {{t}} ({{tPosition}}, {{tTag}})
+                        SELECT p.[Position], tag.[Tag]{{tCollate}}
+                        FROM (SELECT [Position], ROW_NUMBER() OVER (ORDER BY [Position]) - 1 AS [Ordinal] FROM @positions) p
+                        JOIN OPENJSON(@events) e ON CAST(e.[key] AS int) = p.[Ordinal]
+                        CROSS APPLY OPENJSON(e.[value], '$.tags') WITH ([Tag] {{tagType}} '$') tag
+                        OPTION (LOOP JOIN);
+
+                        SET @last = (SELECT MAX([Position]) FROM @positions);
+                    END;
+                END;
+
+                IF @snapshot_id IS NOT NULL
+                BEGIN
+                    DECLARE @snapshot_position bigint =
+                        CASE WHEN @last IS NULL OR @snapshot_latest_position > @last
+                             THEN @snapshot_latest_position ELSE @last END;
+
+            {{snapshotUpdate}}
+
+                    IF @@ROWCOUNT = 0 AND NOT EXISTS (SELECT 1 FROM {{s}} s WITH (FORCESEEK) WHERE s.{{sId}} = @snapshot_id)
+                    BEGIN
+                        SET XACT_ABORT OFF;
+                        BEGIN TRY
+                            INSERT {{s}} ({{sId}}, {{sKind}}, {{sStoreId}}, {{sTagQuery}}, {{sModelType}}, {{sVersion}},
+                                {{sLatestPosition}}, {{sData}}, {{sCreatedDate}}, {{sCreatedBy}}, {{sUpdatedDate}}, {{sUpdatedBy}})
+                            VALUES (@snapshot_id, @snapshot_kind, @snapshot_store_id, @snapshot_tag_query,
+                                @snapshot_model_type, @snapshot_version, @snapshot_position, @snapshot_data,
+                                @created_date, @created_by, @created_date, @created_by);
+                        END TRY
+                        BEGIN CATCH
+                            IF ERROR_NUMBER() NOT IN (2601, 2627)
+                            BEGIN
+                                IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+                                THROW;
+                            END;
+
+            {{snapshotUpdate}}
+                        END CATCH;
+                        SET XACT_ABORT ON;
+                    END;
                 END;
 
                 COMMIT TRANSACTION;

@@ -27,18 +27,17 @@ public static partial class DcbDbContextExtensions
     /// built today; it keeps the Entity Framework Core path, which refuses it loudly.
     /// </para>
     /// <para>
-    /// The SQL Server procedure takes less so far: a guarded append of events over a union boundary,
-    /// with nothing staged on the context. It commits a transaction of its own, so it cannot yet
-    /// join the one staged changes are saved in.
+    /// The SQL Server procedure takes less so far: a guarded append or aggregate save over a union
+    /// boundary, with nothing staged on the context. It commits a transaction of its own, so it
+    /// cannot yet join the one staged changes are saved in.
     /// </para>
     /// </remarks>
-    private static bool AppendsThroughRoutine(this IDcbDbContext dcbDbContext, AppendCondition? condition,
-        bool savesAggregate) =>
+    private static bool AppendsThroughRoutine(this IDcbDbContext dcbDbContext, AppendCondition? condition) =>
         dcbDbContext is DcbDbContext context
         && DcbAppendRoutine.For(context) is { } routine
         && routine.For switch
         {
-            DcbAppendRoutine.Engine.SqlServer => !savesAggregate && condition is not null && IsUnion(condition.Query)
+            DcbAppendRoutine.Engine.SqlServer => condition is not null && IsUnion(condition.Query)
                                                  && !context.ChangeTracker.HasChanges(),
             _ => condition is null || IsUnion(condition.Query) || IsIntersection(condition.Query)
         };
@@ -146,12 +145,12 @@ public static partial class DcbDbContextExtensions
         TaggedEvent[] events, AppendCondition? condition, List<string> affectedTags, DcbSnapshotEntity? snapshot,
         CancellationToken cancellationToken) =>
         DcbAppendRoutine.For((DcbDbContext)dcbDbContext)!.For == DcbAppendRoutine.Engine.SqlServer
-            ? dcbDbContext.CallAppendProcedure(events, condition, affectedTags, cancellationToken)
+            ? dcbDbContext.CallAppendProcedure(events, condition, affectedTags, snapshot, cancellationToken)
             : dcbDbContext.CallAppendFunction(events, condition, affectedTags, snapshot, cancellationToken);
 
     /// <summary>Calls the SQL Server procedure, its collections as JSON.</summary>
     private static async Task<AppendRoutineOutcome> CallAppendProcedure(this IDcbDbContext dcbDbContext,
-        TaggedEvent[] events, AppendCondition? condition, List<string> affectedTags,
+        TaggedEvent[] events, AppendCondition? condition, List<string> affectedTags, DcbSnapshotEntity? snapshot,
         CancellationToken cancellationToken)
     {
         var context = (DcbDbContext)dcbDbContext;
@@ -169,12 +168,21 @@ public static partial class DcbDbContextExtensions
             condition?.AfterPosition ?? AppendCondition.NoEvents,
             eventsJson,
             createdDate,
-            createdBy
+            createdBy,
+            snapshot?.Id,
+            snapshot?.SnapshotKind,
+            snapshot?.StoreId,
+            snapshot?.TagQuery,
+            snapshot?.ModelType,
+            snapshot?.Version ?? 0,
+            snapshot?.LatestPosition ?? 0L,
+            snapshot?.Data
         ];
 
         var outcomes = await context.Database
             .SqlQueryRaw<AppendRoutineOutcome>(
-                $"EXEC {DcbAppendRoutine.For(context)!.CallName} {{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}",
+                $"EXEC {DcbAppendRoutine.For(context)!.CallName} {{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, " +
+                "{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}",
                 arguments!)
             .ToListAsync(cancellationToken);
 

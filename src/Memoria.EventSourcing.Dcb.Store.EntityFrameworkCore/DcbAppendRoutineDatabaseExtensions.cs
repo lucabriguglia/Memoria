@@ -16,9 +16,15 @@ public static class DcbAppendRoutineDatabaseExtensions
     /// <param name="database">The DCB context's database.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <remarks>
+    /// <para>
     /// For databases created with <c>EnsureCreated</c>, such as tests and examples: call it right
     /// after. <c>EnsureCreated</c> creates the tables from the model, and a routine is not part of
     /// the model.
+    /// </para>
+    /// <para>
+    /// The routine is generated from this context's model, so it fits however the context maps the
+    /// store's tables. Call it from each context that maps them differently.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -29,9 +35,9 @@ public static class DcbAppendRoutineDatabaseExtensions
     public static async Task EnsureDcbAppendRoutineAsync(this DatabaseFacade database,
         CancellationToken cancellationToken = default)
     {
-        if (DcbAppendRoutine.Definition(database.ProviderName) is { } definition)
+        if (DcbAppendRoutine.For(database.GetService<ICurrentDbContext>().Context) is { } routine)
         {
-            await database.ExecuteSqlRawAsync(definition, cancellationToken);
+            await database.ExecuteSqlRawAsync(routine.Definition, cancellationToken);
         }
     }
 }

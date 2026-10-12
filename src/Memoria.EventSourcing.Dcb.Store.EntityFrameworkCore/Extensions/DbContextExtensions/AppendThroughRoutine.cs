@@ -27,8 +27,7 @@ public static partial class DcbDbContextExtensions
     /// </remarks>
     private static bool AppendsThroughRoutine(this IDcbDbContext dcbDbContext, AppendCondition? condition) =>
         dcbDbContext is DcbDbContext context
-        && DcbAppendRoutine.Definition(dcbDbContext.Database.ProviderName) is not null
-        && DcbAppendRoutine.FitsModel(context.Model)
+        && DcbAppendRoutine.For(context) is not null
         && (condition is null || IsUnion(condition.Query) || IsIntersection(condition.Query));
 
     private static bool IsUnion(TagQuery query) => query.TagGroups.All(group => group.Count == 1);
@@ -109,7 +108,7 @@ public static partial class DcbDbContextExtensions
 
             return DcbStoreFailures.StorageFailure(operation, condition?.Query) with
             {
-                Description = $"The database has no '{DcbAppendRoutine.Name}' routine, which this store appends " +
+                Description = $"The database has no '{DcbAppendRoutine.For(context)!.DisplayName}' routine, which this store appends " +
                               "through. Install it with Database.EnsureDcbAppendRoutineAsync(), in an EF Core " +
                               "migration, or with the DCB install script for this engine."
             };
@@ -170,7 +169,7 @@ public static partial class DcbDbContextExtensions
             .SqlQueryRaw<AppendRoutineOutcome>(
                 $$"""
                 SELECT appended AS "Appended", latest_position AS "LatestPosition"
-                FROM {{DcbAppendRoutine.Name}}({0}::text[], {1}::text[], {2}::boolean, {3}::bigint,
+                FROM {{DcbAppendRoutine.For((DcbDbContext)dcbDbContext)!.CallName}}({0}::text[], {1}::text[], {2}::boolean, {3}::bigint,
                     {4}::text[], {5}::text[], {6}::int[], {7}::text[], {8}::timestamptz, {9}::text,
                     {10}::text, {11}::text, {12}::text, {13}::text, {14}::text, {15}::int, {16}::bigint, {17}::text)
                 """, arguments!)

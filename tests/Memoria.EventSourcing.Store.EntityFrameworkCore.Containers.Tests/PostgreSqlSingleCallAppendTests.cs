@@ -783,36 +783,6 @@ public class PostgreSqlSingleCallAppendTests(PostgreSqlFixture fixture)
             stored.LatestPosition.Should().Be(newer.LatestPosition);
         });
 
-    [RequiresDockerFact]
-    public Task A_model_with_its_events_mapped_elsewhere_keeps_appending_through_entity_framework_core() =>
-        WithDatabase(async database =>
-        {
-            // The routine is written for the default tables; until it is generated from the model,
-            // a context that maps them elsewhere must not call it.
-            await using var remapped = new RemappedEventsDbContext(
-                new DbContextOptionsBuilder<DcbDbContext>().UseNpgsql(database.ConnectionString).Options);
-            await remapped.Database.EnsureDeletedAsync();
-            await remapped.Database.EnsureCreatedAsync();
-            await remapped.Database.EnsureDcbAppendRoutineAsync();
-
-            var result = await remapped.SaveEvents([Reserved("a1", "s7")],
-                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
-
-            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
-            (await remapped.DcbEvents.CountAsync()).Should().Be(1);
-        });
-
-    private sealed class RemappedEventsDbContext(DbContextOptions<DcbDbContext> options)
-        : TestDbContext(options, TimeProvider.System, new StubHttpContextAccessor())
-    {
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-            modelBuilder.Entity<Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Entities.DcbEventEntity>()
-                .ToTable("BoxOfficeEvents");
-        }
-    }
-
     /// <summary>Waits until an append routine call on this database is blocked on a lock.</summary>
     private static async Task UntilAnAppendIsWaitingOnALock(string connectionString)
     {
@@ -888,6 +858,15 @@ internal sealed class CommandCounter : DbCommandInterceptor
         lock (_sent)
         {
             return string.Join("\n", _sent);
+        }
+    }
+
+    /// <summary>Forgets what was sent so far, so a test can count one operation after its setup.</summary>
+    public void Reset()
+    {
+        lock (_sent)
+        {
+            _sent.Clear();
         }
     }
 

@@ -2,7 +2,7 @@
 title: Upgrade to 1.6.0
 description: "Two changes need attention in Memoria 1.6.0, both affecting only the Cosmos DB store."
 parent: Upgrading
-nav_order: 5
+nav_order: 6
 ---
 
 # Upgrade to 1.6.0

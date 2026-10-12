@@ -2,7 +2,7 @@
 title: Upgrade to 1.7.0
 description: "Memoria 1.7.0 removes the link between aggregates and events. Four things need attention, and only the first is likely to affect application code."
 parent: Upgrading
-nav_order: 4
+nav_order: 5
 ---
 
 # Upgrade to 1.7.0

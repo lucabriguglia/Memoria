@@ -2,7 +2,7 @@
 title: Upgrade to 1.9.0
 description: "Memoria 1.9.0 renames the Entity Framework Core events table to DomainEvents. How to rename an existing database before an upgraded application runs against it."
 parent: Upgrading
-nav_order: 2
+nav_order: 3
 ---
 
 # Upgrade to 1.9.0

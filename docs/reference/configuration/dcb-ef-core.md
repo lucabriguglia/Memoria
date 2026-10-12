@@ -61,10 +61,11 @@ services.AddDbContext<SchoolDbContext>(options =>
     options.UseSqlServer(connectionString, sqlServer => sqlServer.EnableRetryOnFailure()));
 ```
 
-An append runs as one retriable unit, so this needs nothing from you. The unit starts where the
-boundary is read and the tag heads are claimed, not where the transaction opens: the tokens read
-there are what the append is guarded on, so an attempt made again reads them afresh rather than
-reporting a conflict with an append nobody made.
+An append runs as one retriable unit, so this needs nothing from you. On SQL Server and PostgreSQL
+the unit is the call to the append routine, together with saving any changes staged on the context.
+On the Entity Framework Core path it starts where the boundary is read and the tag heads are claimed,
+not where the transaction opens: the tokens read there are what the append is guarded on, so an
+attempt made again reads them afresh rather than reporting a conflict with an append nobody made.
 
 > **This did not used to work.** EF Core refuses to open a caller's own transaction under a strategy
 > that retries, and an append opens one — so every append against a retrying registration failed
@@ -79,7 +80,8 @@ be refused by, so if you care about exactly-once under retries, give it a condit
 
 ## Schema
 
-Four tables, sharing nothing with the streamed store's three.
+Four tables, sharing nothing with the streamed store's three, and on SQL Server and PostgreSQL an
+append routine.
 
 | Table | Holds |
 |---|---|
@@ -91,7 +93,16 @@ Four tables, sharing nothing with the streamed store's three.
 `DcbEventTags` is keyed tag-first because every read narrows by tag before position or date, so the
 primary key is also the serving index.
 
-Install with [EF Core migrations or the shipped scripts](../../guides/install-the-store-schema.md#the-dynamic-consistency-boundary-store).
+The append routine — `memoria_dcb_append_v1`, a stored procedure on SQL Server and a function on
+PostgreSQL — is what every append on those engines calls: one round trip that checks the boundary,
+locks its tag heads and writes. It is generated from the context's model, so it follows remapped
+tables, columns and schemas and the `jsonb` payload override; a context with any such mapping gets a
+routine of its own, named after a hash of the mapping. SQLite has none and appends through Entity
+Framework Core, as does a context that implements `IDcbDbContext` without deriving from
+`DcbDbContext`. See [How an append is written](../../concepts/dynamic-consistency-boundaries.md#how-an-append-is-written).
+
+Install the tables and the routine with [EF Core migrations, the shipped scripts or
+`EnsureDcbAppendRoutineAsync`](../../guides/install-the-store-schema.md#the-dynamic-consistency-boundary-store).
 
 ### How a boundary becomes SQL
 
@@ -183,7 +194,7 @@ See [Observability](../observability.md).
 |---|---|
 | `memoria/concurrency-conflict` | The boundary moved. Tagged `tagQuery`, `expectedPosition`, `latestPosition` |
 | `memoria/batch-limit-exceeded` | Too many events in one append |
-| `memoria/storage-failure` | Anything else. Provider detail goes to the trace, never the failure |
+| `memoria/storage-failure` | Anything else. Provider detail goes to the trace, never the failure. A missing append routine lands here too, with a description naming the routine and how to install it |
 
 The `Type` constants are the ones the streamed stores use, so a retry policy works against both.
 

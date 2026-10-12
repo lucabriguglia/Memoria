@@ -100,6 +100,12 @@ public class BoxOfficeDbContext(
 A container test runs exactly this context against PostgreSQL and appends, folds and snapshots
 through it, so the override is verified rather than merely suggested.
 
+The store's append routine fits the override with no extra step: it is generated from this
+context's model and casts each payload to `jsonb` as it writes it. Install it from this context —
+`EnsureDcbAppendRoutineAsync` or `CreateDcbAppendRoutine` in a migration — and not from the DCB
+install script, which assumes `text` payloads; the routine it gets is named for its mapping. See
+[Install the store schema](install-the-store-schema.md#the-dynamic-consistency-boundary-store).
+
 Note that `jsonb` normalises what it stores: key order is not preserved and whitespace is rewritten.
 Events still deserialise, because JSON objects are unordered, but the stored bytes are no longer the
 bytes the serializer produced. If you need an event payload preserved verbatim, leave the column as

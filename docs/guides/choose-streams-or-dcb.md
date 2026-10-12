@@ -115,36 +115,35 @@ A stream is a range on one indexed column; a boundary is a semi-join against `Dc
 same rows. A snapshot read is one row either way, and stays flat however long the history gets —
 which is the point of snapshots in both models.
 
-**Appends cost roughly one and a third to two and a fifth times as much**, on every engine,
-allocating 1.9–2.2× as much, flat in the number of events already stored:
+**On SQL Server and PostgreSQL, appends are cheaper under DCB** — three quarters of a streamed append's
+time and well under its allocation, flat in the number of events already stored. On SQLite they cost
+nearly twice as much:
 
-| `SaveAggregate`, median | Streams        | DCB            | Ratio     |
-|-------------------------|----------------|----------------|-----------|
-| SQLite, in memory       | 0.64 – 0.69 ms | 1.02 – 1.06 ms | 1.62–1.72 |
-| SQL Server, container   | 8.97 – 9.30 ms | 11.4 – 12.4 ms | 1.31–1.35 |
-| PostgreSQL, container   | 2.71 – 2.85 ms | 5.85 – 6.28 ms | 2.13–2.20 |
+| `SaveAggregate`, median | Streams        | DCB            | Ratio         | Allocated   |
+|-------------------------|----------------|----------------|---------------|-------------|
+| SQLite, in memory       | 0.90 – 0.99 ms | 1.53 – 1.91 ms | 1.75–1.90     | 2.06×       |
+| SQL Server, container   | 6.80 – 7.05 ms | 5.21 – 5.35 ms | **0.75–0.80** | 0.58–0.59×  |
+| PostgreSQL, container   | 3.75 – 3.82 ms | 2.75 – 2.81 ms | **0.74–0.75** | 0.68–0.69×  |
 
-The ranges span 10, 100 and 1000 already-stored events, and on all three engines the ratio moves by
-less than 0.1 across them — the append's cost really is flat in the length of the history behind it.
+The ranges span 10, 100 and 1000 already-stored events. These are from 2.1.0, in which a DCB append on
+SQL Server and PostgreSQL became one call to a routine in the database; the release before was measured
+in the same sitting at 1.49–1.55 on SQL Server and 1.94–2.10 on PostgreSQL.
 
-These are lower than they were before 1.8.0: three round trips came out of the append, and the ratio
-fell from 1.77–1.86 to 1.31–1.35 on SQL Server and from 2.55–2.65 to 2.13–2.20 on PostgreSQL. The
-milliseconds are not comparable across that change — the two sets were measured on different
-machines — but the ratios are.
+A streamed append is 2 database commands on both real engines; a DCB append is 1 — the routine checks
+the boundary, locks its tag heads, then writes the events, their tags and the snapshot, all in one
+call (see [How an append is written](../concepts/dynamic-consistency-boundaries.md#how-an-append-is-written)).
+SQLite keeps the Entity Framework Core path, 5 commands against 3, because in process a round trip is
+almost free and the extra statements cost less than a routine would save.
 
-Read the ratios, not the milliseconds. Two runs of the same commit ten minutes apart put the SQL
+Read the ratios, not the milliseconds. Two runs of the same commit ten minutes apart once put the SQL
 Server streamed append at 13.8 ms and then 18.9 ms; the ratio held across both. The absolute numbers
-say more about the machine than about either store.
+say more about the machine than about either store. The containers run on the same machine as the
+benchmark, so a round trip never leaves it: the further away your database, the more each round trip
+costs, and the more one instead of two is worth.
 
-A streamed append is 2 database commands on both real engines; a DCB append is 4 — it claims the tag
-head rows and reads the boundary's position in one statement, writes the events, writes the tags,
-then the snapshot. Two extra commands, on all three engines.
-
-The ratio does not track the engine's speed. PostgreSQL has the *fastest* streamed append here and
-the *largest* DCB ratio, because its baseline is cheaper while the extra commands cost much the
-same — which is the shape to expect. The further away the database, the more those commands cost and
-the more the ratio moves. If your database is remote, count the round trips rather than trusting this
-table.
+When many writers append to **one** boundary at once, refusals rather than round trips decide the
+throughput. Jittered backoff between retries raised the routine's throughput in every case the benchmarks
+measured, from 3% against a SQL Server container to twice as much on LocalDB; see [When appends collide](../concepts/dynamic-consistency-boundaries.md#when-appends-collide).
 
 ### One PostgreSQL caveat
 
@@ -165,7 +164,7 @@ where a large table can be queried before it has ever been analysed.
 
 None of this is a reason to pick one or the other. A decision whose boundary is not the shape of any
 stream cannot be made correctly under streams at any price, and an append that a stream can express
-is not worth two extra round trips. Pick on the boundary, as above; use these numbers to size the
+is no reason on its own to move it to DCB. Pick on the boundary, as above; use these numbers to size the
 consequence.
 
 ## Known limits

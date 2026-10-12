@@ -2,7 +2,7 @@
 title: Upgrade to 2.0.0
 description: "The licence is unchanged, where a RabbitMQ connection failure now surfaces, and the optional type bindings a store can carry."
 parent: Upgrading
-nav_order: 1
+nav_order: 2
 ---
 
 # Upgrade to 2.0.0

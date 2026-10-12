@@ -382,4 +382,38 @@ public class TagHeadTests : RelationalTestBase
         Context.DcbTagHeads.Should().ContainSingle(head => head.Tag == SeatA1.ToString(),
             "the append has to create the row it contends on, or nothing guards this tag again");
     }
+
+    /// <summary>
+    /// A head that cannot be created fails the append, rather than leaving it to go ahead with nothing
+    /// guarding the tag. Only a head that exists afterwards — another append created it first — makes
+    /// a failed insert benign.
+    /// </summary>
+    [Fact]
+    public async Task An_append_whose_tag_head_cannot_be_created_fails_instead_of_going_unguarded()
+    {
+        await using var dbContext = CreateContext(new FailingTagHeadInsertInterceptor());
+
+        var result = await dbContext.SaveEvents([Reserved("a1", "s7")],
+            AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+        result.Failure!.Type.Should().Be(StoreFailures.StorageFailureType);
+        (await Context.DcbEvents.CountAsync()).Should().Be(0);
+    }
+
+    /// <summary>Fails every insert into the tag heads, as a missing permission would.</summary>
+    private sealed class FailingTagHeadInsertInterceptor : Microsoft.EntityFrameworkCore.Diagnostics.DbCommandInterceptor
+    {
+        public override ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>> NonQueryExecutingAsync(
+            System.Data.Common.DbCommand command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData eventData,
+            Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (command.CommandText.StartsWith("INSERT INTO \"DcbTagHeads\"", StringComparison.Ordinal))
+            {
+                throw new Microsoft.Data.Sqlite.SqliteException("attempt to write a readonly database", 8);
+            }
+
+            return ValueTask.FromResult(result);
+        }
+    }
 }

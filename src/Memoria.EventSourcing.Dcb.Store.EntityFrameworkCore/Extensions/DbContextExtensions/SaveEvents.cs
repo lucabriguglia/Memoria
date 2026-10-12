@@ -1,7 +1,11 @@
+using System.Data.Common;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Entities;
 using Memoria.EventSourcing.Domain;
 using Memoria.Results;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Extensions.DbContextExtensions;
 
@@ -343,11 +347,20 @@ public static partial class DcbDbContextExtensions
             return heads;
         }
 
-        await dcbDbContext.CreateTagHeads(missing, cancellationToken);
+        var creationFailure = await dcbDbContext.CreateTagHeads(missing, cancellationToken);
 
         // Read again rather than assuming what was just written: the tokens have to be the stored
         // ones, and another append introducing the same tag may have won the race to create it.
-        return await dcbDbContext.ReadTagHeads(affectedTags, condition, cancellationToken);
+        var claimed = await dcbDbContext.ReadTagHeads(affectedTags, condition, cancellationToken);
+
+        // A failed insert is benign only if the heads exist now, because another append created
+        // them. Otherwise the append would go ahead with no guard over a tag, so it fails instead.
+        if (creationFailure is not null && claimed.Count < affectedTags.Count)
+        {
+            throw creationFailure;
+        }
+
+        return claimed;
     }
 
     /// <summary>
@@ -384,30 +397,50 @@ public static partial class DcbDbContextExtensions
     /// <summary>
     /// Creates head rows for tags that have none.
     /// </summary>
+    /// <returns>The first insert that failed, or null; whether it matters is decided by the re-read.</returns>
     /// <remarks>
+    /// <para>
     /// A head row carries no domain meaning until an event references its tag, so creating one early
     /// is harmless and creating one twice is not a conflict.
+    /// </para>
+    /// <para>
+    /// A statement per head rather than a save of the context. A save commits everything tracked,
+    /// so changes the caller staged on the context used to be committed here, outside the append's
+    /// transaction, whatever the append then decided; and a failure of theirs was taken for
+    /// another append having created the head, and swallowed. The statement is built from the
+    /// model's own table and column names, so it writes where the context maps the heads.
+    /// </para>
     /// </remarks>
-    private static async Task CreateTagHeads(this IDcbDbContext dcbDbContext, List<string> missing,
+    private static async Task<Exception?> CreateTagHeads(this IDcbDbContext dcbDbContext, List<string> missing,
         CancellationToken cancellationToken)
     {
+        var heads = dcbDbContext.DcbTagHeads.EntityType;
+        var table = StoreObjectIdentifier.Table(heads.GetTableName()!, heads.GetSchema());
+        var sql = dcbDbContext.Database.GetService<ISqlGenerationHelper>();
+
+        var tableName = sql.DelimitIdentifier(table.Name, table.Schema);
+        var tagColumn = sql.DelimitIdentifier(heads.FindProperty(nameof(DcbTagHeadEntity.Tag))!.GetColumnName(table)!);
+        var tokenColumn = sql.DelimitIdentifier(heads.FindProperty(nameof(DcbTagHeadEntity.Token))!.GetColumnName(table)!);
+
+        var insert = $"INSERT INTO {tableName} ({tagColumn}, {tokenColumn}) SELECT {{0}}, {{1}} " +
+                     $"WHERE NOT EXISTS (SELECT 1 FROM {tableName} WHERE {tagColumn} = {{0}})";
+
+        Exception? firstFailure = null;
+
         foreach (var tag in missing)
         {
-            dcbDbContext.DcbTagHeads.Add(new DcbTagHeadEntity { Tag = tag, Token = Guid.NewGuid() });
+            try
+            {
+                await dcbDbContext.Database.ExecuteSqlRawAsync(insert, [tag, Guid.NewGuid()], cancellationToken);
+            }
+            catch (DbException exception)
+            {
+                // Most likely another append introduced the same tag between the check and the
+                // insert. The re-read that follows decides.
+                firstFailure ??= exception;
+            }
         }
 
-        try
-        {
-            await dcbDbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException)
-        {
-            // Another append introduced the same tag first. The row now exists, which is all this
-            // step wanted.
-        }
-        finally
-        {
-            dcbDbContext.ChangeTracker.Clear();
-        }
+        return firstFailure;
     }
 }

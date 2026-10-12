@@ -36,7 +36,9 @@ Nothing in this repository is part of it, and installing the packages never requ
 **Already on 1.x?**
 [Upgrade to 2.0.0](https://lucabriguglia.github.io/Memoria/guides/upgrade-2.0.0.html) walks through
 the two behaviours that move with the major version. Nothing in the store changes, so there is no
-data migration.
+data migration. **Using the DCB store on SQL Server or PostgreSQL?**
+[Upgrade to 2.1.0](https://lucabriguglia.github.io/Memoria/guides/upgrade-2.1.0.html) installs the
+append routine it now needs.
 
 ## 📥 Install
 
@@ -109,7 +111,7 @@ the [reference](https://lucabriguglia.github.io/Memoria/reference/) has the
 | Area | Capabilities |
 |------|--------------|
 | **Mediator** | Commands, queries and notifications through one `IDispatcher`; command sequences; custom handlers in place of the resolved one; automatic notification publication after a command succeeds; [`Result` instead of exceptions](https://lucabriguglia.github.io/Memoria/concepts/result-pattern.html) |
-| **Consistency** | [Event streams](https://lucabriguglia.github.io/Memoria/concepts/aggregates-and-streams.html) with optimistic concurrency on an expected event sequence, or [dynamic consistency boundaries](https://lucabriguglia.github.io/Memoria/concepts/dynamic-consistency-boundaries.html) where the boundary is a tag query chosen per decision; [multiple aggregates per stream](https://lucabriguglia.github.io/Memoria/guides/multiple-aggregates-per-stream.html) |
+| **Consistency** | [Event streams](https://lucabriguglia.github.io/Memoria/concepts/aggregates-and-streams.html) with optimistic concurrency on an expected event sequence, or [dynamic consistency boundaries](https://lucabriguglia.github.io/Memoria/concepts/dynamic-consistency-boundaries.html) where the boundary is a tag query chosen per decision, appended in one round trip on SQL Server and PostgreSQL; [multiple aggregates per stream](https://lucabriguglia.github.io/Memoria/guides/multiple-aggregates-per-stream.html) |
 | **Reads** | [Four read modes](https://lucabriguglia.github.io/Memoria/concepts/read-modes.html); aggregate snapshots stored alongside events for fast, strongly consistent reads; [projections](https://lucabriguglia.github.io/Memoria/concepts/projections.html) persisted and retrieved as snapshots; [in-memory reconstruction](https://lucabriguglia.github.io/Memoria/guides/replay-events-in-memory.html) up to a given sequence or date |
 | **Event queries** | Filter applied events by event type, or by event property declared as key/value pairs on the aggregate id; query stream events from or up to a sequence, date or date range; retrieve every event applied to an aggregate |
 | **Providers** | Stores: EF Core (plus [ASP.NET Identity](https://lucabriguglia.github.io/Memoria/guides/integrate-aspnet-identity.html) and [PostgreSQL `jsonb`](https://lucabriguglia.github.io/Memoria/guides/use-postgres-jsonb.html) companions), Cosmos DB. Messaging: Azure Service Bus, RabbitMQ. Caching: in-memory, Redis. Validation: FluentValidation |

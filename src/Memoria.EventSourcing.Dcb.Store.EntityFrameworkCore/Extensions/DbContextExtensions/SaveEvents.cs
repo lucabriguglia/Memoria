@@ -72,7 +72,7 @@ public static partial class DcbDbContextExtensions
 
         if (dcbDbContext.AppendsThroughRoutine(condition))
         {
-            return await dcbDbContext.AppendThroughRoutine(events, condition!, affectedTags, operation,
+            return await dcbDbContext.AppendThroughRoutine(events, condition, affectedTags, operation,
                 cancellationToken);
         }
 

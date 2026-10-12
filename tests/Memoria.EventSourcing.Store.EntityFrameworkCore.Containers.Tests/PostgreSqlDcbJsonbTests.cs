@@ -69,6 +69,7 @@ public class PostgreSqlDcbJsonbTests(PostgreSqlFixture fixture)
         try
         {
             await dbContext.Database.EnsureCreatedAsync();
+            await dbContext.Database.EnsureDcbAppendRoutineAsync();
 
             var columns = await ColumnMetadata.ReadAsync(dbContext, "DcbEvents");
             columns["Data"].DataType.Should().Be("jsonb", "the override is what is under test");

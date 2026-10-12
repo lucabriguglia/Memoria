@@ -3,9 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.Entities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.AppendRoutine;
 
@@ -56,22 +54,31 @@ internal static class DcbAppendRoutine
     /// Built once per model.
     /// </summary>
     public static Shape? For(DbContext context) =>
-        context.Database.ProviderName == PostgreSqlProvider
-            ? Shapes.GetValue(context.Model, model => Build(model, context.GetService<ISqlGenerationHelper>()))
-            : null;
+        context.Database.ProviderName == PostgreSqlProvider ? For(context.Model) : null;
+
+    /// <summary>
+    /// The PostgreSQL routine for a model: a context's runtime model, or a migration's target model.
+    /// </summary>
+    public static Shape For(IModel model) => Shapes.GetValue(model, Build);
 
     /// <summary>A model's routine.</summary>
     /// <param name="CallName">The name to call it by, quoted and qualified as needed.</param>
     /// <param name="DisplayName">The name to tell a person, for instance in a failure.</param>
     /// <param name="Definition">The statement that creates or replaces it.</param>
-    public sealed record Shape(string CallName, string DisplayName, string Definition);
+    /// <param name="Drop">The statement that drops it, if it exists.</param>
+    public sealed record Shape(string CallName, string DisplayName, string Definition, string Drop);
 
-    private static Shape Build(IModel model, ISqlGenerationHelper sql)
+    /// <summary>The routine's parameter types, which identify it to <c>DROP FUNCTION</c>.</summary>
+    private const string PostgreSqlSignature =
+        "text[], text[], boolean, bigint, text[], text[], int[], text[], timestamptz, text, " +
+        "text, text, text, text, text, int, bigint, text";
+
+    private static Shape Build(IModel model)
     {
-        var events = Mapped<DcbEventEntity>(model, sql);
-        var eventTags = Mapped<DcbEventTagEntity>(model, sql);
-        var heads = Mapped<DcbTagHeadEntity>(model, sql);
-        var snapshots = Mapped<DcbSnapshotEntity>(model, sql);
+        var events = Mapped<DcbEventEntity>(model);
+        var eventTags = Mapped<DcbEventTagEntity>(model);
+        var heads = Mapped<DcbTagHeadEntity>(model);
+        var snapshots = Mapped<DcbSnapshotEntity>(model);
 
         var eventsDataType = events.Type(nameof(DcbEventEntity.Data));
         var snapshotsDataType = snapshots.Type(nameof(DcbSnapshotEntity.Data));
@@ -102,44 +109,58 @@ internal static class DcbAppendRoutine
         else
         {
             var name = $"{Name}_{Hash(mapping + "|" + events.Schema + "|" + eventTags.Schema + "|" + heads.Schema + "|" + snapshots.Schema)}";
-            callName = sql.DelimitIdentifier(name, events.Schema);
+            callName = Quote(name, events.Schema);
             displayName = events.Schema is null ? name : $"{events.Schema}.{name}";
         }
 
-        return new Shape(callName, displayName, PostgreSqlDefinition(callName, events, eventTags, heads, snapshots,
-            eventsDataType, snapshotsDataType));
+        return new Shape(callName, displayName,
+            PostgreSqlDefinition(callName, events, eventTags, heads, snapshots, eventsDataType, snapshotsDataType),
+            $"DROP FUNCTION IF EXISTS {callName}({PostgreSqlSignature});");
     }
 
     private static string Hash(string mapping) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(mapping)))[..8];
 
+    /// <summary>
+    /// Quotes a PostgreSQL identifier, always. The store's own rule rather than the provider's, which
+    /// leaves simple lower-case names bare: one rule wherever the routine is generated — at runtime
+    /// or in a migration, which has no provider services — keeps every route's routine identical.
+    /// </summary>
+    private static string Quote(string name) => $"\"{name.Replace("\"", "\"\"")}\"";
+
+    private static string Quote(string name, string? schema) =>
+        schema is null ? Quote(name) : $"{Quote(schema)}.{Quote(name)}";
+
     /// <summary>One entity's table and columns as the model maps them.</summary>
-    private sealed record MappedTable(IEntityType EntityType, StoreObjectIdentifier Store, ISqlGenerationHelper Sql)
+    private sealed record MappedTable(IReadOnlyEntityType EntityType, StoreObjectIdentifier Store)
     {
         public string Table => Store.Name;
 
         public string? Schema => Store.Schema;
 
         /// <summary>The table, quoted and qualified.</summary>
-        public string Quoted => Sql.DelimitIdentifier(Store.Name, Store.Schema);
+        public string Quoted => Quote(Store.Name, Store.Schema);
 
         /// <summary>The column a property maps to, unquoted.</summary>
         public string Raw(string property) => EntityType.FindProperty(property)!.GetColumnName(Store)!;
 
         /// <summary>The column a property maps to, quoted.</summary>
-        public string Column(string property) => Sql.DelimitIdentifier(Raw(property));
+        public string Column(string property) => Quote(Raw(property));
 
         /// <summary>The store type a property maps to.</summary>
         public string Type(string property) => EntityType.FindProperty(property)!.GetColumnType(Store)!;
     }
 
-    private static MappedTable Mapped<TEntity>(IModel model, ISqlGenerationHelper sql)
+    /// <remarks>
+    /// Found by name rather than by CLR type: a migration's target model is rebuilt from the
+    /// migration's own code, which names its entity types rather than referencing them.
+    /// </remarks>
+    private static MappedTable Mapped<TEntity>(IModel model)
     {
-        var entityType = model.FindEntityType(typeof(TEntity))
+        var entityType = model.FindEntityType(typeof(TEntity).FullName!)
                          ?? throw new InvalidOperationException($"The model does not map {typeof(TEntity).Name}.");
 
-        return new MappedTable(entityType, StoreObjectIdentifier.Table(entityType.GetTableName()!, entityType.GetSchema()),
-            sql);
+        return new MappedTable(entityType, StoreObjectIdentifier.Table(entityType.GetTableName()!, entityType.GetSchema()));
     }
 
     /// <summary>

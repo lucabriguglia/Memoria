@@ -129,7 +129,7 @@ public class SqlServerDcbInstallScriptTests(SqlServerFixture fixture)
 [Collection(PostgreSqlCollection.Name)]
 public class PostgreSqlDcbInstallScriptTests(PostgreSqlFixture fixture)
 {
-    private const string ScriptFileName = "1.8.0-install-dcb-postgresql.sql";
+    private const string ScriptFileName = "2.1.0-install-dcb-postgresql.sql";
 
     private static Task<IReadOnlyList<string>> Describe(DbContext dbContext) =>
         DcbInstallScriptComparison.DescribeAsync(dbContext,

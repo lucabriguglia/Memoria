@@ -41,9 +41,9 @@ public static class DcbAppendRoutineMigrationBuilderExtensions
     /// <returns>The migration builder, for chaining.</returns>
     public static MigrationBuilder CreateDcbAppendRoutine(this MigrationBuilder migrationBuilder, IModel? targetModel)
     {
-        if (Applies(migrationBuilder, targetModel))
+        if (targetModel is not null && DcbAppendRoutine.For(targetModel, migrationBuilder.ActiveProvider) is { } routine)
         {
-            migrationBuilder.Sql(DcbAppendRoutine.For(targetModel!).Definition);
+            migrationBuilder.Sql(routine.Definition);
         }
 
         return migrationBuilder;
@@ -59,14 +59,11 @@ public static class DcbAppendRoutineMigrationBuilderExtensions
     /// </remarks>
     public static MigrationBuilder DropDcbAppendRoutine(this MigrationBuilder migrationBuilder, IModel? targetModel)
     {
-        if (Applies(migrationBuilder, targetModel))
+        if (targetModel is not null && DcbAppendRoutine.For(targetModel, migrationBuilder.ActiveProvider) is { } routine)
         {
-            migrationBuilder.Sql(DcbAppendRoutine.For(targetModel!).Drop);
+            migrationBuilder.Sql(routine.Drop);
         }
 
         return migrationBuilder;
     }
-
-    private static bool Applies(MigrationBuilder migrationBuilder, IModel? targetModel) =>
-        migrationBuilder.ActiveProvider == DcbAppendRoutine.PostgreSqlProvider && targetModel is not null;
 }

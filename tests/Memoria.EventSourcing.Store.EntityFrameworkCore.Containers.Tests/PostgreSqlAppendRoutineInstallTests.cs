@@ -187,13 +187,11 @@ public class PostgreSqlAppendRoutineInstallTests(PostgreSqlFixture fixture)
 /// </summary>
 public class AppendRoutineMigrationOnOtherEnginesTests
 {
-    [Theory]
-    [InlineData("Microsoft.EntityFrameworkCore.Sqlite")]
-    [InlineData("Microsoft.EntityFrameworkCore.SqlServer")]
-    public void The_migration_helpers_add_nothing_on_an_engine_without_a_routine(string provider)
+    [Fact]
+    public void The_migration_helpers_add_nothing_on_an_engine_without_a_routine()
     {
         var model = DcbStoreSchema.OnPostgreSql("Host=unused").GetService<IDesignTimeModel>().Model;
-        var migrationBuilder = new MigrationBuilder(provider);
+        var migrationBuilder = new MigrationBuilder("Microsoft.EntityFrameworkCore.Sqlite");
 
         migrationBuilder.CreateDcbAppendRoutine(model);
         migrationBuilder.DropDcbAppendRoutine(model);

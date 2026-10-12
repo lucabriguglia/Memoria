@@ -19,10 +19,6 @@ namespace Memoria.EventSourcing.Dcb.Store.EntityFrameworkCore.AppendRoutine;
 /// Core path, because in process a round trip is almost free.
 /// </para>
 /// <para>
-/// The SQL Server procedure covers every append and aggregate save of the default model so far; a
-/// remapped model on SQL Server keeps the Entity Framework Core path until it covers that too.
-/// </para>
-/// <para>
 /// Generated from the context's model, so it writes wherever the model maps the store's tables and
 /// columns, and casts payloads to whatever type the model gives them — the documented <c>jsonb</c>
 /// override included. The default model's routine is <c>memoria_dcb_append_v1</c>, in the default
@@ -57,12 +53,12 @@ internal static class DcbAppendRoutine
         "DcbSnapshots", "Id", "SnapshotKind", "StoreId", "TagQuery", "ModelType", "Version", "LatestPosition",
         "Data", "text", "CreatedDate", "CreatedBy", "UpdatedDate", "UpdatedBy");
 
-    /// <summary>The default model's table and column names, whatever their types.</summary>
-    private static readonly string DefaultNames = DefaultMapping.Replace("|text|", "|");
+    /// <summary>What the default model maps on SQL Server, where payloads are <c>nvarchar(max)</c>.</summary>
+    private static readonly string SqlServerDefaultMapping = DefaultMapping.Replace("|text|", "|nvarchar(max)|");
 
     private static readonly ConditionalWeakTable<IModel, Shape> Shapes = new();
 
-    private static readonly ConditionalWeakTable<IModel, Fitted> SqlServerShapes = new();
+    private static readonly ConditionalWeakTable<IModel, Shape> SqlServerShapes = new();
 
     /// <summary>
     /// The routine for this context's model, or null where appends go through Entity Framework Core.
@@ -74,15 +70,21 @@ internal static class DcbAppendRoutine
     /// </remarks>
     public static Shape? For(DbContext context) => context.Database.ProviderName switch
     {
-        PostgreSqlProvider => For(context.Model),
-        SqlServerProvider => SqlServerShapes.GetValue(context.GetService<IDesignTimeModel>().Model, BuildSqlServer).Shape,
+        PostgreSqlProvider => For(context.Model, PostgreSqlProvider),
+        SqlServerProvider => For(context.GetService<IDesignTimeModel>().Model, SqlServerProvider),
         _ => null
     };
 
     /// <summary>
-    /// The PostgreSQL routine for a model: a context's runtime model, or a migration's target model.
+    /// The routine for a model on a provider — a context's model, or a migration's target model — or
+    /// null for a provider whose appends go through Entity Framework Core.
     /// </summary>
-    public static Shape For(IModel model) => Shapes.GetValue(model, Build);
+    public static Shape? For(IModel model, string? provider) => provider switch
+    {
+        PostgreSqlProvider => Shapes.GetValue(model, Build),
+        SqlServerProvider => SqlServerShapes.GetValue(model, BuildSqlServer),
+        _ => null
+    };
 
     /// <summary>The engine a routine is written for, which decides how it is called.</summary>
     public enum Engine
@@ -98,9 +100,6 @@ internal static class DcbAppendRoutine
     /// <param name="Definition">The statement that creates or replaces it.</param>
     /// <param name="Drop">The statement that drops it, if it exists.</param>
     public sealed record Shape(Engine For, string CallName, string DisplayName, string Definition, string Drop);
-
-    /// <summary>A model's routine, or null when the model is not one the engine's routine fits yet.</summary>
-    private sealed record Fitted(Shape? Shape);
 
     /// <summary>The routine's parameter types, which identify it to <c>DROP FUNCTION</c>.</summary>
     private const string PostgreSqlSignature =
@@ -143,46 +142,43 @@ internal static class DcbAppendRoutine
         var eventsDataType = events.Type(nameof(DcbEventEntity.Data));
         var snapshotsDataType = snapshots.Type(nameof(DcbSnapshotEntity.Data));
 
-        var mapping = tables.Mapping(withPayloadTypes: true);
+        var (name, schema) = Naming(tables, DefaultMapping);
+        var callName = Quote(name, schema);
 
-        string callName;
-        string displayName;
-
-        if (mapping == DefaultMapping && !tables.AnySchema)
-        {
-            callName = Name;
-            displayName = Name;
-        }
-        else
-        {
-            var name = $"{Name}_{Hash(mapping + "|" + events.Schema + "|" + eventTags.Schema + "|" + heads.Schema + "|" + snapshots.Schema)}";
-            callName = Quote(name, events.Schema);
-            displayName = events.Schema is null ? name : $"{events.Schema}.{name}";
-        }
-
-        return new Shape(Engine.PostgreSql, callName, displayName,
+        return new Shape(Engine.PostgreSql, callName, DisplayName(name, schema),
             Portable(PostgreSqlDefinition(callName, events, eventTags, heads, snapshots, eventsDataType, snapshotsDataType)),
             $"DROP FUNCTION IF EXISTS {callName}({PostgreSqlSignature});");
     }
 
-    /// <summary>
-    /// The SQL Server procedure for a model, or none for a model that maps the store's tables
-    /// anywhere but where the default model does: the procedure is written for the default names.
-    /// </summary>
-    private static Fitted BuildSqlServer(IModel model)
+    private static Shape BuildSqlServer(IModel model)
     {
         var tables = StoreTables.Of(model);
+        var (name, schema) = Naming(tables, SqlServerDefaultMapping);
+        var callName = schema is null ? BracketQuote(name) : $"{BracketQuote(schema)}.{BracketQuote(name)}";
 
-        if (tables.Mapping(withPayloadTypes: false) != DefaultNames || tables.AnySchema)
+        return new Shape(Engine.SqlServer, callName, DisplayName(name, schema),
+            Portable(SqlServerDefinition(callName, tables)), $"DROP PROCEDURE IF EXISTS {callName};");
+    }
+
+    /// <summary>
+    /// The routine's name and schema: the plain name in the default schema for the default model,
+    /// and otherwise that name with a hash of the mapping, in the schema of the events table.
+    /// </summary>
+    private static (string Name, string? Schema) Naming(StoreTables tables, string defaultMapping)
+    {
+        var mapping = tables.Mapping(withPayloadTypes: true);
+
+        if (mapping == defaultMapping && !tables.AnySchema)
         {
-            return new Fitted(null);
+            return (Name, null);
         }
 
-        var callName = BracketQuote(Name);
-
-        return new Fitted(new Shape(Engine.SqlServer, callName, Name, Portable(SqlServerDefinition(callName, tables)),
-            $"DROP PROCEDURE IF EXISTS {callName};"));
+        var (events, eventTags, heads, snapshots) = tables;
+        return ($"{Name}_{Hash(mapping + "|" + events.Schema + "|" + eventTags.Schema + "|" + heads.Schema + "|" + snapshots.Schema)}",
+            events.Schema);
     }
+
+    private static string DisplayName(string name, string? schema) => schema is null ? name : $"{schema}.{name}";
 
     /// <summary>
     /// A definition with its lines ended by <c>\n</c>, however its source file ends them. A raw
@@ -224,7 +220,8 @@ internal static class DcbAppendRoutine
         public string Type(string property) => EntityType.FindProperty(property)!.GetColumnType(Store)!;
 
         /// <summary>The table, bracketed for SQL Server.</summary>
-        public string Bracketed => BracketQuote(Store.Name);
+        public string Bracketed =>
+            Store.Schema is null ? BracketQuote(Store.Name) : $"{BracketQuote(Store.Schema)}.{BracketQuote(Store.Name)}";
 
         /// <summary>The column a property maps to, bracketed for SQL Server.</summary>
         public string BracketedColumn(string property) => BracketQuote(Raw(property));

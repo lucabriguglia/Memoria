@@ -14,7 +14,7 @@ namespace Memoria.EventSourcing.Store.EntityFrameworkCore.Containers.Tests;
 [Collection(SqlServerCollection.Name)]
 public class SqlServerDcbInstallScriptTests(SqlServerFixture fixture)
 {
-    private const string ScriptFileName = "1.8.0-install-dcb-sqlserver.sql";
+    private const string ScriptFileName = "2.1.0-install-dcb-sqlserver.sql";
 
     private static Task<IReadOnlyList<string>> Describe(DbContext dbContext) =>
         DcbInstallScriptComparison.DescribeAsync(dbContext,

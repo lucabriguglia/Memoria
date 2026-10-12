@@ -202,7 +202,7 @@ public sealed class StoreBenchmarkHarness : IAsyncDisposable
         await _dcbContext!.Database.ExecuteSqlRawAsync("ANALYZE;");
     }
 
-    private static void ConfigureTypeBindings()
+    internal static void ConfigureTypeBindings()
     {
         TypeBindings.EventTypeBindings = new Dictionary<string, Type>
         {

@@ -24,18 +24,12 @@ public static partial class DcbDbContextExtensions
     /// routine takes both, or none for an unconditional append. A boundary mixing the two cannot be
     /// built today; it keeps the Entity Framework Core path, which refuses it loudly.
     /// </para>
-    /// <para>
-    /// Not yet when the caller has changes staged on the context: those keep the Entity Framework
-    /// Core path until the routine covers them. Staged changes have always been saved with the
-    /// append, all or nothing, and the routine call alone would leave them behind.
-    /// </para>
     /// </remarks>
     private static bool AppendsThroughRoutine(this IDcbDbContext dcbDbContext, AppendCondition? condition) =>
         dcbDbContext is DcbDbContext context
         && DcbAppendRoutine.Definition(dcbDbContext.Database.ProviderName) is not null
         && DcbAppendRoutine.FitsModel(context.Model)
-        && (condition is null || IsUnion(condition.Query) || IsIntersection(condition.Query))
-        && !dcbDbContext.ChangeTracker.HasChanges();
+        && (condition is null || IsUnion(condition.Query) || IsIntersection(condition.Query));
 
     private static bool IsUnion(TagQuery query) => query.TagGroups.All(group => group.Count == 1);
 
@@ -46,37 +40,68 @@ public static partial class DcbDbContextExtensions
     /// the writes in one round trip.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Through the execution strategy, like the Entity Framework Core path, so a deployment that
     /// retries transient failures retries this too. A refusal leaves as a value and is never retried.
     /// The refusal carries the boundary's latest position from the same call, so it costs no re-read.
+    /// </para>
+    /// <para>
+    /// Changes the caller staged on the context have always been saved with the append, all or
+    /// nothing. With some staged, the call runs in a transaction after a save of them that is not
+    /// accepted until the append commits: a refusal rolls them back and leaves them pending, and a
+    /// retried attempt saves them again. Not through <c>Appending</c>, which clears the tracker
+    /// between attempts and would throw them away; nothing else is attached here to clear.
+    /// </para>
     /// </remarks>
     private static async Task<Result> AppendThroughRoutine(this IDcbDbContext dcbDbContext, TaggedEvent[] events,
         AppendCondition? condition, List<string> affectedTags, string operation, CancellationToken cancellationToken,
         DcbSnapshotEntity? snapshot = null, Action<long>? appendedTo = null)
     {
+        var context = (DcbDbContext)dcbDbContext;
+        var staged = context.ChangeTracker.HasChanges();
+
         try
         {
-            return await dcbDbContext.Appending(async token =>
+            var outcome = await context.Database.CreateExecutionStrategy().ExecuteAsync(async token =>
             {
-                var outcome = await dcbDbContext.CallAppendRoutine(events, condition, affectedTags, snapshot, token);
-
-                if (outcome.Appended)
+                if (!staged)
                 {
-                    if (outcome.LatestPosition is { } lastWritten)
-                    {
-                        appendedTo?.Invoke(lastWritten);
-                    }
-
-                    return Result.Ok();
+                    return await dcbDbContext.CallAppendRoutine(events, condition, affectedTags, snapshot, token);
                 }
 
-                // Only a conditioned append can be refused: an unconditional one has nothing to check.
-                DcbDiagnostics.AddConcurrencyConflictEvent(condition!.Query, condition.AfterPosition,
-                    outcome.LatestPosition!.Value);
+                await using var transaction = await context.Database.BeginTransactionAsync(token);
+                await context.SaveChangesAsync(acceptAllChangesOnSuccess: false, token);
 
-                return DcbStoreFailures.ConcurrencyConflict(condition.Query, condition.AfterPosition,
-                    outcome.LatestPosition!.Value);
+                var attempt = await dcbDbContext.CallAppendRoutine(events, condition, affectedTags, snapshot, token);
+                if (attempt.Appended)
+                {
+                    await transaction.CommitAsync(token);
+                }
+
+                return attempt;
             }, cancellationToken);
+
+            if (outcome.Appended)
+            {
+                if (staged)
+                {
+                    context.ChangeTracker.AcceptAllChanges();
+                }
+
+                if (outcome.LatestPosition is { } lastWritten)
+                {
+                    appendedTo?.Invoke(lastWritten);
+                }
+
+                return Result.Ok();
+            }
+
+            // Only a conditioned append can be refused: an unconditional one has nothing to check.
+            DcbDiagnostics.AddConcurrencyConflictEvent(condition!.Query, condition.AfterPosition,
+                outcome.LatestPosition!.Value);
+
+            return DcbStoreFailures.ConcurrencyConflict(condition.Query, condition.AfterPosition,
+                outcome.LatestPosition!.Value);
         }
         catch (Exception exception) when (IsMissingRoutine(exception))
         {

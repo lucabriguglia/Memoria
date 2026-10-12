@@ -417,6 +417,176 @@ public class PostgreSqlSingleCallAppendTests(PostgreSqlFixture fixture)
             conditioned.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
         });
 
+    [RequiresDockerFact]
+    public Task A_change_staged_on_the_context_commits_with_the_append() =>
+        WithStagingDatabase(async database =>
+        {
+            var commands = new CommandCounter();
+            await using var dbContext = database.ConnectStaging(commands);
+            dbContext.Bookings.Add(new Booking { Id = "b1", Seat = "a1" });
+
+            var result = await dbContext.SaveEvents([Reserved("a1", "s7")],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            commands.Count.Should().Be(2, $"the staged change and the append, but sent:\n{commands}");
+            dbContext.ChangeTracker.HasChanges().Should().BeFalse(
+                "what was staged is now saved; leaving it pending would insert it again on the next save");
+            await using var reading = database.ConnectStaging();
+            (await reading.Bookings.CountAsync()).Should().Be(1);
+            (await reading.DcbEvents.CountAsync()).Should().Be(1);
+        });
+
+    [RequiresDockerFact]
+    public Task A_change_staged_on_the_context_commits_with_an_aggregate_save() =>
+        WithStagingDatabase(async database =>
+        {
+            await using var dbContext = database.ConnectStaging();
+            dbContext.Bookings.Add(new Booking { Id = "b1", Seat = "a1" });
+            var seat = new SeatAggregate();
+            seat.Reserve("a1", "s7");
+
+            var result = await dbContext.SaveAggregate(SeatA1Aggregate, seat,
+                AppendCondition.NothingAppendedFor(SeatA1Aggregate.Boundary));
+
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            await using var reading = database.ConnectStaging();
+            (await reading.Bookings.CountAsync()).Should().Be(1);
+            (await reading.DcbSnapshots.CountAsync()).Should().Be(1);
+        });
+
+    [RequiresDockerFact]
+    public Task A_refused_append_saves_no_staged_change_and_leaves_it_pending() =>
+        WithStagingDatabase(async database =>
+        {
+            await using var dbContext = database.ConnectStaging();
+            await dbContext.SaveEvents([Reserved("a1", "s7")], condition: null);
+            dbContext.Bookings.Add(new Booking { Id = "b1", Seat = "a1" });
+
+            // A new tag as well, so the append would have to create a head: on the Entity Framework
+            // Core path that is where staged changes escaped the transaction.
+            var result = await dbContext.SaveEvents([Reserved("a1", "s8", SeatA1, StudentS7)],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+            result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.ConcurrencyConflictType);
+            dbContext.ChangeTracker.HasChanges().Should().BeTrue("the caller still holds what it staged");
+            await using var reading = database.ConnectStaging();
+            (await reading.Bookings.CountAsync()).Should().Be(0);
+            (await reading.DcbEvents.CountAsync()).Should().Be(1);
+        });
+
+    [RequiresDockerFact]
+    public Task A_staged_change_that_cannot_be_saved_fails_the_append() =>
+        WithStagingDatabase(async database =>
+        {
+            await using (var existing = database.ConnectStaging())
+            {
+                existing.Bookings.Add(new Booking { Id = "b1", Seat = "a1" });
+                await existing.SaveChangesAsync();
+            }
+
+            await using var dbContext = database.ConnectStaging();
+            dbContext.Bookings.Add(new Booking { Id = "b1", Seat = "a2" });
+
+            var result = await dbContext.SaveEvents([Reserved("a1", "s7", SeatA1, StudentS7)],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+            result.Failure!.Type.Should().Be(EventSourcing.StoreFailures.StorageFailureType);
+            await using var reading = database.ConnectStaging();
+            (await reading.DcbEvents.CountAsync()).Should().Be(0, "nothing is appended when the staged change fails");
+            (await reading.Bookings.SingleAsync()).Seat.Should().Be("a1");
+        });
+
+    [RequiresDockerFact]
+    public Task A_retried_append_saves_its_staged_change_again() =>
+        WithStagingDatabase(async database =>
+        {
+            var failOnce = new FailTheRoutineOnce();
+            await using var dbContext = database.ConnectStaging(retrying: true, interceptors: failOnce);
+            dbContext.Bookings.Add(new Booking { Id = "b1", Seat = "a1" });
+
+            var result = await dbContext.SaveEvents([Reserved("a1", "s7")],
+                AppendCondition.NothingAppendedFor(TagQuery.AnyOf(SeatA1)));
+
+            failOnce.Failed.Should().BeTrue("the first attempt must actually have failed");
+            result.IsSuccess.Should().BeTrue(result.Failure?.Description);
+            await using var reading = database.ConnectStaging();
+            (await reading.Bookings.CountAsync()).Should().Be(1, "the retry saves the staged change it rolled back");
+            (await reading.DcbEvents.CountAsync()).Should().Be(1);
+        });
+
+    /// <summary>A database with the store's schema plus an entity of the caller's own.</summary>
+    private sealed class StagingDatabase(string connectionString)
+    {
+        public StagingDbContext ConnectStaging(params IInterceptor[] interceptors) =>
+            ConnectStaging(retrying: false, interceptors);
+
+        public StagingDbContext ConnectStaging(bool retrying, params IInterceptor[] interceptors) =>
+            new(new DbContextOptionsBuilder<DcbDbContext>()
+                .UseNpgsql(connectionString, npgsql =>
+                {
+                    if (retrying)
+                    {
+                        npgsql.EnableRetryOnFailure();
+                    }
+                })
+                .AddInterceptors(interceptors)
+                .Options);
+    }
+
+    private Task WithStagingDatabase(Func<StagingDatabase, Task> body) =>
+        WithDatabase(async database =>
+        {
+            var staging = new StagingDatabase(database.ConnectionString);
+
+            await using (var setup = staging.ConnectStaging())
+            {
+                await setup.Database.EnsureDeletedAsync();
+                await setup.Database.EnsureCreatedAsync();
+                await setup.Database.EnsureDcbAppendRoutineAsync();
+            }
+
+            await body(staging);
+        });
+
+    public sealed class Booking
+    {
+        public string Id { get; set; } = null!;
+
+        public string Seat { get; set; } = null!;
+    }
+
+    public sealed class StagingDbContext(DbContextOptions<DcbDbContext> options)
+        : TestDbContext(options, TimeProvider.System, new StubHttpContextAccessor())
+    {
+        public DbSet<Booking> Bookings => Set<Booking>();
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<Booking>().HasKey(booking => booking.Id);
+        }
+    }
+
+    /// <summary>Fails the first call to the append routine with a transient error.</summary>
+    private sealed class FailTheRoutineOnce : DbCommandInterceptor
+    {
+        public bool Failed { get; private set; }
+
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command,
+            CommandEventData eventData, InterceptionResult<DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (!Failed && command.CommandText.Contains("memoria_dcb_append"))
+            {
+                Failed = true;
+                throw new NpgsqlException("Simulated transient failure.", new TimeoutException());
+            }
+
+            return ValueTask.FromResult(result);
+        }
+    }
+
     /// <summary>
     /// Holds the first tag head the append contends on, starts the append so it waits for it, then
     /// commits an event under <paramref name="holderTags"/> and releases the head, returning what the
